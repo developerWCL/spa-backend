@@ -1,0 +1,72 @@
+import {
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+  DeleteDateColumn,
+  ManyToOne,
+  OneToMany,
+} from 'typeorm';
+import { Spa } from './spa.entity';
+import { BranchOperatingHours } from './branch_operating_hours.entity';
+import { BranchSpecialClosures } from './branch_special_closures.entity';
+import { Staff } from './staffs.entity';
+import { Room } from './rooms.entity';
+import { Service } from './services.entity';
+import { Package } from './packages.entity';
+import { Promotion } from './promotions.entity';
+
+@Entity('branch')
+export class Branch {
+  @PrimaryGeneratedColumn('uuid')
+  id: string;
+
+  @ManyToOne(() => Spa, (s) => s.branches, { onDelete: 'CASCADE' })
+  spa: Spa;
+
+  @Column()
+  name: string;
+
+  @Column({ type: 'text', nullable: true })
+  location: string;
+
+  @Column({ nullable: true })
+  phone: string;
+
+  @Column({ nullable: true })
+  email: string;
+
+  @Column({ nullable: true })
+  website: string;
+
+  @CreateDateColumn({ type: 'timestamp' })
+  created_at: Date;
+
+  @UpdateDateColumn({ type: 'timestamp' })
+  updated_at: Date;
+
+  @DeleteDateColumn({ type: 'timestamp', nullable: true })
+  deleted_at?: Date;
+
+  @OneToMany(() => BranchOperatingHours, (h) => h.branch)
+  operating_hours: BranchOperatingHours[];
+
+  @OneToMany(() => BranchSpecialClosures, (c) => c.branch)
+  special_closures: BranchSpecialClosures[];
+
+  @OneToMany(() => Staff, (s) => s.branch)
+  staffs: Staff[];
+
+  @OneToMany(() => Room, (r) => r.branch)
+  rooms: Room[];
+
+  @OneToMany(() => Service, (svc) => svc.branch)
+  services: Service[];
+
+  @OneToMany(() => Package, (p) => p.branch)
+  packages: Package[];
+
+  @OneToMany(() => Promotion, (pr) => pr.branch)
+  promotions: Promotion[];
+}
