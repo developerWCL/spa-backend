@@ -3,9 +3,9 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { RolesService } from './roles.service';
 import { CreatePermissionDto } from '../dto/create-permission.dto';
 import { CreateRoleDto } from '../dto/create-role.dto';
-import { StaffJwtAuthGuard } from '../guards/staff-jwt.guard';
-import { PermissionsGuard } from '../guards/permissions.guard';
-import { Permissions } from '../guards/permissions.decorator';
+import { StaffJwtAuthGuard } from '../../../guards/staff-jwt.guard';
+import { PermissionsGuard } from '../../../guards/permissions.guard';
+import { Permissions } from '../../../decorator/permissions.decorator';
 
 @ApiTags('Roles & Permissions')
 @ApiBearerAuth()

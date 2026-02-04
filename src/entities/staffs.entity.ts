@@ -27,9 +27,6 @@ export class Staff {
   lastName: string;
 
   @Column({ nullable: true })
-  role: string;
-
-  @Column({ nullable: true })
   email: string;
 
   @Column({ name: 'password_hash', nullable: true })

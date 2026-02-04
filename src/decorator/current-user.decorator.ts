@@ -3,7 +3,7 @@ import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 export interface CurrentUserPayload {
   sub: string; // staff ID
   email: string;
-  role?: string;
+  roles?: string[]; // multiple role names
   branchIds?: string[]; // multiple branch IDs
   spaIds?: string[]; // multiple spa IDs
 }

@@ -15,7 +15,7 @@ export class StaffAuthService {
   async validateCredentials(email: string, password: string) {
     const staff = await this.staffRepo.findOne({
       where: { email },
-      relations: ['branches', 'branches.spa'],
+      relations: ['branches', 'branches.spa', 'roles'],
     });
     if (!staff) return null;
     if (!staff.isActive) return null;
@@ -44,10 +44,11 @@ export class StaffAuthService {
           .filter(Boolean),
       ),
     );
+    const roleNames = ((staff as any).roles || []).map((r: any) => r.name);
 
     const payload = {
       sub: staff.id,
-      role: staff.role,
+      roles: roleNames,
       branchIds,
       spaIds,
       email: staff.email,

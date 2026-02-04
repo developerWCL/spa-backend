@@ -6,7 +6,7 @@ import { Staff } from '../../../entities/staffs.entity';
 import { RolesService } from './roles.service';
 import { RolesController } from './roles.controller';
 import { AuthorizationService } from './authorization.service';
-import { PermissionsGuard } from '../guards/permissions.guard';
+import { PermissionsGuard } from '../../../guards/permissions.guard';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Role, Permission, Staff])],

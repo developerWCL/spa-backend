@@ -18,14 +18,14 @@ import {
 import { StaffsService } from './staffs.service';
 import { CreateStaffDto } from '../dto/create-staff.dto';
 import { UpdateStaffDto } from '../dto/update-staff.dto';
-import { StaffJwtAuthGuard } from '../guards/staff-jwt.guard';
-import { PermissionsGuard } from '../guards/permissions.guard';
-import { Permissions } from '../guards/permissions.decorator';
+import { StaffJwtAuthGuard } from '../../../guards/staff-jwt.guard';
+import { PermissionsGuard } from '../../../guards/permissions.guard';
+import { Permissions } from '../../../decorator/permissions.decorator';
 import { BranchGuard } from '../guards/branch.guard';
 import {
   CurrentUser,
   CurrentUserPayload,
-} from '../guards/current-user.decorator';
+} from '../../../decorator/current-user.decorator';
 
 @ApiTags('Staff Management')
 @ApiBearerAuth()
