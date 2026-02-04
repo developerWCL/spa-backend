@@ -8,12 +8,12 @@ import {
   Delete,
   UseGuards,
   Req,
+  Headers,
   BadRequestException,
 } from '@nestjs/common';
-import { Request } from 'express';
 import { SpaService } from './spa.service';
 import { CreateSpaDto } from './spa.types';
-import { JwtAuthGuard } from 'src/guards/jwt.guard';
+import { ApiKeyGuard } from 'src/guards/api-key.guard';
 
 @Controller('spas')
 export class SpaController {
@@ -31,14 +31,15 @@ export class SpaController {
 
   // Tenant-aware endpoint example: returns the subscription validated by JWT
   @Get('me')
-  @UseGuards(JwtAuthGuard)
-  me(@Req() req: Request & { subscription?: { companyId?: string } }) {
-    const companyId = req.subscription?.companyId;
-    if (!companyId) {
-      throw new BadRequestException('Missing companyId in subscription');
-    }
+  @UseGuards(ApiKeyGuard)
+  me(@Headers() headers: Record<string, string>) {
+    console.log('Headers received:', headers);
 
-    return this.spaService.findByCompanyId(companyId);
+    const spaId = headers['spa-id'];
+    if (!spaId || Array.isArray(spaId)) {
+      throw new BadRequestException('Missing or invalid spa-id header');
+    }
+    return this.spaService.findOne(spaId);
   }
 
   @Get(':id')

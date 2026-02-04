@@ -20,11 +20,11 @@ export class Customer {
   @ManyToOne(() => Spa, (s) => s.customers, { onDelete: 'CASCADE' })
   spa: Spa;
 
-  @Column()
-  first_name: string;
+  @Column({ name: 'first_name' })
+  firstName: string;
 
-  @Column()
-  last_name: string;
+  @Column({ name: 'last_name' })
+  lastName: string;
 
   @Index({ unique: true })
   @Column()
@@ -33,17 +33,17 @@ export class Customer {
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ type: 'int', default: 0 })
-  loyalty_points: number;
+  @Column({ name: 'loyalty_points', type: 'int', default: 0 })
+  loyaltyPoints: number;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
+  deletedAt?: Date;
 
   @OneToMany(() => Booking, (b) => b.customer)
   bookings: Booking[];

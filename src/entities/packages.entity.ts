@@ -22,13 +22,12 @@ export class Package {
 
   @ManyToOne(() => Branch, (b) => b.packages, { onDelete: 'CASCADE' })
   branch: Branch;
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  createdAt: Date;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  updatedAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
-
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }

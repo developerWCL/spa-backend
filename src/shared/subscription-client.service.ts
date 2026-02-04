@@ -13,18 +13,12 @@ export class SubscriptionClientService {
   private readonly logger = new Logger(SubscriptionClientService.name);
   private baseUrl =
     process.env.SUBSCRIPTION_SERVICE_URL || 'http://localhost:8001';
-  private serviceToken = process.env.SUBSCRIPTION_SERVICE_TOKEN;
-
-  async validateApiKey(
-    apiKey?: string,
-    service?: string,
-    serviceToken?: string,
-  ): Promise<ValidateApiKeyResult> {
+  private serviceToken = process.env.SERVICE_TOKEN || '';
+  private serviceName = process.env.SERVICE_NAME || '';
+  async validateApiKey(apiKey?: string): Promise<ValidateApiKeyResult> {
     const headers: Record<string, string> = {};
     if (apiKey) headers['x-api-key'] = apiKey;
-    // prefer explicit serviceToken param, fall back to configured env value
-    const tokenToUse = serviceToken || this.serviceToken;
-    if (tokenToUse) headers['x-service-token'] = tokenToUse;
+    headers['x-service-token'] = this.serviceToken;
 
     const url = `${this.baseUrl.replace(/\/$/, '')}/subscriptions/validate-key`;
     const options = { headers, timeout: 3000 };
@@ -34,7 +28,7 @@ export class SubscriptionClientService {
       try {
         const resp = await axios.post<ValidateApiKeyResult>(
           url,
-          { service },
+          { service: this.serviceName },
           options,
         );
         return resp.data;

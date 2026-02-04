@@ -17,18 +17,18 @@ export class Bed {
   @ManyToOne(() => Room, (r) => r.beds, { onDelete: 'CASCADE' })
   room: Room;
 
-  @Column()
-  bed_label: string;
+  @Column({ name: 'bed_label' })
+  bedLabel: string;
 
   @Column({ nullable: true })
   status: string;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }

@@ -29,14 +29,7 @@ export class AuthService {
   private refreshStore = new Map<string, RefreshEntry>();
 
   async issueToken(apiKey?: string) {
-    const service = process.env.SERVICE_NAME || 'Spa';
-    // prefer explicit per-service token if provided, otherwise fall back to the global subscription service token
-    const serviceToken = process.env.SERVICE_TOKEN;
-    const result = await this.subClient.validateApiKey(
-      apiKey,
-      service,
-      serviceToken,
-    );
+    const result = await this.subClient.validateApiKey(apiKey);
     if (!result || !result.valid) {
       throw new UnauthorizedException('Invalid API key');
     }

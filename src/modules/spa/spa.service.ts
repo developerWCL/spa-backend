@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Spa } from 'src/entities/spa.entity';
 import { Repository } from 'typeorm';
+import { encryptApiKey } from '../../shared/crypto.util';
 
 @Injectable()
 export class SpaService {
@@ -10,8 +11,20 @@ export class SpaService {
     private readonly spaRepo: Repository<Spa>,
   ) {}
 
-  async create(data: Partial<Spa>): Promise<Spa> {
-    const entity = this.spaRepo.create(data);
+  async create(data: Partial<Spa> | Record<string, unknown>): Promise<Spa> {
+    const rawApiKey =
+      typeof (data as any).apiKey === 'string'
+        ? (data as any).apiKey
+        : typeof (data as any)['api_key'] === 'string'
+          ? (data as any)['api_key']
+          : undefined;
+
+    const payload: Partial<Spa> = { ...(data as Partial<Spa>) };
+    if (rawApiKey) {
+      payload.apiKey = encryptApiKey(rawApiKey);
+    }
+
+    const entity = this.spaRepo.create(payload);
     return this.spaRepo.save(entity);
   }
 
@@ -25,9 +38,22 @@ export class SpaService {
     return spa;
   }
 
-  async update(id: string, data: Partial<Spa>): Promise<Spa> {
+  async update(
+    id: string,
+    data: Partial<Spa> | Record<string, unknown>,
+  ): Promise<Spa> {
     const spa = await this.findOne(id);
-    Object.assign(spa, data);
+    const rawApiKey =
+      typeof (data as any).apiKey === 'string'
+        ? (data as any).apiKey
+        : typeof (data as any)['api_key'] === 'string'
+          ? (data as any)['api_key']
+          : undefined;
+
+    const payload: Partial<Spa> = { ...(data as Partial<Spa>) };
+    if (rawApiKey) payload.apiKey = encryptApiKey(rawApiKey);
+
+    Object.assign(spa, payload);
     return this.spaRepo.save(spa);
   }
 
@@ -37,6 +63,6 @@ export class SpaService {
   }
 
   async findByCompanyId(companyId: string): Promise<Spa[]> {
-    return this.spaRepo.find({ where: { company_id: companyId } });
+    return this.spaRepo.find({ where: { companyId: companyId } });
   }
 }

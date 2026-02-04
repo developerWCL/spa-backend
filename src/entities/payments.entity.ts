@@ -19,19 +19,18 @@ export class Payment {
 
   @Column({ nullable: true })
   status: string;
-
-  @Column({ nullable: true })
-  payment_type: string;
+  @Column({ nullable: true, name: 'payment_type' })
+  paymentType: string;
 
   @Column({ type: 'numeric' })
   amount: string;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }

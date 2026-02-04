@@ -9,21 +9,20 @@ import {
 } from 'typeorm';
 import { Branch } from './branch.entity';
 import { Customer } from './customers.entity';
-import { SpaApiKey } from './spa_api_keys.entity';
 
 @Entity('spa')
 export class Spa {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column('uuid', { nullable: true })
-  company_id?: string;
+  @Column('uuid', { name: 'company_id', nullable: true })
+  companyId?: string;
 
-  @Column({ nullable: true })
-  company_name?: string;
+  @Column({ name: 'company_name', nullable: true })
+  companyName?: string;
 
-  @Column({ nullable: true })
-  billing_email?: string;
+  @Column({ name: 'billing_email', nullable: true })
+  billingEmail?: string;
 
   @Column()
   name: string;
@@ -40,21 +39,22 @@ export class Spa {
   @Column({ default: 'active' })
   status: string;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @Column({ type: 'text', nullable: true })
+  @Column({ name: 'api_key', type: 'text', nullable: true })
+  apiKey?: string;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
+  @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
+  createdAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @UpdateDateColumn({ name: 'updated_at', type: 'timestamp' })
+  updatedAt: Date;
+
+  @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
+  deletedAt?: Date;
 
   @OneToMany(() => Branch, (b) => b.spa)
   branches: Branch[];
 
   @OneToMany(() => Customer, (c) => c.spa)
   customers: Customer[];
-
-  @OneToMany(() => SpaApiKey, (k) => k.spa)
-  apiKeys: SpaApiKey[];
 }

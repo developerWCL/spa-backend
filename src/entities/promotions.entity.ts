@@ -17,17 +17,17 @@ export class Promotion {
   @Column()
   code: string;
 
-  @Column({ type: 'numeric', nullable: true })
-  discount_percent: string;
+  @Column({ type: 'numeric', nullable: true, name: 'discount_percent' })
+  discountPercent: string;
 
-  @Column({ type: 'date', nullable: true })
-  start_date: string;
+  @Column({ type: 'date', nullable: true, name: 'start_date' })
+  startDate: string;
 
-  @Column({ type: 'date', nullable: true })
-  end_date: string;
+  @Column({ type: 'date', nullable: true, name: 'end_date' })
+  endDate: string;
 
-  @Column({ type: 'int', nullable: true })
-  max_used: number;
+  @Column({ type: 'int', nullable: true, name: 'max_used' })
+  maxUsed: number;
 
   @Column({ type: 'int', default: 0 })
   used: number;
@@ -35,12 +35,12 @@ export class Promotion {
   @ManyToOne(() => Branch, (b) => b.promotions, { onDelete: 'CASCADE' })
   branch: Branch;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }

@@ -7,16 +7,25 @@ export interface ISpa {
   email?: string | null;
   website?: string | null;
   status?: SpaStatus;
-  created_at?: Date;
-  updated_at?: Date;
-  deleted_at?: Date | null;
+  createdAt?: Date;
+  updatedAt?: Date;
+  deletedAt?: Date | null;
 }
+
+import { Expose } from 'class-transformer';
 
 export class CreateSpaDto {
   name: string;
-  company_id: string;
-  company_name?: string;
-  billing_email?: string;
+
+  @Expose({ name: 'company_id' })
+  companyId: string;
+
+  @Expose({ name: 'company_name' })
+  companyName?: string;
+
+  @Expose({ name: 'billing_email' })
+  billingEmail?: string;
+
   phone?: string;
   email?: string;
   website?: string;

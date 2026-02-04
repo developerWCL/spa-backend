@@ -16,22 +16,21 @@ export class BranchSpecialClosures {
 
   @ManyToOne(() => Branch, (b) => b.special_closures, { onDelete: 'CASCADE' })
   branch: Branch;
-
-  @Column({ type: 'date' })
-  specific_date: string;
+  @Column({ type: 'date', name: 'specific_date' })
+  specificDate: string;
 
   @Column({ nullable: true })
   reason: string;
 
-  @Column({ default: true })
-  is_all_day: boolean;
+  @Column({ default: true, name: 'is_all_day' })
+  isAllDay: boolean;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }

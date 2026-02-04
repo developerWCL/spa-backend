@@ -16,22 +16,21 @@ export class BranchOperatingHours {
 
   @ManyToOne(() => Branch, (b) => b.operating_hours, { onDelete: 'CASCADE' })
   branch: Branch;
+  @Column('int', { name: 'day_of_week' })
+  dayOfWeek: number;
 
-  @Column('int')
-  day_of_week: number;
+  @Column({ type: 'time', name: 'open_time' })
+  openTime: string;
 
-  @Column({ type: 'time' })
-  open_time: string;
+  @Column({ type: 'time', name: 'close_time' })
+  closeTime: string;
 
-  @Column({ type: 'time' })
-  close_time: string;
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  createdAt: Date;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  updatedAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
-
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }

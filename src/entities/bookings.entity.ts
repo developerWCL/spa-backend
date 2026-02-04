@@ -40,22 +40,21 @@ export class Booking {
 
   @ManyToOne(() => Promotion, { onDelete: 'SET NULL', nullable: true })
   promotion: Promotion | null;
-
-  @Column({ type: 'timestamp' })
-  booking_time: Date;
+  @Column({ type: 'timestamp', name: 'booking_time' })
+  bookingTime: Date;
 
   @Column({ nullable: true })
   status: string;
 
-  @Column({ type: 'numeric', nullable: true })
-  total_amount: string;
+  @Column({ type: 'numeric', nullable: true, name: 'total_amount' })
+  totalAmount: string;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }

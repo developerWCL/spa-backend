@@ -25,20 +25,20 @@ export class Service {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ type: 'numeric', nullable: true })
-  base_price: string;
+  @Column({ type: 'numeric', nullable: true, name: 'base_price' })
+  basePrice: string;
 
-  @Column({ type: 'int', nullable: true })
-  duration_minutes: number;
+  @Column({ type: 'int', nullable: true, name: 'duration_minutes' })
+  durationMinutes: number;
 
-  @CreateDateColumn({ type: 'timestamp' })
-  created_at: Date;
+  @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
+  createdAt: Date;
 
-  @UpdateDateColumn({ type: 'timestamp' })
-  updated_at: Date;
+  @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
+  updatedAt: Date;
 
-  @DeleteDateColumn({ type: 'timestamp', nullable: true })
-  deleted_at?: Date;
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 
   @ManyToMany(() => Programme, (p) => p.services)
   programmes: Programme[];
