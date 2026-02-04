@@ -7,6 +7,7 @@ import {
   DeleteDateColumn,
   ManyToOne,
   OneToMany,
+  ManyToMany,
 } from 'typeorm';
 import { Spa } from './spa.entity';
 import { BranchOperatingHours } from './branch_operating_hours.entity';
@@ -55,7 +56,7 @@ export class Branch {
   @OneToMany(() => BranchSpecialClosures, (c) => c.branch)
   special_closures: BranchSpecialClosures[];
 
-  @OneToMany(() => Staff, (s) => s.branch)
+  @OneToMany(() => Staff, (s) => s.branches)
   staffs: Staff[];
 
   @OneToMany(() => Room, (r) => r.branch)

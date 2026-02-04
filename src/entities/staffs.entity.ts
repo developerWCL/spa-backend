@@ -5,17 +5,20 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   DeleteDateColumn,
-  ManyToOne,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Branch } from './branch.entity';
+import { Role } from './role.entity';
 
 @Entity('staffs')
 export class Staff {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Branch, (b) => b.staffs, { onDelete: 'CASCADE' })
-  branch: Branch;
+  @ManyToMany(() => Branch, (b) => b.staffs, { onDelete: 'CASCADE' })
+  @JoinTable({ name: 'staff_branches' })
+  branches: Branch[];
 
   @Column({ name: 'first_name' })
   firstName: string;
@@ -28,6 +31,16 @@ export class Staff {
 
   @Column({ nullable: true })
   email: string;
+
+  @Column({ name: 'password_hash', nullable: true })
+  passwordHash?: string;
+
+  @Column({ name: 'is_active', default: true })
+  isActive: boolean;
+
+  @ManyToMany(() => Role, (r) => r.staffs, { cascade: true })
+  @JoinTable({ name: 'staff_roles' })
+  roles?: Role[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

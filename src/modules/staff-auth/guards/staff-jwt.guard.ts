@@ -3,11 +3,11 @@ import type { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 
 @Injectable()
-export class JwtAuthGuard implements CanActivate {
+export class StaffJwtAuthGuard implements CanActivate {
   canActivate(context: ExecutionContext): boolean {
     const req = context
       .switchToHttp()
-      .getRequest<Request & { subscription?: Record<string, unknown> }>();
+      .getRequest<Request & { staff?: Record<string, unknown> }>();
 
     const authHeader =
       req.headers['authorization'] || req.headers['Authorization'];
@@ -22,11 +22,13 @@ export class JwtAuthGuard implements CanActivate {
     if (!match) return false;
 
     const token = match[1];
-    const secret = process.env.API_JWT_SECRET || 'dev-secret';
+    const secret = process.env.STAFF_JWT_SECRET || 'staff-dev-secret';
 
     try {
-      const decoded = jwt.verify(token, secret) as Record<string, unknown>;
-      req.subscription = decoded;
+      const decodedUnknown = jwt.verify(token, secret);
+      if (typeof decodedUnknown !== 'object' || decodedUnknown === null)
+        return false;
+      req.staff = decodedUnknown as Record<string, unknown>;
       return true;
     } catch {
       return false;

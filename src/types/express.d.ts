@@ -4,6 +4,7 @@ declare global {
   namespace Express {
     interface Request {
       spa?: Spa;
+      staff?: Record<string, unknown> | undefined;
     }
   }
 }
