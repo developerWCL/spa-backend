@@ -29,11 +29,6 @@ export class CreateStaffDto {
   @IsString()
   password?: string;
 
-  @ApiProperty({ example: 'branch-uuid' })
-  @IsNotEmpty()
-  @IsString()
-  branchId: string;
-
   @ApiProperty({
     example: ['branch-uuid-2', 'branch-uuid-3'],
     required: false,

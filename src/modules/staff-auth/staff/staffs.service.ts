@@ -58,44 +58,44 @@ export class StaffsService {
     requestingStaffBranchIds?: string[],
     requestingStaffSpaIds?: string[],
   ) {
+    // Collect all branch IDs from request
+    const allBranchIds = [
+      ...(dto.branchIds && Array.isArray(dto.branchIds) ? dto.branchIds : []),
+    ];
+    const uniqueBranchIds = [...new Set(allBranchIds)];
+
     // Validate that staff can only create users in their assigned branches
-    if (
-      requestingStaffBranchIds &&
-      !requestingStaffBranchIds.includes(dto.branchId)
-    ) {
-      throw new ForbiddenException(
-        'You can only create staff in your assigned branches',
+    if (requestingStaffBranchIds) {
+      const hasAccess = uniqueBranchIds.every((branchId) =>
+        requestingStaffBranchIds.includes(branchId),
       );
+      if (!hasAccess) {
+        throw new ForbiddenException(
+          'You can only create staff in your assigned branches',
+        );
+      }
     }
 
-    const branch = await this.branchRepo.findOne({
-      where: { id: dto.branchId },
+    // Fetch all branches
+    const branches = await this.branchRepo.find({
+      where: { id: In(uniqueBranchIds) } as any,
       relations: ['spa'],
     });
-    if (!branch) throw new NotFoundException('Branch not found');
 
-    // Validate SPA access
-    if (
-      requestingStaffSpaIds &&
-      branch.spa?.id &&
-      !requestingStaffSpaIds.includes(branch.spa.id)
-    ) {
-      throw new ForbiddenException(
-        'You can only create staff in your assigned spas',
-      );
+    if (branches.length === 0) {
+      throw new NotFoundException('No valid branches found');
     }
 
-    // Get additional branch IDs if provided
-    let branches = [branch];
-    if (
-      dto.branchIds &&
-      Array.isArray(dto.branchIds) &&
-      dto.branchIds.length > 0
-    ) {
-      const additionalBranches = await this.branchRepo.find({
-        where: { id: In(dto.branchIds) } as any,
-      });
-      branches = [branch, ...additionalBranches];
+    // Validate SPA access for all branches
+    if (requestingStaffSpaIds && requestingStaffSpaIds.length > 0) {
+      const hasValidSpaAccess = branches.every((branch) =>
+        branch.spa?.id ? requestingStaffSpaIds.includes(branch.spa.id) : true,
+      );
+      if (!hasValidSpaAccess) {
+        throw new ForbiddenException(
+          'You can only create staff in your assigned spas',
+        );
+      }
     }
 
     const staff = new Staff();

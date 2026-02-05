@@ -32,9 +32,11 @@ export class StaffAuthController {
     }
 
     const result = await this.auth.login(body.email, body.password);
-    // Return staff data and expiry time (no tokens in response body)
+    // Return staff data, access token and expiry time
     return {
       success: true,
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
       staff: result.staff,
       expiresIn: result.expiresIn,
     };

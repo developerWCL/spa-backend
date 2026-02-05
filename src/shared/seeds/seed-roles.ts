@@ -7,31 +7,107 @@ export async function seedRoles() {
   const roleRepo = dataSource.getRepository(Role);
   const permRepo = dataSource.getRepository(Permission);
 
-  const perms = ['manage:roles', 'manage:bookings', 'view:reports'];
+  // Define all permissions
+  const perms = [
+    // Admin permissions
+    'manage:roles',
+    'manage:staffs',
+    'manage:bookings',
+    'manage:clients',
+    'manage:services',
+    'manage:branches',
+    'view:reports',
+    'view:analytics',
+
+    // Therapist permissions
+    'view:bookings',
+    'view:clients',
+    'manage:own:schedule',
+    'view:own:profile',
+    'update:own:profile',
+    'manage:own:availability',
+
+    // Reception permissions
+    'manage:bookings',
+    'manage:clients',
+    'view:schedule',
+    'manage:appointments',
+    'view:staff:availability',
+    'manage:services',
+  ];
+
   const savedPerms: Permission[] = [];
   for (const name of perms) {
     let p = await permRepo.findOne({ where: { name } });
     if (!p) {
       p = permRepo.create({ name });
       p = await permRepo.save(p);
-      console.log('Created permission', name);
+      console.log('Created permission:', name);
     }
     savedPerms.push(p);
   }
 
-  const adminRoleName = 'admin';
-  let admin = await roleRepo.findOne({
-    where: { name: adminRoleName },
-    relations: ['permissions'],
-  });
-  if (!admin) {
-    admin = roleRepo.create({ name: adminRoleName, permissions: savedPerms });
-    admin = await roleRepo.save(admin);
-    console.log('Created role', adminRoleName);
-  } else {
-    admin.permissions = savedPerms;
-    await roleRepo.save(admin);
-    console.log('Updated role', adminRoleName);
+  // Define roles with their permissions
+  const rolesConfig = [
+    {
+      name: 'admin',
+      permissionNames: [
+        'manage:roles',
+        'manage:staffs',
+        'manage:bookings',
+        'manage:clients',
+        'manage:services',
+        'manage:branches',
+        'view:reports',
+        'view:analytics',
+      ],
+    },
+    {
+      name: 'therapist',
+      permissionNames: [
+        'view:bookings',
+        'view:clients',
+        'manage:own:schedule',
+        'view:own:profile',
+        'update:own:profile',
+        'manage:own:availability',
+      ],
+    },
+    {
+      name: 'reception',
+      permissionNames: [
+        'manage:bookings',
+        'manage:clients',
+        'view:schedule',
+        'manage:appointments',
+        'view:staff:availability',
+        'manage:services',
+      ],
+    },
+  ];
+
+  for (const roleConfig of rolesConfig) {
+    let role = await roleRepo.findOne({
+      where: { name: roleConfig.name },
+      relations: ['permissions'],
+    });
+
+    const rolePerms = savedPerms.filter((p) =>
+      roleConfig.permissionNames.includes(p.name),
+    );
+
+    if (!role) {
+      role = roleRepo.create({
+        name: roleConfig.name,
+        permissions: rolePerms,
+      });
+      role = await roleRepo.save(role);
+      console.log(`Created role: ${roleConfig.name}`);
+    } else {
+      role.permissions = rolePerms;
+      await roleRepo.save(role);
+      console.log(`Updated role: ${roleConfig.name}`);
+    }
   }
 
   await dataSource.destroy();

@@ -47,6 +47,54 @@ export async function seedStaff() {
     console.log('Updated admin role with all permissions');
   }
 
+  // Get or create therapist role
+  let therapistRole = await roleRepo.findOne({
+    where: { name: 'therapist' },
+    relations: ['permissions'],
+  });
+  if (!therapistRole) {
+    const therapistPerms = await permRepo.find({
+      where: [
+        { name: 'view:bookings' },
+        { name: 'view:clients' },
+        { name: 'manage:own:schedule' },
+        { name: 'view:own:profile' },
+        { name: 'update:own:profile' },
+        { name: 'manage:own:availability' },
+      ],
+    });
+    therapistRole = roleRepo.create({
+      name: 'therapist',
+      permissions: therapistPerms,
+    });
+    therapistRole = await roleRepo.save(therapistRole);
+    console.log('Created therapist role');
+  }
+
+  // Get or create reception role
+  let receptionRole = await roleRepo.findOne({
+    where: { name: 'reception' },
+    relations: ['permissions'],
+  });
+  if (!receptionRole) {
+    const receptionPerms = await permRepo.find({
+      where: [
+        { name: 'manage:bookings' },
+        { name: 'manage:clients' },
+        { name: 'view:schedule' },
+        { name: 'manage:appointments' },
+        { name: 'view:staff:availability' },
+        { name: 'manage:services' },
+      ],
+    });
+    receptionRole = roleRepo.create({
+      name: 'reception',
+      permissions: receptionPerms,
+    });
+    receptionRole = await roleRepo.save(receptionRole);
+    console.log('Created reception role');
+  }
+
   // Get default branch or create one
   let branch = await branchRepo.findOne({ where: {} });
   if (!branch) {
@@ -80,6 +128,56 @@ export async function seedStaff() {
     console.log(`Default password: ${adminPassword}`);
   } else {
     console.log(`Admin staff already exists: ${adminEmail}`);
+  }
+
+  // Create therapist staff
+  const therapistEmail = 'therapist@spa.local';
+  let therapistStaff = await staffRepo.findOne({
+    where: { email: therapistEmail },
+  });
+  if (!therapistStaff) {
+    const therapistPassword = 'therapist123456';
+    const passwordHash = await hashPassword(therapistPassword);
+
+    therapistStaff = staffRepo.create({
+      firstName: 'Emma',
+      lastName: 'Wilson',
+      email: therapistEmail,
+      passwordHash,
+      branches: [branch],
+      roles: [therapistRole],
+      isActive: true,
+    });
+    therapistStaff = await staffRepo.save(therapistStaff);
+    console.log(`Created therapist staff: ${therapistEmail}`);
+    console.log(`Default password: ${therapistPassword}`);
+  } else {
+    console.log(`Therapist staff already exists: ${therapistEmail}`);
+  }
+
+  // Create reception staff
+  const receptionEmail = 'reception@spa.local';
+  let receptionStaff = await staffRepo.findOne({
+    where: { email: receptionEmail },
+  });
+  if (!receptionStaff) {
+    const receptionPassword = 'reception123456';
+    const passwordHash = await hashPassword(receptionPassword);
+
+    receptionStaff = staffRepo.create({
+      firstName: 'Sarah',
+      lastName: 'Johnson',
+      email: receptionEmail,
+      passwordHash,
+      branches: [branch],
+      roles: [receptionRole],
+      isActive: true,
+    });
+    receptionStaff = await staffRepo.save(receptionStaff);
+    console.log(`Created reception staff: ${receptionEmail}`);
+    console.log(`Default password: ${receptionPassword}`);
+  } else {
+    console.log(`Reception staff already exists: ${receptionEmail}`);
   }
 
   await dataSource.destroy();

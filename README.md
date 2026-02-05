@@ -71,6 +71,46 @@ $ mau deploy
 
 With Mau, you can deploy your application in just a few clicks, allowing you to focus on building features rather than managing infrastructure.
 
+## Seeded Staff & Roles
+
+The application comes with pre-seeded staff members and roles for testing and development:
+
+### Staff Accounts
+
+| Name | Email | Password | Role |
+|------|-------|----------|------|
+| Admin User | `admin@spa.local` | `admin123456` | Admin |
+| Emma Wilson | `therapist@spa.local` | `therapist123456` | Therapist |
+| Sarah Johnson | `reception@spa.local` | `reception123456` | Reception |
+
+### Roles & Permissions
+
+#### Admin Role
+- `manage:roles` - Manage user roles
+- `manage:staffs` - Manage staff members
+- `manage:bookings` - Create/edit/delete bookings
+- `manage:clients` - Manage client information
+- `manage:services` - Manage spa services
+- `manage:branches` - Manage spa branches
+- `view:reports` - View business reports
+- `view:analytics` - View analytics data
+
+#### Therapist Role
+- `view:bookings` - View their bookings
+- `view:clients` - View client information
+- `manage:own:schedule` - Manage their schedule
+- `view:own:profile` - View their profile
+- `update:own:profile` - Update their profile
+- `manage:own:availability` - Manage their availability
+
+#### Reception Role
+- `manage:bookings` - Create/manage appointments
+- `manage:clients` - Manage client records
+- `view:schedule` - View staff schedules
+- `manage:appointments` - Manage appointment details
+- `view:staff:availability` - Check therapist availability
+- `manage:services` - View/manage services
+
 ## Resources
 
 Check out a few resources that may come in handy when working with NestJS:
