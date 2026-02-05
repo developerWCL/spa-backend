@@ -35,6 +35,12 @@ export class Staff {
   @Column({ name: 'is_active', default: true })
   isActive: boolean;
 
+  @Column({ name: 'password_reset_token', nullable: true })
+  passwordResetToken?: string;
+
+  @Column({ name: 'password_reset_expires', nullable: true, type: 'timestamp' })
+  passwordResetExpires?: Date;
+
   @ManyToMany(() => Role, (r) => r.staffs, { cascade: true })
   @JoinTable({ name: 'staff_roles' })
   roles?: Role[];
