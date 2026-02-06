@@ -18,6 +18,9 @@ export async function seedRoles() {
     'manage:branches',
     'view:reports',
     'view:analytics',
+    'view:branches',
+    'manage:staff_dayoff',
+    'view:staff_dayoff',
 
     // Therapist permissions
     'view:bookings',
@@ -51,16 +54,7 @@ export async function seedRoles() {
   const rolesConfig = [
     {
       name: 'admin',
-      permissionNames: [
-        'manage:roles',
-        'manage:staffs',
-        'manage:bookings',
-        'manage:clients',
-        'manage:services',
-        'manage:branches',
-        'view:reports',
-        'view:analytics',
-      ],
+      permissionNames: perms, // Admin has all permissions
     },
     {
       name: 'therapist',
