@@ -8,6 +8,7 @@ import {
   Body,
   UseGuards,
   HttpCode,
+  Headers,
 } from '@nestjs/common';
 import {
   ApiTags,
@@ -37,7 +38,15 @@ export class StaffsController {
   @ApiOperation({ summary: 'List all staff' })
   @Get()
   @Permissions('manage:staffs')
-  list(@CurrentUser() currentUser: CurrentUserPayload) {
+  list(
+    @CurrentUser() currentUser: CurrentUserPayload,
+    @Headers('branchId') branchId?: string,
+  ) {
+    // If branchId is provided in header, filter by that specific branch
+    if (branchId) {
+      return this.svc.list([branchId], currentUser.spaIds);
+    }
+    // Otherwise, list all staffs for user's branches
     return this.svc.list(currentUser.branchIds, currentUser.spaIds);
   }
 

@@ -6,12 +6,20 @@ import {
   Param,
   Put,
   Delete,
-  Query,
+  UseGuards,
 } from '@nestjs/common';
 import { BranchesService } from './branches.service';
 import { CreateBranchDto, UpdateBranchDto } from './branches.types';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
+import { ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 
 @Controller('branches')
+@UseGuards(StaffJwtAuthGuard)
+@ApiBearerAuth()
 export class BranchesController {
   constructor(private readonly branchesService: BranchesService) {}
 
@@ -20,12 +28,10 @@ export class BranchesController {
     return this.branchesService.create(dto);
   }
 
+  @ApiOperation({ summary: 'List branch by spaId' })
   @Get()
-  findAll(@Query('spaId') spaId?: string) {
-    if (spaId) {
-      return this.branchesService.findBySpaId(spaId);
-    }
-    return this.branchesService.findAll();
+  findAll(@CurrentUser() currentUser: CurrentUserPayload) {
+    return this.branchesService.findAll(currentUser.branchIds);
   }
 
   @Get(':id')

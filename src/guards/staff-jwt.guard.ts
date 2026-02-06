@@ -1,4 +1,9 @@
-import { CanActivate, ExecutionContext, Injectable } from '@nestjs/common';
+import {
+  CanActivate,
+  ExecutionContext,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
 import type { Request } from 'express';
 import * as jwt from 'jsonwebtoken';
 
@@ -16,10 +21,14 @@ export class StaffJwtAuthGuard implements CanActivate {
       : typeof authHeader === 'string'
         ? authHeader
         : undefined;
-    if (!auth) return false;
+    if (!auth) {
+      throw new UnauthorizedException('Missing authorization header');
+    }
 
     const match = auth.match(/Bearer\s+(.+)/i);
-    if (!match) return false;
+    if (!match) {
+      throw new UnauthorizedException('Invalid authorization header format');
+    }
 
     const token = match[1];
     const secret = process.env.STAFF_JWT_SECRET || 'staff-dev-secret';
@@ -30,8 +39,10 @@ export class StaffJwtAuthGuard implements CanActivate {
         return false;
       req.staff = decodedUnknown as Record<string, unknown>;
       return true;
-    } catch {
-      return false;
+    } catch (error) {
+      throw new UnauthorizedException(
+        `Invalid token: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
     }
   }
 }

@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { Branch } from 'src/entities/branch.entity';
 import { CreateBranchDto, UpdateBranchDto } from './branches.types';
 
@@ -16,9 +16,12 @@ export class BranchesService {
     return this.branchRepo.save(branch);
   }
 
-  async findAll(): Promise<Branch[]> {
+  async findAll(ids: Array<string>): Promise<Branch[]> {
     return this.branchRepo.find({
       relations: ['spa'],
+      where: {
+        id: In(ids),
+      },
       order: { createdAt: 'DESC' },
     });
   }
