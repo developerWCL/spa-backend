@@ -7,40 +7,27 @@ import {
   DeleteDateColumn,
   ManyToOne,
   OneToMany,
-  ManyToMany,
 } from 'typeorm';
-import { Branch } from './branch.entity';
-import { Programme } from './programmes.entity';
-import { ServiceCategory } from './service_categories.entity';
-import { SubService } from './sub_services.entity';
-import { ServiceTranslation } from './service_translations.entity';
+import { Service } from './services.entity';
+import { SubServiceTranslation } from './sub_service_translations.entity';
 import { EntityStatus } from './enums/entity-status.enum';
 
-@Entity('services')
-export class Service {
+@Entity('sub_services')
+export class SubService {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Branch, (b) => b.services, { onDelete: 'CASCADE' })
-  branch: Branch;
-
-  @ManyToOne(() => ServiceCategory, (sc) => sc.services, {
-    nullable: true,
-    onDelete: 'SET NULL',
-  })
-  category: ServiceCategory;
+  @ManyToOne(() => Service, (s) => s.subServices, { onDelete: 'CASCADE' })
+  service: Service;
 
   @Column()
   name: string;
 
-  @Column({ type: 'text', nullable: true })
-  description: string;
-
-  @Column({ type: 'numeric', nullable: true, name: 'base_price' })
-  basePrice: string;
-
   @Column({ type: 'int', nullable: true, name: 'duration_minutes' })
   durationMinutes: number;
+
+  @Column({ type: 'numeric', nullable: true })
+  price: string;
 
   @Column({
     type: 'enum',
@@ -66,14 +53,11 @@ export class Service {
   })
   maxBookingsPerDay: number;
 
-  @OneToMany(() => SubService, (ss) => ss.service, { cascade: true })
-  subServices: SubService[];
-
-  @OneToMany(() => ServiceTranslation, (t) => t.service, {
+  @OneToMany(() => SubServiceTranslation, (t) => t.subService, {
     cascade: true,
     eager: true,
   })
-  translations: ServiceTranslation[];
+  translations: SubServiceTranslation[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
@@ -83,7 +67,4 @@ export class Service {
 
   @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
   deletedAt?: Date;
-
-  @ManyToMany(() => Programme, (p) => p.services)
-  programmes: Programme[];
 }

@@ -8,11 +8,19 @@ import { StaffsController } from './staffs.controller';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { StaffJwtAuthGuard } from '../../../guards/staff-jwt.guard';
 import { RolesSubmodule } from '../roles/roles.module';
+import { SubscriptionClientService } from 'src/shared/subscription-client.service';
+import { ApiKeyGuard } from 'src/guards/api-key.guard';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Staff, Role, Branch]), RolesSubmodule],
-  providers: [StaffsService, PermissionsGuard, StaffJwtAuthGuard],
+  providers: [
+    StaffsService,
+    PermissionsGuard,
+    StaffJwtAuthGuard,
+    SubscriptionClientService,
+    ApiKeyGuard,
+  ],
   controllers: [StaffsController],
-  exports: [StaffsService],
+  exports: [StaffsService, SubscriptionClientService, ApiKeyGuard],
 })
 export class StaffSubmodule {}

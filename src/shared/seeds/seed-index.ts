@@ -1,11 +1,13 @@
 import { seedRoles } from './seed-roles';
 import { seedStaff } from './seed-staff';
+import { seedServiceCategories } from './seed-service-categories';
 
 async function run() {
   try {
     console.log('Running seeds...');
     await seedRoles();
     await seedStaff();
+    await seedServiceCategories();
     console.log('All seeds complete');
     process.exit(0);
   } catch (err) {

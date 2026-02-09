@@ -7,11 +7,25 @@ import { RolesService } from './roles.service';
 import { RolesController } from './roles.controller';
 import { AuthorizationService } from './authorization.service';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
+import { SubscriptionClientService } from 'src/shared/subscription-client.service';
+import { ApiKeyGuard } from 'src/guards/api-key.guard';
 
 @Module({
   imports: [TypeOrmModule.forFeature([Role, Permission, Staff])],
-  providers: [RolesService, AuthorizationService, PermissionsGuard],
+  providers: [
+    RolesService,
+    AuthorizationService,
+    PermissionsGuard,
+    SubscriptionClientService,
+    ApiKeyGuard,
+  ],
   controllers: [RolesController],
-  exports: [AuthorizationService, PermissionsGuard, RolesService],
+  exports: [
+    AuthorizationService,
+    PermissionsGuard,
+    RolesService,
+    SubscriptionClientService,
+    ApiKeyGuard,
+  ],
 })
 export class RolesSubmodule {}

@@ -7,7 +7,6 @@ import {
   DeleteDateColumn,
   ManyToOne,
   OneToMany,
-  ManyToMany,
 } from 'typeorm';
 import { Spa } from './spa.entity';
 import { BranchOperatingHours } from './branch_operating_hours.entity';
@@ -17,6 +16,7 @@ import { Room } from './rooms.entity';
 import { Service } from './services.entity';
 import { Package } from './packages.entity';
 import { Promotion } from './promotions.entity';
+import { ServiceCategory } from './service_categories.entity';
 
 @Entity('branch')
 export class Branch {
@@ -70,4 +70,7 @@ export class Branch {
 
   @OneToMany(() => Promotion, (pr) => pr.branch)
   promotions: Promotion[];
+
+  @OneToMany(() => ServiceCategory, (sc) => sc.branch)
+  serviceCategories: ServiceCategory[];
 }
