@@ -33,7 +33,7 @@ export class ServicesService {
         where: { id: dto.branchId },
       });
       if (!branch) {
-        throw new NotFoundException('Branch not found');
+        throw new NotFoundException(`Branch with ID ${dto.branchId} not found`);
       }
 
       let category = null;
@@ -42,7 +42,9 @@ export class ServicesService {
           where: { id: dto.categoryId },
         });
         if (!category) {
-          throw new NotFoundException('Category not found');
+          throw new NotFoundException(
+            `Category with ID ${dto.categoryId} not found`,
+          );
         }
       }
 
@@ -104,7 +106,7 @@ export class ServicesService {
         }
       }
 
-      return this.findOne(savedService.id);
+      return savedService;
     });
   }
 
@@ -283,5 +285,23 @@ export class ServicesService {
     }
     await this.subServiceRepo.remove(subService);
     return { success: true, message: 'Sub-service deleted successfully' };
+  }
+
+  async getServiceCategories(branchId: string) {
+    const branch = await this.branchRepo.findOne({
+      where: { id: branchId },
+    });
+    if (!branch) {
+      throw new NotFoundException('Branch not found');
+    }
+
+    return await this.categoryRepo.find({
+      where: {
+        branch: { id: branchId },
+        isActive: true,
+      },
+      relations: ['translations'],
+      order: { displayOrder: 'ASC' },
+    });
   }
 }

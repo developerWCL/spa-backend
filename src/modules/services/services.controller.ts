@@ -35,6 +35,12 @@ export class ServicesController {
     return this.servicesService.findAll(branchId);
   }
 
+  @Get('categories/all/:branchId')
+  @ApiOperation({ summary: 'Get all service categories for a branch' })
+  getServiceCategories(@Param('branchId') branchId: string) {
+    return this.servicesService.getServiceCategories(branchId);
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get service by ID with all relations' })
   findOne(@Param('id') id: string) {

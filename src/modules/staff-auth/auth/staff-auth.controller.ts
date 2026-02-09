@@ -5,7 +5,6 @@ import {
   BadRequestException,
   Res,
   Req,
-  UseGuards,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { Request, Response } from 'express';
@@ -14,7 +13,6 @@ import { LoginDto } from '../dto/login.dto';
 import { ForgotPasswordDto } from '../dto/forgot-password.dto';
 import { ResetPasswordDto } from '../dto/reset-password.dto';
 import { LogoutDto } from '../dto/logout.dto';
-import { ApiKeyGuard } from 'src/guards/api-key.guard';
 
 @ApiTags('Staff Auth')
 @Controller('staff-auth')
@@ -27,7 +25,6 @@ export class StaffAuthController {
     description: 'Login successful, tokens set in HTTP-only cookies',
   })
   @ApiResponse({ status: 401, description: 'Invalid credentials' })
-  @UseGuards(ApiKeyGuard)
   @Post('login')
   async login(@Body() body: LoginDto) {
     if (!body?.email || !body?.password) {
@@ -51,7 +48,6 @@ export class StaffAuthController {
     description: 'Reset email sent successfully',
   })
   @ApiResponse({ status: 400, description: 'Staff member not found' })
-  @UseGuards(ApiKeyGuard)
   @Post('forgot-password')
   forgotPassword(@Body() body: ForgotPasswordDto) {
     return this.auth.forgotPassword(body.email);
@@ -74,7 +70,6 @@ export class StaffAuthController {
     description: 'Token refreshed successfully',
   })
   @ApiResponse({ status: 401, description: 'Invalid or expired refresh token' })
-  @UseGuards(ApiKeyGuard)
   @Post('refresh')
   async refreshToken(
     @Req() req: Request,

@@ -36,6 +36,9 @@ export class Service {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @Column({ type: 'text', nullable: true, name: 'image_url' })
+  imageUrl: string;
+
   @Column({ type: 'numeric', nullable: true, name: 'base_price' })
   basePrice: string;
 

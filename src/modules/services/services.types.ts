@@ -95,6 +95,11 @@ export class CreateServiceDto {
   @IsString()
   description?: string;
 
+  @ApiPropertyOptional({ description: 'Service image URL' })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
+
   @ApiPropertyOptional({ description: 'Base price' })
   @IsOptional()
   @IsString()
@@ -159,6 +164,11 @@ export class UpdateServiceDto {
   @IsOptional()
   @IsString()
   description?: string;
+
+  @ApiPropertyOptional({ description: 'Service image URL' })
+  @IsOptional()
+  @IsString()
+  imageUrl?: string;
 
   @ApiPropertyOptional({ description: 'Base price' })
   @IsOptional()
