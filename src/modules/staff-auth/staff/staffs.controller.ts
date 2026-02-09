@@ -27,6 +27,7 @@ import {
   CurrentUser,
   CurrentUserPayload,
 } from '../../../decorator/current-user.decorator';
+import { ApiKeyGuard } from 'src/guards/api-key.guard';
 
 @ApiTags('Staff Management')
 @ApiBearerAuth()
@@ -38,6 +39,7 @@ export class StaffsController {
   @ApiOperation({ summary: 'List all staff' })
   @Get()
   @Permissions('manage:staffs')
+  @UseGuards(ApiKeyGuard)
   list(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Headers('branchId') branchId?: string,
@@ -54,7 +56,7 @@ export class StaffsController {
   @ApiParam({ name: 'id', description: 'Staff ID' })
   @Get(':id')
   @Permissions('manage:staffs')
-  @UseGuards(BranchGuard)
+  @UseGuards(BranchGuard, ApiKeyGuard)
   get(@Param('id') id: string) {
     return this.svc.get(id);
   }
@@ -62,6 +64,7 @@ export class StaffsController {
   @ApiOperation({ summary: 'Create a new staff' })
   @Post()
   @Permissions('manage:staffs')
+  @UseGuards(ApiKeyGuard)
   create(
     @Body() body: CreateStaffDto,
     @CurrentUser() currentUser: CurrentUserPayload,
@@ -73,7 +76,7 @@ export class StaffsController {
   @ApiParam({ name: 'id', description: 'Staff ID' })
   @Put(':id')
   @Permissions('manage:staffs')
-  @UseGuards(BranchGuard)
+  @UseGuards(BranchGuard, ApiKeyGuard)
   update(@Param('id') id: string, @Body() body: UpdateStaffDto) {
     return this.svc.update(id, body);
   }
@@ -82,7 +85,7 @@ export class StaffsController {
   @ApiParam({ name: 'id', description: 'Staff ID' })
   @Delete(':id')
   @Permissions('manage:staffs')
-  @UseGuards(BranchGuard)
+  @UseGuards(BranchGuard, ApiKeyGuard)
   @HttpCode(204)
   remove(@Param('id') id: string) {
     return this.svc.remove(id);
