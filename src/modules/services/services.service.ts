@@ -81,9 +81,6 @@ export class ServicesService {
           subService.durationMinutes = subServiceDto.durationMinutes;
           subService.price = subServiceDto.price;
           subService.status = subServiceDto.status;
-          subService.maxConcurrentBookings =
-            subServiceDto.maxConcurrentBookings;
-          subService.maxBookingsPerDay = subServiceDto.maxBookingsPerDay;
 
           const savedSubService = await manager.save(subService);
 
@@ -217,11 +214,6 @@ export class ServicesService {
                 subService.price = subServiceDto.price;
               if (subServiceDto.status)
                 subService.status = subServiceDto.status;
-              if (subServiceDto.maxConcurrentBookings !== undefined)
-                subService.maxConcurrentBookings =
-                  subServiceDto.maxConcurrentBookings;
-              if (subServiceDto.maxBookingsPerDay !== undefined)
-                subService.maxBookingsPerDay = subServiceDto.maxBookingsPerDay;
 
               await manager.save(subService);
 
@@ -251,9 +243,6 @@ export class ServicesService {
             subService.durationMinutes = subServiceDto.durationMinutes;
             subService.price = subServiceDto.price;
             subService.status = subServiceDto.status;
-            subService.maxConcurrentBookings =
-              subServiceDto.maxConcurrentBookings;
-            subService.maxBookingsPerDay = subServiceDto.maxBookingsPerDay;
 
             const savedSubService = await manager.save(subService);
 
