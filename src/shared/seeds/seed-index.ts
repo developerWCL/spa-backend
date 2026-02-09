@@ -1,6 +1,7 @@
 import { seedRoles } from './seed-roles';
 import { seedStaff } from './seed-staff';
 import { seedServiceCategories } from './seed-service-categories';
+import { seedServiceCategoryTranslations } from './seed-category-translations';
 
 async function run() {
   try {
@@ -8,6 +9,7 @@ async function run() {
     await seedRoles();
     await seedStaff();
     await seedServiceCategories();
+    await seedServiceCategoryTranslations();
     console.log('All seeds complete');
     process.exit(0);
   } catch (err) {
