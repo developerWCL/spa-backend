@@ -130,25 +130,49 @@ export class ServicesService {
     });
   }
 
-  async findAll(branchId: string, paginationParams?: PaginationParams) {
-    if (!paginationParams) {
-      // Fallback to non-paginated response for backward compatibility
-      return this.serviceRepo.find({
-        where: { branch: { id: branchId }, deletedAt: null },
-        relations: ['category', 'subServices', 'translations', 'media'],
-        order: { createdAt: 'DESC' },
+  async findAll(
+    branchId: string,
+    filters?: { search?: string; categoryId?: string },
+    paginationParams?: PaginationParams,
+  ) {
+    // Build query with filters
+    let query = this.serviceRepo
+      .createQueryBuilder('service')
+      .where('service.branchId = :branchId', { branchId })
+      .andWhere('service.deletedAt IS NULL')
+      .leftJoinAndSelect('service.category', 'category')
+      .leftJoinAndSelect('service.subServices', 'subServices')
+      .leftJoinAndSelect('service.translations', 'translations')
+      .leftJoinAndSelect('service.media', 'media')
+      .orderBy('service.createdAt', 'DESC');
+
+    // Apply search filter
+    if (filters?.search) {
+      const searchTerm = `%${filters.search}%`;
+      query = query.andWhere(
+        '(service.name ILIKE :search OR service.description ILIKE :search)',
+        { search: searchTerm },
+      );
+    }
+
+    // Apply category filter
+    if (filters?.categoryId) {
+      query = query.andWhere('service.categoryId = :categoryId', {
+        categoryId: filters.categoryId,
       });
     }
 
-    const { skip, take } = getPaginationQueryTypeORM(paginationParams);
+    // Handle pagination
+    if (!paginationParams) {
+      // Fallback to non-paginated response for backward compatibility
+      return await query.getMany();
+    }
 
-    const [results, totalCount] = await this.serviceRepo.findAndCount({
-      where: { branch: { id: branchId }, deletedAt: null },
-      relations: ['category', 'subServices', 'translations', 'media'],
-      order: { createdAt: 'DESC' },
-      skip,
-      take,
-    });
+    const { skip, take } = getPaginationQueryTypeORM(paginationParams);
+    const [results, totalCount] = await query
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
 
     return paginate(paginationParams, totalCount, results);
   }

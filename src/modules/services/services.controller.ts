@@ -41,11 +41,31 @@ export class ServicesController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'List all services for a branch' })
+  @ApiOperation({
+    summary: 'List all services for a branch with filtering and pagination',
+  })
   @ApiHeader({
     name: 'spa-id',
     description: 'The spa/branch ID',
     required: false,
+  })
+  @ApiQuery({
+    name: 'branchId',
+    required: true,
+    type: 'string',
+    description: 'Branch ID',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: 'string',
+    description: 'Search by service name or description',
+  })
+  @ApiQuery({
+    name: 'categoryId',
+    required: false,
+    type: 'string',
+    description: 'Filter by category ID',
   })
   @ApiQuery({
     name: 'page',
@@ -61,9 +81,15 @@ export class ServicesController {
   })
   findAll(
     @Query('branchId') branchId: string,
-    @Query() paginationParams: PaginationParams,
+    @Query('search') search?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query() paginationParams?: PaginationParams,
   ) {
-    return this.servicesService.findAll(branchId, paginationParams);
+    return this.servicesService.findAll(
+      branchId,
+      { search, categoryId },
+      paginationParams,
+    );
   }
 
   @Get('categories/all/:branchId')
