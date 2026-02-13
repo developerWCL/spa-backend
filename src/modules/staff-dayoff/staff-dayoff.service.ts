@@ -3,6 +3,14 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StaffDayoff } from 'src/entities/staff-dayoff.entity';
 import {
+  paginate,
+  getPaginationQueryTypeORM,
+} from 'src/shared/pagination.util';
+import {
+  PaginationParams,
+  PaginatedResponse,
+} from 'src/shared/pagination.types';
+import {
   CreateStaffDayoffDto,
   UpdateStaffDayoffDto,
 } from './staff-dayoff.types';
@@ -19,7 +27,10 @@ export class StaffDayoffService {
     return this.staffDayoffRepo.save(staffDayoff);
   }
 
-  async findAll(branchId?: string): Promise<StaffDayoff[]> {
+  async findAll(
+    branchId?: string,
+    paginationParams?: PaginationParams,
+  ): Promise<StaffDayoff[] | PaginatedResponse<StaffDayoff>> {
     const query = this.staffDayoffRepo
       .createQueryBuilder('staffDayoff')
       .leftJoinAndSelect('staffDayoff.staff', 'staff');
@@ -30,7 +41,20 @@ export class StaffDayoffService {
         .where('branch.id = :branchId', { branchId });
     }
 
-    return query.orderBy('staffDayoff.createdAt', 'DESC').getMany();
+    if (!paginationParams) {
+      // Fallback to non-paginated response for backward compatibility
+      return query.orderBy('staffDayoff.createdAt', 'DESC').getMany();
+    }
+
+    const { skip, take } = getPaginationQueryTypeORM(paginationParams);
+
+    const [results, totalCount] = await query
+      .orderBy('staffDayoff.createdAt', 'DESC')
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
+
+    return paginate(paginationParams, totalCount, results);
   }
 
   async findOne(id: string, branchId?: string): Promise<StaffDayoff> {

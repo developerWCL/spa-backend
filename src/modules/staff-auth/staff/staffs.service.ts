@@ -9,6 +9,11 @@ import { Staff } from '../../../entities/staffs.entity';
 import { Role } from '../../../entities/role.entity';
 import { Branch } from '../../../entities/branch.entity';
 import { hashPassword } from '../../../shared/password.util';
+import {
+  paginate,
+  getPaginationQueryTypeORM,
+} from '../../../shared/pagination.util';
+import { PaginationParams } from '../../../shared/pagination.types';
 import { CreateStaffDto } from '../dto/create-staff.dto';
 import { UpdateStaffDto } from '../dto/update-staff.dto';
 
@@ -23,7 +28,13 @@ export class StaffsService {
     private readonly branchRepo: Repository<Branch>,
   ) {}
 
-  async list(branchIds?: string[], spaIds?: string[]) {
+  async list(
+    paginationParams: PaginationParams,
+    branchIds?: string[],
+    spaIds?: string[],
+  ) {
+    const { skip, take } = getPaginationQueryTypeORM(paginationParams);
+
     const query = this.staffRepo
       .createQueryBuilder('staff')
       .distinct(true)
@@ -41,7 +52,13 @@ export class StaffsService {
       query.andWhere('spa.id IN (:...spaIds)', { spaIds });
     }
 
-    return query.getMany();
+    const [results, totalCount] = await query
+      .skip(skip)
+      .take(take)
+      .orderBy('staff.createdAt', 'DESC')
+      .getManyAndCount();
+
+    return paginate(paginationParams, totalCount, results);
   }
 
   async get(id: string) {

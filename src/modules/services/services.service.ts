@@ -8,6 +8,11 @@ import { SubServiceTranslation } from 'src/entities/sub_service_translations.ent
 import { Branch } from 'src/entities/branch.entity';
 import { ServiceCategory } from 'src/entities/service_categories.entity';
 import { Media } from 'src/entities/media.entity';
+import {
+  paginate,
+  getPaginationQueryTypeORM,
+} from 'src/shared/pagination.util';
+import { PaginationParams } from 'src/shared/pagination.types';
 import { CreateServiceDto, UpdateServiceDto } from './services.types';
 
 @Injectable()
@@ -125,12 +130,27 @@ export class ServicesService {
     });
   }
 
-  async findAll(branchId: string) {
-    return this.serviceRepo.find({
+  async findAll(branchId: string, paginationParams?: PaginationParams) {
+    if (!paginationParams) {
+      // Fallback to non-paginated response for backward compatibility
+      return this.serviceRepo.find({
+        where: { branch: { id: branchId }, deletedAt: null },
+        relations: ['category', 'subServices', 'translations', 'media'],
+        order: { createdAt: 'DESC' },
+      });
+    }
+
+    const { skip, take } = getPaginationQueryTypeORM(paginationParams);
+
+    const [results, totalCount] = await this.serviceRepo.findAndCount({
       where: { branch: { id: branchId }, deletedAt: null },
       relations: ['category', 'subServices', 'translations', 'media'],
       order: { createdAt: 'DESC' },
+      skip,
+      take,
     });
+
+    return paginate(paginationParams, totalCount, results);
   }
 
   async findOne(id: string) {

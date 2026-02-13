@@ -9,12 +9,14 @@ import {
   UseGuards,
   HttpCode,
   Headers,
+  Query,
 } from '@nestjs/common';
 import {
   ApiTags,
   ApiOperation,
   ApiBearerAuth,
   ApiParam,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { StaffsService } from './staffs.service';
 import { CreateStaffDto } from '../dto/create-staff.dto';
@@ -28,6 +30,7 @@ import {
   CurrentUserPayload,
 } from '../../../decorator/current-user.decorator';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
+import { PaginationParams } from '../../../shared/pagination.types';
 
 @ApiTags('Staff Management')
 @ApiBearerAuth()
@@ -37,19 +40,36 @@ export class StaffsController {
   constructor(private readonly svc: StaffsService) {}
 
   @ApiOperation({ summary: 'List all staff' })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page (default: 10, max: 100)',
+  })
   @Get()
   @Permissions('manage:staffs')
   @UseGuards(ApiKeyGuard)
   list(
     @CurrentUser() currentUser: CurrentUserPayload,
+    @Query() paginationParams: PaginationParams,
     @Headers('branchId') branchId?: string,
   ) {
     // If branchId is provided in header, filter by that specific branch
     if (branchId) {
-      return this.svc.list([branchId], currentUser.spaIds);
+      return this.svc.list(paginationParams, [branchId], currentUser.spaIds);
     }
     // Otherwise, list all staffs for user's branches
-    return this.svc.list(currentUser.branchIds, currentUser.spaIds);
+    return this.svc.list(
+      paginationParams,
+      currentUser.branchIds,
+      currentUser.spaIds,
+    );
   }
 
   @ApiOperation({ summary: 'Get a staff by ID' })

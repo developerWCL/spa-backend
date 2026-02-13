@@ -25,6 +25,7 @@ import {
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { PermissionsGuard } from 'src/guards/permissions.guard';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
+import { PaginationParams } from 'src/shared/pagination.types';
 
 @Controller('staff-dayoff')
 @UseGuards(StaffJwtAuthGuard, PermissionsGuard)
@@ -54,12 +55,25 @@ export class StaffDayoffController {
     required: false,
     description: 'Filter by branch ID',
   })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: 'number',
+    description: 'Page number (default: 1)',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: 'number',
+    description: 'Items per page (default: 10, max: 100)',
+  })
   findAll(
     @Headers('branchId') headerBranchId?: string,
     @Query('branchId') queryBranchId?: string,
+    @Query() paginationParams?: PaginationParams,
   ) {
     const branchId = queryBranchId || headerBranchId;
-    return this.staffDayoffService.findAll(branchId);
+    return this.staffDayoffService.findAll(branchId, paginationParams);
   }
 
   @Get('staff/:staffId')
