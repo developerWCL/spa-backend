@@ -67,13 +67,22 @@ export class StaffDayoffController {
     type: 'number',
     description: 'Items per page (default: 10, max: 100)',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: 'string',
+    description: 'Search by staff name',
+  })
   findAll(
     @Headers('branchId') headerBranchId?: string,
     @Query('branchId') queryBranchId?: string,
+    @Query('search') search?: string,
     @Query() paginationParams?: PaginationParams,
   ) {
     const branchId = queryBranchId || headerBranchId;
-    return this.staffDayoffService.findAll(branchId, paginationParams);
+    return this.staffDayoffService.findAll(branchId, paginationParams, {
+      search,
+    });
   }
 
   @Get('staff/:staffId')

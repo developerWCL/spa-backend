@@ -30,6 +30,7 @@ export class StaffDayoffService {
   async findAll(
     branchId?: string,
     paginationParams?: PaginationParams,
+    filters?: { search?: string },
   ): Promise<StaffDayoff[] | PaginatedResponse<StaffDayoff>> {
     const query = this.staffDayoffRepo
       .createQueryBuilder('staffDayoff')
@@ -39,6 +40,15 @@ export class StaffDayoffService {
       query
         .leftJoinAndSelect('staff.branches', 'branch')
         .where('branch.id = :branchId', { branchId });
+    }
+
+    // Search filter for staff firstName or lastName
+    if (filters?.search) {
+      const searchTerm = `%${filters.search}%`;
+      query.andWhere(
+        '(staff.firstName ILIKE :search OR staff.lastName ILIKE :search)',
+        { search: searchTerm },
+      );
     }
 
     if (!paginationParams) {
