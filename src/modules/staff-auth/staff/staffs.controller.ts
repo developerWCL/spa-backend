@@ -52,23 +52,47 @@ export class StaffsController {
     type: 'number',
     description: 'Items per page (default: 10, max: 100)',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: 'string',
+    description: 'Search by name or email',
+  })
+  @ApiQuery({
+    name: 'isActive',
+    required: false,
+    type: 'boolean',
+    description: 'Filter by active status (true/false, omit for all)',
+  })
   @Get()
   @Permissions('manage:staffs')
   @UseGuards(ApiKeyGuard)
   list(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Query() paginationParams: PaginationParams,
+    @Query('search') search?: string,
+    @Query('isActive') isActive?: string,
     @Headers('branchId') branchId?: string,
   ) {
+    // Parse isActive from query string
+    let isActiveFilter: boolean | undefined;
+    if (isActive !== undefined) {
+      isActiveFilter = isActive === 'true';
+    }
+
     // If branchId is provided in header, filter by that specific branch
     if (branchId) {
-      return this.svc.list(paginationParams, [branchId], currentUser.spaIds);
+      return this.svc.list(paginationParams, [branchId], currentUser.spaIds, {
+        search,
+        isActive: isActiveFilter,
+      });
     }
     // Otherwise, list all staffs for user's branches
     return this.svc.list(
       paginationParams,
       currentUser.branchIds,
       currentUser.spaIds,
+      { search, isActive: isActiveFilter },
     );
   }
 

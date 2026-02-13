@@ -32,6 +32,7 @@ export class StaffsService {
     paginationParams: PaginationParams,
     branchIds?: string[],
     spaIds?: string[],
+    filters?: { search?: string; isActive?: boolean },
   ) {
     const { skip, take } = getPaginationQueryTypeORM(paginationParams);
 
@@ -50,6 +51,22 @@ export class StaffsService {
     // Additional filter by spa if spaIds provided
     if (spaIds && spaIds.length > 0) {
       query.andWhere('spa.id IN (:...spaIds)', { spaIds });
+    }
+
+    // Search filter for firstName, lastName, or email
+    if (filters?.search) {
+      const searchTerm = `%${filters.search}%`;
+      query.andWhere(
+        '(staff.firstName ILIKE :search OR staff.lastName ILIKE :search OR staff.email ILIKE :search)',
+        { search: searchTerm },
+      );
+    }
+
+    // Status filter
+    if (filters?.isActive !== undefined) {
+      query.andWhere('staff.isActive = :isActive', {
+        isActive: filters.isActive,
+      });
     }
 
     const [results, totalCount] = await query
