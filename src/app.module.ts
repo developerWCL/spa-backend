@@ -7,6 +7,7 @@ import { StaffAuthModule } from './modules/staff-auth/staff-auth.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { StaffDayoffModule } from './modules/staff-dayoff/staff-dayoff.module';
 import { ServicesModule } from './modules/services/services.module';
+import { MediasModule } from './modules/medias/medias.module';
 import { typeOrmConfig } from './config/typeorm';
 import { SubscriptionClientService } from './shared/subscription-client.service';
 
@@ -18,6 +19,7 @@ import { SubscriptionClientService } from './shared/subscription-client.service'
     BranchesModule,
     StaffDayoffModule,
     ServicesModule,
+    MediasModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],

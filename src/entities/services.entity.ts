@@ -14,6 +14,7 @@ import { Programme } from './programmes.entity';
 import { ServiceCategory } from './service_categories.entity';
 import { SubService } from './sub_services.entity';
 import { ServiceTranslation } from './service_translations.entity';
+import { Media } from './media.entity';
 import { EntityStatus } from './enums/entity-status.enum';
 
 @Entity('services')
@@ -35,9 +36,6 @@ export class Service {
 
   @Column({ type: 'text', nullable: true })
   description: string;
-
-  @Column({ type: 'text', nullable: true, name: 'image_url' })
-  imageUrl: string;
 
   @Column({ type: 'numeric', nullable: true, name: 'base_price' })
   basePrice: string;
@@ -89,4 +87,7 @@ export class Service {
 
   @ManyToMany(() => Programme, (p) => p.services)
   programmes: Programme[];
+
+  @OneToMany(() => Media, (m) => m.service, { cascade: true })
+  media: Media[];
 }

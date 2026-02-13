@@ -8,6 +8,7 @@ import { ServiceTranslation } from 'src/entities/service_translations.entity';
 import { SubServiceTranslation } from 'src/entities/sub_service_translations.entity';
 import { Branch } from 'src/entities/branch.entity';
 import { ServiceCategory } from 'src/entities/service_categories.entity';
+import { Media } from 'src/entities/media.entity';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
 
 @Module({
@@ -19,6 +20,7 @@ import { StaffAuthModule } from '../staff-auth/staff-auth.module';
       SubServiceTranslation,
       Branch,
       ServiceCategory,
+      Media,
     ]),
     StaffAuthModule,
   ],

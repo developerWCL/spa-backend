@@ -95,10 +95,10 @@ export class CreateServiceDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Service image URL' })
+  @ApiPropertyOptional({ description: 'Media IDs for service images' })
   @IsOptional()
-  @IsString()
-  imageUrl?: string;
+  @IsArray()
+  mediaIds?: string[];
 
   @ApiPropertyOptional({ description: 'Base price' })
   @IsOptional()
@@ -165,10 +165,10 @@ export class UpdateServiceDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ description: 'Service image URL' })
+  @ApiPropertyOptional({ description: 'Media IDs for service images' })
   @IsOptional()
-  @IsString()
-  imageUrl?: string;
+  @IsArray()
+  mediaIds?: string[];
 
   @ApiPropertyOptional({ description: 'Base price' })
   @IsOptional()

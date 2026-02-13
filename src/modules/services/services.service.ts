@@ -7,6 +7,7 @@ import { ServiceTranslation } from 'src/entities/service_translations.entity';
 import { SubServiceTranslation } from 'src/entities/sub_service_translations.entity';
 import { Branch } from 'src/entities/branch.entity';
 import { ServiceCategory } from 'src/entities/service_categories.entity';
+import { Media } from 'src/entities/media.entity';
 import { CreateServiceDto, UpdateServiceDto } from './services.types';
 
 @Injectable()
@@ -24,6 +25,8 @@ export class ServicesService {
     private branchRepo: Repository<Branch>,
     @InjectRepository(ServiceCategory)
     private categoryRepo: Repository<ServiceCategory>,
+    @InjectRepository(Media)
+    private mediaRepo: Repository<Media>,
     private dataSource: DataSource,
   ) {}
 
@@ -60,6 +63,18 @@ export class ServicesService {
       service.maxBookingsPerDay = dto.maxBookingsPerDay;
 
       const savedService = await manager.save(service);
+
+      // Handle media associations
+      if (dto.mediaIds && dto.mediaIds.length > 0) {
+        const mediaList = await manager.find(Media, {
+          where: { id: In(dto.mediaIds) },
+        });
+
+        for (const media of mediaList) {
+          media.service = savedService;
+          await manager.save(media);
+        }
+      }
 
       // Create translations
       if (dto.translations && dto.translations.length > 0) {
@@ -112,20 +127,21 @@ export class ServicesService {
 
   async findAll(branchId: string) {
     return this.serviceRepo.find({
-      where: { branch: { id: branchId } },
-      relations: ['category', 'subServices', 'translations'],
+      where: { branch: { id: branchId }, deletedAt: null },
+      relations: ['category', 'subServices', 'translations', 'media'],
       order: { createdAt: 'DESC' },
     });
   }
 
   async findOne(id: string) {
     const service = await this.serviceRepo.findOne({
-      where: { id },
+      where: { id, deletedAt: null },
       relations: [
         'category',
         'subServices',
         'subServices.translations',
         'translations',
+        'media',
       ],
     });
 
@@ -174,6 +190,44 @@ export class ServicesService {
         service.maxBookingsPerDay = dto.maxBookingsPerDay;
 
       await manager.save(service);
+
+      // Handle media associations - only update what changed
+      if (dto.mediaIds !== undefined) {
+        // Get existing media IDs for this service
+        const existingMedia = await manager.find(Media, {
+          where: { service: { id } },
+        });
+        const existingMediaIds = new Set(existingMedia.map((m) => m.id));
+        const incomingMediaIds = new Set(dto.mediaIds);
+
+        // Find media to remove (was in existing, not in incoming)
+        const mediaToRemove = existingMedia.filter(
+          (media) => !incomingMediaIds.has(media.id),
+        );
+
+        // Find media to add (in incoming, not in existing)
+        const mediaIdsToAdd = Array.from(incomingMediaIds).filter(
+          (id) => !existingMediaIds.has(id),
+        );
+
+        // Remove media no longer associated with this service
+        for (const media of mediaToRemove) {
+          media.service = null;
+          await manager.save(media);
+        }
+
+        // Add new media associations
+        if (mediaIdsToAdd.length > 0) {
+          const mediaList = await manager.find(Media, {
+            where: { id: In(mediaIdsToAdd) },
+          });
+
+          for (const media of mediaList) {
+            media.service = service;
+            await manager.save(media);
+          }
+        }
+      }
 
       // Update translations
       if (dto.translations && dto.translations.length > 0) {
@@ -271,8 +325,8 @@ export class ServicesService {
   }
 
   async remove(id: string) {
-    const service = await this.findOne(id);
-    await this.serviceRepo.remove(service);
+    await this.findOne(id); // Verify service exists
+    await this.serviceRepo.softDelete(id);
     return { success: true, message: 'Service deleted successfully' };
   }
 
@@ -283,7 +337,7 @@ export class ServicesService {
     if (!subService) {
       throw new NotFoundException('Sub-service not found');
     }
-    await this.subServiceRepo.remove(subService);
+    await this.subServiceRepo.softDelete(subServiceId);
     return { success: true, message: 'Sub-service deleted successfully' };
   }
 
