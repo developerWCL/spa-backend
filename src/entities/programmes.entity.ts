@@ -12,6 +12,7 @@ import { Branch } from './branch.entity';
 import { ProgrammeStep } from './programmes_step.entity';
 import { ProgrammeTranslation } from './programme_translation.entity';
 import { Media } from './media.entity';
+import { EntityStatus } from './enums/entity-status.enum';
 
 @Entity('programmes')
 export class Programme {
@@ -29,6 +30,14 @@ export class Programme {
 
   @Column({ type: 'numeric', nullable: true, name: 'price' })
   price: string;
+
+  @Column({
+    type: 'enum',
+    enum: EntityStatus,
+    default: EntityStatus.ACTIVE,
+    name: 'status',
+  })
+  status: EntityStatus;
 
   @OneToMany(() => ProgrammeStep, (ps) => ps.programme, { cascade: true })
   steps: ProgrammeStep[];

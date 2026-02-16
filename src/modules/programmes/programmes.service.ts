@@ -33,78 +33,90 @@ export class ProgrammesService {
   ) {}
 
   async create(dto: CreateProgrammeDto) {
-    return this.dataSource.transaction(async (manager: EntityManager) => {
-      const branch = await manager.findOne(Branch, {
-        where: { id: dto.branchId },
-      });
-      if (!branch) {
-        throw new NotFoundException(`Branch with ID ${dto.branchId} not found`);
-      }
-
-      const programme = new Programme();
-      programme.branch = branch;
-      programme.name = dto.name;
-      programme.description = dto.description || null;
-      programme.price = dto.price || null;
-
-      const savedProgramme = await manager.save(programme);
-
-      // Handle media associations
-      if (dto.mediaIds && dto.mediaIds.length > 0) {
-        const mediaList = await manager.find(Media, {
-          where: { id: In(dto.mediaIds) },
+    const savedProgrammeId = await this.dataSource.transaction(
+      async (manager: EntityManager) => {
+        const branch = await manager.findOne(Branch, {
+          where: { id: dto.branchId },
         });
-
-        for (const media of mediaList) {
-          media.programme = savedProgramme;
-          await manager.save(media);
+        if (!branch) {
+          throw new NotFoundException(
+            `Branch with ID ${dto.branchId} not found`,
+          );
         }
-      }
 
-      // Create translations
-      if (dto.translations && dto.translations.length > 0) {
-        const translations = dto.translations.map((t) => {
-          const translation = new ProgrammeTranslation();
-          translation.programme = savedProgramme;
-          translation.languageCode = t.languageCode;
-          translation.name = t.name;
-          translation.description = t.description || null;
-          return translation;
-        });
-        await manager.save(translations);
-      }
+        const programme = new Programme();
+        programme.branch = branch;
+        programme.name = dto.name;
+        programme.description = dto.description || null;
+        programme.price = dto.price || null;
 
-      // Create steps with their translations
-      if (dto.steps && dto.steps.length > 0) {
-        for (const stepDto of dto.steps) {
-          const step = new ProgrammeStep();
-          step.programme = savedProgramme;
-          step.title = stepDto.title;
-          step.description = stepDto.description || null;
-          step.duration = stepDto.duration || null;
+        const savedProgramme = await manager.save(programme);
 
-          const savedStep = await manager.save(step);
+        // Handle media associations
+        if (dto.mediaIds && dto.mediaIds.length > 0) {
+          const mediaList = await manager.find(Media, {
+            where: { id: In(dto.mediaIds) },
+          });
 
-          // Create step translations
-          if (stepDto.translations && stepDto.translations.length > 0) {
-            const stepTranslations = stepDto.translations.map((t) => {
-              const translation = new ProgrammeStepTranslation();
-              translation.programmeStep = savedStep;
-              translation.languageCode = t.languageCode;
-              translation.title = t.title;
-              translation.description = t.description || null;
-              return translation;
-            });
-            await manager.save(stepTranslations);
+          for (const media of mediaList) {
+            media.programme = savedProgramme;
+            await manager.save(media);
           }
         }
-      }
 
-      return this.findById(savedProgramme.id);
-    });
+        // Create translations
+        if (dto.translations && dto.translations.length > 0) {
+          const translations = dto.translations.map((t) => {
+            const translation = new ProgrammeTranslation();
+            translation.programme = savedProgramme;
+            translation.languageCode = t.languageCode;
+            translation.name = t.name;
+            translation.description = t.description || null;
+            return translation;
+          });
+          await manager.save(translations);
+        }
+
+        // Create steps with their translations
+        if (dto.steps && dto.steps.length > 0) {
+          for (const stepDto of dto.steps) {
+            const step = new ProgrammeStep();
+            step.programme = savedProgramme;
+            step.title = stepDto.title;
+            step.description = stepDto.description || null;
+            step.duration = stepDto.duration || null;
+
+            const savedStep = await manager.save(step);
+
+            // Create step translations
+            if (stepDto.translations && stepDto.translations.length > 0) {
+              const stepTranslations = stepDto.translations.map((t) => {
+                const translation = new ProgrammeStepTranslation();
+                translation.programmeStep = savedStep;
+                translation.languageCode = t.languageCode;
+                translation.title = t.title;
+                translation.description = t.description || null;
+                return translation;
+              });
+              await manager.save(stepTranslations);
+            }
+          }
+        }
+
+        return savedProgramme.id;
+      },
+    );
+
+    // Call findById after transaction completes
+    return this.findById(savedProgrammeId);
   }
 
-  async findAll(branchId: string, paginationParams?: PaginationParams) {
+  async findAll(
+    branchId: string,
+    paginationParams?: PaginationParams,
+    search?: string,
+    status?: string,
+  ) {
     const query = this.programmeRepo
       .createQueryBuilder('programme')
       .leftJoinAndSelect('programme.translations', 'translations')
@@ -113,6 +125,20 @@ export class ProgrammesService {
       .leftJoinAndSelect('programme.media', 'media')
       .where('programme.branchId = :branchId', { branchId })
       .andWhere('programme.deletedAt IS NULL');
+
+    // Add search filter
+    if (search && search.trim()) {
+      query.andWhere(
+        '(LOWER(programme.name) LIKE LOWER(:search) OR LOWER(programme.description) LIKE LOWER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
+    // Add status filter
+    if (status && status.trim()) {
+      const statusLower = status.toLocaleLowerCase();
+      query.andWhere('programme.status = :status', { status: statusLower });
+    }
 
     // Handle pagination
     if (!paginationParams) {

@@ -82,6 +82,19 @@ export class ProgrammesController {
     type: 'number',
     description: 'Items per page (default: 10, max: 100)',
   })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: 'string',
+    description: 'Search by programme name or description',
+  })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    type: 'string',
+    enum: ['active', 'inactive'],
+    description: 'Filter by status',
+  })
   @ApiResponse({
     status: 200,
     description: 'List of programmes',
@@ -89,10 +102,12 @@ export class ProgrammesController {
   findAll(
     @Query('branchId') branchId: string,
     @Query() params: PaginationParams,
+    @Query('search') search?: string,
+    @Query('status') status?: string,
   ) {
     params.page = params.page || 1;
     params.limit = params.limit || 10;
-    return this.programmesService.findAll(branchId, params);
+    return this.programmesService.findAll(branchId, params, search, status);
   }
 
   @Get(':id')
