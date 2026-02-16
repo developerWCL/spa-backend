@@ -2,10 +2,12 @@ import { seedRoles } from './seed-roles';
 import { seedStaff } from './seed-staff';
 import { seedServiceCategories } from './seed-service-categories';
 import { seedServiceCategoryTranslations } from './seed-category-translations';
+import { seedLanguages } from './seed-languages';
 
 async function run() {
   try {
     console.log('Running seeds...');
+    await seedLanguages();
     await seedRoles();
     await seedStaff();
     await seedServiceCategories();

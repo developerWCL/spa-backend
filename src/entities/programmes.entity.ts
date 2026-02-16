@@ -6,11 +6,12 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToOne,
-  ManyToMany,
-  JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { Branch } from './branch.entity';
-import { Service } from './services.entity';
+import { ProgrammeStep } from './programmes_step.entity';
+import { ProgrammeTranslation } from './programme_translation.entity';
+import { Media } from './media.entity';
 
 @Entity('programmes')
 export class Programme {
@@ -26,6 +27,18 @@ export class Programme {
   @Column({ type: 'text', nullable: true })
   description: string;
 
+  @Column({ type: 'numeric', nullable: true, name: 'price' })
+  price: string;
+
+  @OneToMany(() => ProgrammeStep, (ps) => ps.programme, { cascade: true })
+  steps: ProgrammeStep[];
+
+  @OneToMany(() => ProgrammeTranslation, (t) => t.programme, {
+    cascade: true,
+    eager: true,
+  })
+  translations: ProgrammeTranslation[];
+
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
 
@@ -35,11 +48,6 @@ export class Programme {
   @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
   deletedAt?: Date;
 
-  @ManyToMany(() => Service, (s) => s.programmes)
-  @JoinTable({
-    name: 'package_services',
-    joinColumn: { name: 'programme_id' },
-    inverseJoinColumn: { name: 'service_id' },
-  })
-  services: Service[];
+  @OneToMany(() => Media, (m) => m.programme, { cascade: true })
+  media: Media[];
 }

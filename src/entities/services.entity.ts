@@ -7,10 +7,8 @@ import {
   DeleteDateColumn,
   ManyToOne,
   OneToMany,
-  ManyToMany,
 } from 'typeorm';
 import { Branch } from './branch.entity';
-import { Programme } from './programmes.entity';
 import { ServiceCategory } from './service_categories.entity';
 import { SubService } from './sub_services.entity';
 import { ServiceTranslation } from './service_translations.entity';
@@ -84,9 +82,6 @@ export class Service {
 
   @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
   deletedAt?: Date;
-
-  @ManyToMany(() => Programme, (p) => p.services)
-  programmes: Programme[];
 
   @OneToMany(() => Media, (m) => m.service, { cascade: true })
   media: Media[];

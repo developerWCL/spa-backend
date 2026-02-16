@@ -10,6 +10,8 @@ import { ServicesModule } from './modules/services/services.module';
 import { MediasModule } from './modules/medias/medias.module';
 import { typeOrmConfig } from './config/typeorm';
 import { SubscriptionClientService } from './shared/subscription-client.service';
+import { LanguagesModule } from './modules/languages/languages.module';
+import { ProgrammesModule } from './modules/programmes/programmes.module';
 
 @Module({
   imports: [
@@ -20,6 +22,8 @@ import { SubscriptionClientService } from './shared/subscription-client.service'
     StaffDayoffModule,
     ServicesModule,
     MediasModule,
+    LanguagesModule,
+    ProgrammesModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],

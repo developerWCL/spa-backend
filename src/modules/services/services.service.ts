@@ -142,6 +142,7 @@ export class ServicesService {
       .andWhere('service.deletedAt IS NULL')
       .leftJoinAndSelect('service.category', 'category')
       .leftJoinAndSelect('service.subServices', 'subServices')
+      .leftJoinAndSelect('subServices.translations', 'subServiceTranslations')
       .leftJoinAndSelect('service.translations', 'translations')
       .leftJoinAndSelect('service.media', 'media')
       .orderBy('service.createdAt', 'DESC');

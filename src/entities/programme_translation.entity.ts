@@ -4,37 +4,36 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  DeleteDateColumn,
   ManyToOne,
 } from 'typeorm';
-import { Service } from './services.entity';
 import { Programme } from './programmes.entity';
 
-@Entity('media')
-export class Media {
+@Entity('programme_translations')
+export class ProgrammeTranslation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Service, (s) => s.media, { onDelete: 'CASCADE' })
-  service: Service;
-
-  @ManyToOne(() => Programme, (p) => p.media, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Programme, (p) => p.translations, {
+    onDelete: 'CASCADE',
+  })
   programme: Programme;
 
-  @Column()
-  filename: string;
+  @Column({ length: 10 })
+  languageCode: string; // 'en', 'th', etc.
 
   @Column()
-  type: string;
+  name: string;
 
-  @Column({ name: 'mime_type' })
-  mimeType: string;
-
-  @Column()
-  url: string;
+  @Column({ type: 'text', nullable: true })
+  description: string;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
 
   @UpdateDateColumn({ type: 'timestamp', name: 'updated_at' })
   updatedAt: Date;
+
+  @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
+  deletedAt?: Date;
 }
