@@ -49,6 +49,8 @@ export class ProgrammesService {
         programme.name = dto.name;
         programme.description = dto.description || null;
         programme.price = dto.price || null;
+        programme.maxConcurrentBookings = dto.maxConcurrentBookings || null;
+        programme.maxBookingsPerDay = dto.maxBookingsPerDay || null;
 
         const savedProgramme = await manager.save(programme);
 
@@ -188,6 +190,10 @@ export class ProgrammesService {
       if (dto.description !== undefined)
         programme.description = dto.description;
       if (dto.price !== undefined) programme.price = dto.price;
+      if (dto.maxConcurrentBookings !== undefined)
+        programme.maxConcurrentBookings = dto.maxConcurrentBookings;
+      if (dto.maxBookingsPerDay !== undefined)
+        programme.maxBookingsPerDay = dto.maxBookingsPerDay;
 
       await manager.save(programme);
 

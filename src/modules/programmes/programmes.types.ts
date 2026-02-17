@@ -93,6 +93,16 @@ export class CreateProgrammeDto {
   @IsString()
   price?: string;
 
+  @ApiPropertyOptional({ description: 'Maximum concurrent bookings allowed' })
+  @IsOptional()
+  @IsNumber()
+  maxConcurrentBookings?: number;
+
+  @ApiPropertyOptional({ description: 'Maximum bookings per day' })
+  @IsOptional()
+  @IsNumber()
+  maxBookingsPerDay?: number;
+
   @ApiPropertyOptional({
     description: 'Translations for this programme',
     type: [ProgrammeTranslationDto],
@@ -137,6 +147,16 @@ export class UpdateProgrammeDto {
   @IsOptional()
   @IsString()
   price?: string;
+
+  @ApiPropertyOptional({ description: 'Maximum concurrent bookings allowed' })
+  @IsOptional()
+  @IsNumber()
+  maxConcurrentBookings?: number;
+
+  @ApiPropertyOptional({ description: 'Maximum bookings per day' })
+  @IsOptional()
+  @IsNumber()
+  maxBookingsPerDay?: number;
 
   @ApiPropertyOptional({
     description: 'Translations for this programme',

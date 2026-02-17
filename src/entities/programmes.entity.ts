@@ -39,6 +39,22 @@ export class Programme {
   })
   status: EntityStatus;
 
+  @Column({
+    type: 'int',
+    nullable: true,
+    name: 'max_concurrent_bookings',
+    default: 0,
+  })
+  maxConcurrentBookings: number;
+
+  @Column({
+    type: 'int',
+    nullable: true,
+    name: 'max_bookings_per_day',
+    default: 0,
+  })
+  maxBookingsPerDay: number;
+
   @OneToMany(() => ProgrammeStep, (ps) => ps.programme, { cascade: true })
   steps: ProgrammeStep[];
 
