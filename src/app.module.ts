@@ -12,6 +12,7 @@ import { typeOrmConfig } from './config/typeorm';
 import { SubscriptionClientService } from './shared/subscription-client.service';
 import { LanguagesModule } from './modules/languages/languages.module';
 import { ProgrammesModule } from './modules/programmes/programmes.module';
+import { PackagesModule } from './modules/packages/packages.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { ProgrammesModule } from './modules/programmes/programmes.module';
     MediasModule,
     LanguagesModule,
     ProgrammesModule,
+    PackagesModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],

@@ -5,9 +5,11 @@ import {
   ValidateNested,
   IsArray,
   IsUUID,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 
 export class ProgrammeTranslationDto {
   @ApiProperty({ description: 'Language code (e.g., en, th)' })
@@ -103,6 +105,15 @@ export class CreateProgrammeDto {
   @IsNumber()
   maxBookingsPerDay?: number;
 
+  //status
+  @ApiPropertyOptional({
+    enum: ['active', 'inactive'],
+    description: 'Status: active or inactive',
+  })
+  @IsOptional()
+  @IsEnum(EntityStatus)
+  status?: EntityStatus;
+
   @ApiPropertyOptional({
     description: 'Translations for this programme',
     type: [ProgrammeTranslationDto],
@@ -147,6 +158,15 @@ export class UpdateProgrammeDto {
   @IsOptional()
   @IsString()
   price?: string;
+
+  //status
+  @ApiPropertyOptional({
+    enum: ['active', 'inactive'],
+    description: 'Status: active or inactive',
+  })
+  @IsOptional()
+  @IsEnum(EntityStatus)
+  status?: EntityStatus;
 
   @ApiPropertyOptional({ description: 'Maximum concurrent bookings allowed' })
   @IsOptional()

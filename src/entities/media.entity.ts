@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Service } from './services.entity';
 import { Programme } from './programmes.entity';
+import { Package } from './packages.entity';
 
 @Entity('media')
 export class Media {
@@ -19,6 +20,9 @@ export class Media {
 
   @ManyToOne(() => Programme, (p) => p.media, { onDelete: 'CASCADE' })
   programme: Programme;
+
+  @ManyToOne(() => Package, (p) => p.media, { onDelete: 'CASCADE' })
+  package: Package;
 
   @Column()
   filename: string;

@@ -194,6 +194,7 @@ export class ProgrammesService {
         programme.maxConcurrentBookings = dto.maxConcurrentBookings;
       if (dto.maxBookingsPerDay !== undefined)
         programme.maxBookingsPerDay = dto.maxBookingsPerDay;
+      if (dto.status !== undefined) programme.status = dto.status;
 
       await manager.save(programme);
 
