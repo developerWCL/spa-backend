@@ -83,8 +83,16 @@ export class ServicesController {
     @Query('branchId') branchId: string,
     @Query('search') search?: string,
     @Query('categoryId') categoryId?: string,
-    @Query() paginationParams?: PaginationParams,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
+    const paginationParams: PaginationParams =
+      page || limit
+        ? {
+            page: page ? parseInt(page) : 1,
+            limit: limit ? parseInt(limit) : 10,
+          }
+        : undefined;
     return this.servicesService.findAll(
       branchId,
       { search, categoryId },

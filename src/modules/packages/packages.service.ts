@@ -133,6 +133,7 @@ export class PackagesService {
     const query = this.packageRepo
       .createQueryBuilder('pkg')
       .leftJoinAndSelect('pkg.subServices', 'subServices')
+      .leftJoinAndSelect('subServices.service', 'service')
       .leftJoinAndSelect('pkg.translations', 'translations')
       .leftJoinAndSelect('pkg.media', 'media')
       .leftJoinAndSelect('pkg.branch', 'branch')
