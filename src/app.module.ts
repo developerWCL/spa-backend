@@ -13,6 +13,8 @@ import { SubscriptionClientService } from './shared/subscription-client.service'
 import { LanguagesModule } from './modules/languages/languages.module';
 import { ProgrammesModule } from './modules/programmes/programmes.module';
 import { PackagesModule } from './modules/packages/packages.module';
+import { RoomsModule } from './modules/rooms/rooms.module';
+import { BedsModule } from './modules/beds/beds.module';
 
 @Module({
   imports: [
@@ -26,6 +28,8 @@ import { PackagesModule } from './modules/packages/packages.module';
     LanguagesModule,
     ProgrammesModule,
     PackagesModule,
+    RoomsModule,
+    BedsModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],

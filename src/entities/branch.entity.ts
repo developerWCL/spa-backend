@@ -17,6 +17,7 @@ import { Service } from './services.entity';
 import { Package } from './packages.entity';
 import { Promotion } from './promotions.entity';
 import { ServiceCategory } from './service_categories.entity';
+import { Bed } from './beds.entity';
 
 @Entity('branch')
 export class Branch {
@@ -61,6 +62,9 @@ export class Branch {
 
   @OneToMany(() => Room, (r) => r.branch)
   rooms: Room[];
+
+  @OneToMany(() => Bed, (b) => b.branch)
+  beds: Bed[];
 
   @OneToMany(() => Service, (svc) => svc.branch)
   services: Service[];

@@ -10,6 +10,7 @@ import {
 } from 'typeorm';
 import { Branch } from './branch.entity';
 import { Bed } from './beds.entity';
+import { RoomStatus } from './enums/entity-room.enum';
 
 @Entity('rooms')
 export class Room {
@@ -19,11 +20,28 @@ export class Room {
   @ManyToOne(() => Branch, (b) => b.rooms, { onDelete: 'CASCADE' })
   branch: Branch;
 
-  @Column({ name: 'room_number' })
-  roomNumber: string;
+  @Column({ name: 'name' })
+  name: string;
 
-  @Column({ nullable: true, name: 'room_type' })
-  roomType: string;
+  @Column({ nullable: true, name: 'type' })
+  type: string;
+
+  @Column({ nullable: true, name: 'capacity' })
+  capacity: number;
+
+  @Column({ nullable: true, name: 'floor' })
+  floor: string;
+
+  @Column({ nullable: true, name: 'size' })
+  size: string;
+
+  @Column({
+    nullable: true,
+    name: 'status',
+    default: RoomStatus.AVAILABLE,
+    enum: RoomStatus,
+  })
+  status: RoomStatus;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
