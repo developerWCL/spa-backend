@@ -30,6 +30,7 @@ export class CreateSpaDto {
   email?: string;
   website?: string;
   status?: SpaStatus;
+  metadata?: Record<string, any>;
 }
 
 export type UpdateSpaDto = Partial<CreateSpaDto>;
