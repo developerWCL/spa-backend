@@ -24,6 +24,11 @@ export class Spa {
   @Column({ name: 'billing_email', nullable: true })
   billingEmail?: string;
 
+  // pattern:
+  // { "primary_color": "#ff0000", "logo_url": "https://example.com/logo.png" , banner_url: "https://example.com/banner.png"}
+  @Column({ name: 'metadata', type: 'jsonb', nullable: true })
+  metadata?: Record<string, any>;
+
   @Column()
   name: string;
 
