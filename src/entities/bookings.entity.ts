@@ -9,11 +9,11 @@ import {
 } from 'typeorm';
 import { Customer } from './customers.entity';
 import { Branch } from './branch.entity';
-import { Service } from './services.entity';
 import { Package } from './packages.entity';
 import { Programme } from './programmes.entity';
 import { Bed } from './beds.entity';
 import { Promotion } from './promotions.entity';
+import { SubService } from './sub_services.entity';
 
 @Entity('bookings')
 export class Booking {
@@ -26,8 +26,8 @@ export class Booking {
   @ManyToOne(() => Branch, { onDelete: 'SET NULL' })
   branch: Branch;
 
-  @ManyToOne(() => Service, { onDelete: 'SET NULL', nullable: true })
-  service: Service | null;
+  @ManyToOne(() => SubService, { onDelete: 'SET NULL', nullable: true })
+  subService: SubService | null;
 
   @ManyToOne(() => Package, { onDelete: 'SET NULL', nullable: true })
   package: Package | null;

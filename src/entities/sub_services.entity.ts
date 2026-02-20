@@ -11,6 +11,7 @@ import {
 import { Service } from './services.entity';
 import { SubServiceTranslation } from './sub_service_translations.entity';
 import { EntityStatus } from './enums/entity-status.enum';
+import { Booking } from './bookings.entity';
 
 @Entity('sub_services')
 export class SubService {
@@ -19,6 +20,9 @@ export class SubService {
 
   @ManyToOne(() => Service, (s) => s.subServices, { onDelete: 'CASCADE' })
   service: Service;
+
+  @OneToMany(() => Booking, (b) => b.subService)
+  bookings: Booking[];
 
   @Column()
   name: string;

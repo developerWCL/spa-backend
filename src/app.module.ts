@@ -14,7 +14,9 @@ import { LanguagesModule } from './modules/languages/languages.module';
 import { ProgrammesModule } from './modules/programmes/programmes.module';
 import { PackagesModule } from './modules/packages/packages.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
+
 import { BedsModule } from './modules/beds/beds.module';
+import { BookingModule } from './modules/booking/booking.module';
 
 @Module({
   imports: [
@@ -30,6 +32,7 @@ import { BedsModule } from './modules/beds/beds.module';
     PackagesModule,
     RoomsModule,
     BedsModule,
+    BookingModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],
