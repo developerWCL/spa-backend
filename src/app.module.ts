@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { SpaModule } from './modules/spa/spa.module';
+import { PromotionModule } from './modules/promotion/promotion.module';
 import { StaffAuthModule } from './modules/staff-auth/staff-auth.module';
 import { BranchesModule } from './modules/branches/branches.module';
 import { StaffDayoffModule } from './modules/staff-dayoff/staff-dayoff.module';
@@ -33,6 +34,7 @@ import { BookingModule } from './modules/booking/booking.module';
     RoomsModule,
     BedsModule,
     BookingModule,
+    PromotionModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],
