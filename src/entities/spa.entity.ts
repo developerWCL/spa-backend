@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Branch } from './branch.entity';
 import { Customer } from './customers.entity';
+import { Otp } from './otp.entity';
 
 @Entity('spa')
 export class Spa {
@@ -62,4 +63,7 @@ export class Spa {
 
   @OneToMany(() => Customer, (c) => c.spa)
   customers: Customer[];
+
+  @OneToMany(() => Otp, (o) => o.spa)
+  otps: Otp[];
 }

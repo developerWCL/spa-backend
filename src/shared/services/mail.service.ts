@@ -73,4 +73,26 @@ export class MailService {
       );
     }
   }
+
+  async sendOtpEmail(email: string, otp: string): Promise<void> {
+    try {
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: email,
+        subject: 'Your OTP Code - Orientala Spa',
+        html: `
+          <h2>Your OTP Code</h2>
+          <p>Dear ${email},</p>
+          <p>Your OTP code is <b>${otp}</b>.</p>
+          <p>If you did not request this OTP, please contact support immediately.</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending OTP email:', error);
+
+      throw new InternalServerErrorException('Failed to send OTP email');
+    }
+  }
 }

@@ -30,8 +30,14 @@ export class Customer {
   @Column()
   email: string;
 
+  @Column()
+  password: string;
+
   @Column({ nullable: true })
   phone: string;
+
+  @Column({ name: 'is_verified', type: 'boolean', default: false })
+  isVerified: boolean;
 
   @Column({ name: 'loyalty_points', type: 'int', default: 0 })
   loyaltyPoints: number;

@@ -18,6 +18,7 @@ import { RoomsModule } from './modules/rooms/rooms.module';
 
 import { BedsModule } from './modules/beds/beds.module';
 import { BookingModule } from './modules/booking/booking.module';
+import { CustomerAuthModule } from './modules/customer-auth/customer-auth.module';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { BookingModule } from './modules/booking/booking.module';
     BedsModule,
     BookingModule,
     PromotionModule,
+    CustomerAuthModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],
