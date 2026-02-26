@@ -22,11 +22,10 @@ import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
 
 @Controller('services')
-@UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
 @ApiBearerAuth()
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
-
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Post()
   @ApiOperation({
     summary: 'Create a new service with translations and sub-services',
@@ -116,7 +115,7 @@ export class ServicesController {
   findOne(@Param('id') id: string) {
     return this.servicesService.findOne(id);
   }
-
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Put(':id')
   @ApiOperation({
     summary: 'Update service with translations and sub-services',
@@ -124,13 +123,14 @@ export class ServicesController {
   update(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
     return this.servicesService.update(id, dto);
   }
-
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'Delete service' })
   remove(@Param('id') id: string) {
     return this.servicesService.remove(id);
   }
 
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Delete('sub-services/:subServiceId')
   @ApiOperation({ summary: 'Delete sub-service' })
   removeSubService(@Param('subServiceId') subServiceId: string) {

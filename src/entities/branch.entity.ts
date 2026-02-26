@@ -52,7 +52,7 @@ export class Branch {
   deletedAt?: Date;
 
   @OneToMany(() => BranchOperatingHours, (h) => h.branch)
-  operating_hours: BranchOperatingHours[];
+  operatingHours: BranchOperatingHours[];
 
   @OneToMany(() => BranchSpecialClosures, (c) => c.branch)
   special_closures: BranchSpecialClosures[];

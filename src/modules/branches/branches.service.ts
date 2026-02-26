@@ -43,6 +43,33 @@ export class BranchesService {
     });
   }
 
+  async findLocationBySpaId(spaId: string): Promise<{ location: string }[]> {
+    const branches = await this.branchRepo.find({
+      where: { spa: { id: spaId } },
+      select: ['location'],
+      order: { location: 'ASC' },
+    });
+    // Get unique locations only
+    const uniqueLocations = Array.from(
+      new Set(branches.map((branch) => branch.location)),
+    );
+    return uniqueLocations.map((location) => ({ location }));
+  }
+
+  async findBranchByLocation(
+    spaId: string,
+    location: string,
+  ): Promise<Branch[]> {
+    return this.branchRepo.find({
+      where: {
+        spa: { id: spaId },
+        location: location === 'all' ? undefined : location,
+      },
+      relations: ['spa', 'operatingHours'],
+      order: { name: 'ASC' },
+    });
+  }
+
   async update(id: string, dto: UpdateBranchDto): Promise<Branch> {
     const branch = await this.findOne(id);
     Object.assign(branch, dto);

@@ -14,7 +14,7 @@ export class BranchOperatingHours {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Branch, (b) => b.operating_hours, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Branch, (b) => b.operatingHours, { onDelete: 'CASCADE' })
   branch: Branch;
   @Column('int', { name: 'day_of_week' })
   dayOfWeek: number;
