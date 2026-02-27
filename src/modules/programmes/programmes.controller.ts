@@ -26,12 +26,12 @@ import { PaginationParams } from 'src/shared/pagination.types';
 
 @Controller('programmes')
 @ApiTags('Programmes')
-@UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
 @ApiBearerAuth()
 export class ProgrammesController {
   constructor(private readonly programmesService: ProgrammesService) {}
 
   @Post()
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @ApiOperation({
     summary: 'Create a new programme with steps and translations',
     description:
@@ -129,6 +129,7 @@ export class ProgrammesController {
   }
 
   @Put(':id')
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @ApiOperation({
     summary: 'Update a programme',
     description:
@@ -147,6 +148,7 @@ export class ProgrammesController {
   }
 
   @Delete(':id')
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @ApiOperation({
     summary: 'Delete a programme (soft delete)',
     description: 'Soft delete a programme. Can be restored later.',

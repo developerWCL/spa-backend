@@ -25,8 +25,8 @@ import { PaginationParams } from 'src/shared/pagination.types';
 @ApiBearerAuth()
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Post()
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @ApiOperation({
     summary: 'Create a new service with translations and sub-services',
   })

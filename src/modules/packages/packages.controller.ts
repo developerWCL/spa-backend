@@ -25,13 +25,13 @@ import { PaginationParams } from 'src/shared/pagination.types';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 
 @Controller('packages')
-@UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
 @ApiBearerAuth()
 @ApiTags('📦 Packages')
 export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
   @Post()
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @ApiOperation({
     summary: 'Create a new package with sub-services',
     description:
@@ -116,6 +116,7 @@ export class PackagesController {
   }
 
   @Put(':id')
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @ApiOperation({
     summary: 'Update a package',
     description:
@@ -131,6 +132,7 @@ export class PackagesController {
   }
 
   @Delete(':id')
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @ApiOperation({
     summary: 'Delete a package',
     description: 'Permanently delete a package and its associations.',
@@ -145,6 +147,7 @@ export class PackagesController {
   }
 
   @Get(':id/active-services')
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @ApiOperation({
     summary: 'Get active sub-services for a package',
     description: 'Retrieve only the active sub-services included in a package.',
