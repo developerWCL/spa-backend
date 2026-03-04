@@ -10,6 +10,9 @@ import { Branch } from 'src/entities/branch.entity';
 import { ServiceCategory } from 'src/entities/service_categories.entity';
 import { Media } from 'src/entities/media.entity';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
+import { Booking } from 'src/entities/bookings.entity';
+import { Package } from 'src/entities/packages.entity';
+import { Programme } from 'src/entities/programmes.entity';
 
 @Module({
   imports: [
@@ -21,6 +24,9 @@ import { StaffAuthModule } from '../staff-auth/staff-auth.module';
       Branch,
       ServiceCategory,
       Media,
+      Booking,
+      Package,
+      Programme,
     ]),
     StaffAuthModule,
   ],

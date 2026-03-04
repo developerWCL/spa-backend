@@ -137,7 +137,8 @@ export class PackagesService {
       .leftJoinAndSelect('pkg.translations', 'translations')
       .leftJoinAndSelect('pkg.media', 'media')
       .leftJoinAndSelect('pkg.branch', 'branch')
-      .where('pkg.branchId = :branchId', { branchId });
+      .where('pkg.branchId = :branchId', { branchId })
+      .addOrderBy('media.createdAt', 'ASC');
 
     if (filters?.search) {
       query.andWhere('pkg.name ILIKE :search', {
@@ -163,7 +164,16 @@ export class PackagesService {
   async findOne(id: string) {
     const pkg = await this.packageRepo.findOne({
       where: { id },
-      relations: ['subServices', 'translations', 'media', 'branch'],
+      relations: [
+        'subServices',
+        'translations',
+        'media',
+        'branch',
+        'branch.operatingHours',
+      ],
+      order: {
+        media: { createdAt: 'ASC' },
+      },
     });
 
     if (!pkg) {

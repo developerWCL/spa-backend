@@ -218,3 +218,28 @@ export class UpdateServiceDto {
   @IsArray()
   subServices?: SubServiceDto[];
 }
+
+export class BookingCountEntryDto {
+  @ApiProperty({ description: 'Time slot (date or hour depending on groupBy)' })
+  timeSlot: string | Date;
+
+  @ApiProperty({ description: 'Number of bookings in this time slot' })
+  count: number;
+}
+
+export class BookingCountResponseDto {
+  @ApiProperty({ description: 'Service ID' })
+  serviceId: string;
+
+  @ApiProperty({ description: 'Grouping type' })
+  groupBy: 'day' | 'hour';
+
+  @ApiProperty({ description: 'Total count of bookings' })
+  total: number;
+
+  @ApiProperty({
+    type: [BookingCountEntryDto],
+    description: 'Booking counts by time slot',
+  })
+  data: BookingCountEntryDto[];
+}

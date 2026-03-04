@@ -6,19 +6,20 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToOne,
-  OneToMany,
   Index,
+  ManyToMany,
 } from 'typeorm';
 import { Spa } from './spa.entity';
 import { Booking } from './bookings.entity';
-import { Guest } from './guests.entity';
+import { EntityGuestGender } from './enums/entity-guest.enum';
+import { Customer } from './customers.entity';
 
-@Entity('customers')
-export class Customer {
+@Entity('guests')
+export class Guest {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Spa, (s) => s.customers, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Spa, (s) => s.guests, { onDelete: 'CASCADE' })
   spa: Spa;
 
   @Column({ name: 'first_name' })
@@ -31,17 +32,19 @@ export class Customer {
   @Column()
   email: string;
 
-  @Column()
-  password: string;
-
   @Column({ nullable: true })
   phone: string;
 
-  @Column({ name: 'is_verified', type: 'boolean', default: false })
-  isVerified: boolean;
+  @Column({ name: 'nationality', nullable: true })
+  nationality: string;
 
-  @Column({ name: 'loyalty_points', type: 'int', default: 0 })
-  loyaltyPoints: number;
+  @Column({
+    name: 'gender',
+    type: 'enum',
+    enum: EntityGuestGender,
+    default: EntityGuestGender.MALE,
+  })
+  gender: EntityGuestGender;
 
   @CreateDateColumn({ name: 'created_at', type: 'timestamp' })
   createdAt: Date;
@@ -52,9 +55,9 @@ export class Customer {
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
   deletedAt?: Date;
 
-  @OneToMany(() => Booking, (b) => b.customer)
+  @ManyToMany(() => Booking, (b) => b.guests)
   bookings: Booking[];
 
-  @OneToMany(() => Guest, (g) => g.customer)
-  guests: Guest[];
+  @ManyToOne(() => Customer, (c) => c.guests, { onDelete: 'SET NULL' })
+  customer: Customer | null;
 }

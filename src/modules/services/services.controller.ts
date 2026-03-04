@@ -136,4 +136,48 @@ export class ServicesController {
   removeSubService(@Param('subServiceId') subServiceId: string) {
     return this.servicesService.removeSubService(subServiceId);
   }
+
+  @Get(':id/bookings/count')
+  @ApiOperation({
+    summary: 'Get count of bookings for a service grouped by date or hour',
+  })
+  @ApiQuery({
+    name: 'serviceType',
+    required: true,
+    type: 'string',
+    description: 'Type of service',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: 'string',
+    description: 'Start date filter (ISO format)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: 'string',
+    description: 'End date filter (ISO format)',
+  })
+  @ApiQuery({
+    name: 'groupBy',
+    required: false,
+    enum: ['day', 'hour'],
+    description: 'Group bookings by day or hour (default: day)',
+  })
+  countBookingsByServiceAndTime(
+    @Param('id') serviceId: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+    @Query('groupBy') groupBy?: 'day' | 'hour',
+    @Query('serviceType') serviceType?: 'services' | 'packages' | 'programs',
+  ) {
+    return this.servicesService.countBookingsByServiceAndTime({
+      serviceId,
+      startDate: startDate ? new Date(startDate) : undefined,
+      endDate: endDate ? new Date(endDate) : undefined,
+      groupBy: groupBy || 'day',
+      serviceType: serviceType || 'services',
+    });
+  }
 }

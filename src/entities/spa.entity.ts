@@ -10,6 +10,7 @@ import {
 import { Branch } from './branch.entity';
 import { Customer } from './customers.entity';
 import { Otp } from './otp.entity';
+import { Guest } from './guests.entity';
 
 @Entity('spa')
 export class Spa {
@@ -63,6 +64,9 @@ export class Spa {
 
   @OneToMany(() => Customer, (c) => c.spa)
   customers: Customer[];
+
+  @OneToMany(() => Guest, (g) => g.spa)
+  guests: Guest[];
 
   @OneToMany(() => Otp, (o) => o.spa)
   otps: Otp[];

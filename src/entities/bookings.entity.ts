@@ -6,6 +6,8 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToOne,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Customer } from './customers.entity';
 import { Branch } from './branch.entity';
@@ -14,6 +16,7 @@ import { Programme } from './programmes.entity';
 import { Bed } from './beds.entity';
 import { Promotion } from './promotions.entity';
 import { SubService } from './sub_services.entity';
+import { Guest } from './guests.entity';
 
 @Entity('bookings')
 export class Booking {
@@ -40,8 +43,22 @@ export class Booking {
 
   @ManyToOne(() => Promotion, { onDelete: 'SET NULL', nullable: true })
   promotion: Promotion | null;
+
+  @ManyToMany(() => Guest, (g) => g.bookings, { nullable: true })
+  @JoinTable({ name: 'booking_guests' })
+  guests: Guest[];
+
   @Column({ type: 'timestamp', name: 'booking_time' })
   bookingTime: Date;
+
+  @Column({ type: 'timestamp', name: 'start_date_time', nullable: true })
+  startDateTime: Date;
+
+  @Column({ type: 'timestamp', name: 'end_date_time', nullable: true })
+  endDateTime: Date;
+
+  @Column({ type: 'numeric', nullable: true })
+  duration: string;
 
   @Column({ nullable: true })
   status: string;

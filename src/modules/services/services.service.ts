@@ -8,12 +8,15 @@ import { SubServiceTranslation } from 'src/entities/sub_service_translations.ent
 import { Branch } from 'src/entities/branch.entity';
 import { ServiceCategory } from 'src/entities/service_categories.entity';
 import { Media } from 'src/entities/media.entity';
+import { Booking } from 'src/entities/bookings.entity';
 import {
   paginate,
   getPaginationQueryTypeORM,
 } from 'src/shared/pagination.util';
 import { PaginationParams } from 'src/shared/pagination.types';
 import { CreateServiceDto, UpdateServiceDto } from './services.types';
+import { Package } from 'src/entities/packages.entity';
+import { Programme } from 'src/entities/programmes.entity';
 
 @Injectable()
 export class ServicesService {
@@ -32,6 +35,12 @@ export class ServicesService {
     private categoryRepo: Repository<ServiceCategory>,
     @InjectRepository(Media)
     private mediaRepo: Repository<Media>,
+    @InjectRepository(Booking)
+    private bookingRepo: Repository<Booking>,
+    @InjectRepository(Package)
+    private packageRepo: Repository<Package>,
+    @InjectRepository(Programme)
+    private programmeRepo: Repository<Programme>,
     private dataSource: DataSource,
   ) {}
 
@@ -145,7 +154,8 @@ export class ServicesService {
       .leftJoinAndSelect('subServices.translations', 'subServiceTranslations')
       .leftJoinAndSelect('service.translations', 'translations')
       .leftJoinAndSelect('service.media', 'media')
-      .orderBy('service.createdAt', 'DESC');
+      .orderBy('service.createdAt', 'DESC')
+      .addOrderBy('media.createdAt', 'ASC');
 
     // Apply search filter
     if (filters?.search) {
@@ -187,7 +197,15 @@ export class ServicesService {
         'subServices.translations',
         'translations',
         'media',
+        'branch',
+        'branch.operatingHours',
       ],
+      order: {
+        media: { createdAt: 'ASC' },
+        subServices: {
+          durationMinutes: 'ASC',
+        },
+      },
     });
 
     if (!service) {
@@ -400,7 +418,303 @@ export class ServicesService {
         isActive: true,
       },
       relations: ['translations'],
-      order: { displayOrder: 'ASC' },
+      order: { name: 'ASC' },
     });
+  }
+
+  async countBookingsByServiceAndTime(filters: {
+    serviceId: string;
+    serviceType: 'services' | 'packages' | 'programs';
+    startDate?: Date;
+    endDate?: Date;
+    groupBy?: 'day' | 'hour'; // 'day' or 'hour' grouping
+  }) {
+    const { serviceId, startDate, endDate, groupBy = 'day' } = filters;
+
+    // Verify service exists and get applicable service IDs and packages
+    let applicableServiceIds: string[] = [];
+    let applicablePackageIds: string[] = [];
+    let packageBookingData: any = null;
+
+    if (filters.serviceType === 'packages') {
+      const packageData = await this.packageRepo.findOne({
+        where: { id: serviceId },
+        relations: ['subServices'],
+      });
+      if (!packageData) {
+        throw new NotFoundException('Package not found');
+      }
+      // Get all subService IDs from the package
+      applicableServiceIds = packageData.subServices.map((sub) => sub.id);
+
+      // Get the package booking to find its actual time window
+      const packageBooking = await this.bookingRepo.findOne({
+        where: { package: { id: serviceId }, deletedAt: null },
+        order: { startDateTime: 'ASC', endDateTime: 'DESC' },
+      });
+      if (packageBooking) {
+        packageBookingData = {
+          startTime: packageBooking.startDateTime,
+          endTime: packageBooking.endDateTime,
+        };
+      }
+    } else if (filters.serviceType === 'programs') {
+      const programme = await this.programmeRepo.findOne({
+        where: { id: serviceId },
+      });
+      if (!programme) {
+        throw new NotFoundException('Programme not found');
+      }
+      // For programme, we search by the programme ID itself
+      applicableServiceIds = [];
+    } else {
+      const service = await this.serviceRepo.findOne({
+        where: { id: serviceId },
+        relations: ['subServices'],
+      });
+      if (!service) {
+        throw new NotFoundException('Service not found');
+      }
+      // For a single service, get all its sub-services
+      applicableServiceIds = service.subServices.map((sub) => sub.id);
+
+      // Also find all packages that include any of these sub-services
+      if (applicableServiceIds.length > 0) {
+        const packagesWithService = await this.packageRepo.find({
+          relations: ['subServices'],
+        });
+        applicablePackageIds = packagesWithService
+          .filter((pkg) =>
+            pkg.subServices?.some((sub) =>
+              applicableServiceIds.includes(sub.id),
+            ),
+          )
+          .map((pkg) => pkg.id);
+      }
+    }
+
+    let query = this.bookingRepo
+      .createQueryBuilder('booking')
+      .leftJoin('booking.subService', 'subService')
+      .leftJoin('booking.package', 'package')
+      .leftJoin('booking.programme', 'programme')
+      .leftJoinAndSelect('booking.guests', 'guests')
+      .where('booking.deletedAt IS NULL');
+
+    // Apply filters based on service type
+    if (filters.serviceType === 'packages') {
+      // For packages, count:
+      // 1. Direct package bookings (booking.package = packageId)
+      // 2. Bookings for all subservices in the package that overlap with package time
+      if (applicableServiceIds.length > 0) {
+        query = query.andWhere(
+          '(package.id = :serviceId OR subService.id IN (:...applicableServiceIds))',
+          { serviceId, applicableServiceIds },
+        );
+      } else {
+        // If package has no subservices, only check for direct package bookings
+        query = query.andWhere('package.id = :serviceId', { serviceId });
+      }
+    } else if (filters.serviceType === 'programs') {
+      // For programmes, search by programme ID
+      query = query.andWhere('programme.id = :serviceId', { serviceId });
+    } else {
+      // For single services, count:
+      // 1. Bookings for all sub-services within that service
+      // 2. Bookings of packages that include any of these sub-services
+      if (applicableServiceIds.length > 0) {
+        if (applicablePackageIds.length > 0) {
+          query = query.andWhere(
+            '(subService.id IN (:...applicableServiceIds) OR package.id IN (:...applicablePackageIds))',
+            { applicableServiceIds, applicablePackageIds },
+          );
+        } else {
+          query = query.andWhere(
+            'subService.id IN (:...applicableServiceIds)',
+            { applicableServiceIds },
+          );
+        }
+      } else {
+        // Service has no sub-services, return no results
+        query = query.andWhere('1=0');
+      }
+    }
+
+    // Apply date filters if provided
+    if (startDate) {
+      startDate.setHours(0, 0, 0, 0); // Start of the day
+      query = query.andWhere('booking.start_date_time >= :startDate', {
+        startDate,
+      });
+    }
+    if (endDate) {
+      endDate.setHours(23, 59, 59, 999); // End of the day
+      query = query.andWhere('booking.end_date_time <= :endDate', { endDate });
+    }
+
+    // For services type, get actual booking times to consolidate overlaps
+    if (filters.serviceType === 'services') {
+      query = query
+        .select('booking.start_date_time', 'startTimeSlot')
+        .addSelect('booking.end_date_time', 'endTimeSlot')
+        .addSelect('booking.id', 'bookingId')
+        .orderBy('booking.start_date_time', 'ASC')
+        .addOrderBy('booking.end_date_time', 'ASC');
+
+      const allBookings = await query.getRawMany();
+
+      // Consolidate overlapping bookings
+      const consolidatedSlots: Array<{
+        startTimeSlot: Date;
+        endTimeSlot: Date;
+        bookings: string[];
+      }> = [];
+
+      for (const booking of allBookings) {
+        const bookingStart = new Date(booking.startTimeSlot);
+        const bookingEnd = new Date(booking.endTimeSlot);
+
+        let merged = false;
+
+        // Check if this booking overlaps with any existing slot
+        for (const slot of consolidatedSlots) {
+          const slotStart = new Date(slot.startTimeSlot);
+          const slotEnd = new Date(slot.endTimeSlot);
+
+          // Check for overlap: booking starts before slot ends AND booking ends after slot starts
+          if (bookingStart < slotEnd && bookingEnd > slotStart) {
+            // Merge: expand the slot to include the new booking
+            slot.startTimeSlot = new Date(
+              Math.min(slotStart.getTime(), bookingStart.getTime()),
+            );
+            slot.endTimeSlot = new Date(
+              Math.max(slotEnd.getTime(), bookingEnd.getTime()),
+            );
+            slot.bookings.push(booking.bookingId);
+            merged = true;
+            break;
+          }
+        }
+
+        // If no overlap found, create a new slot
+        if (!merged) {
+          consolidatedSlots.push({
+            startTimeSlot: bookingStart,
+            endTimeSlot: bookingEnd,
+            bookings: [booking.bookingId],
+          });
+        }
+      }
+
+      // Further consolidate slots that now overlap after the initial merge
+      let hasChanges = true;
+      while (hasChanges) {
+        hasChanges = false;
+        for (let i = 0; i < consolidatedSlots.length; i++) {
+          for (let j = i + 1; j < consolidatedSlots.length; j++) {
+            const slot1 = consolidatedSlots[i];
+            const slot2 = consolidatedSlots[j];
+
+            const slot1Start = new Date(slot1.startTimeSlot);
+            const slot1End = new Date(slot1.endTimeSlot);
+            const slot2Start = new Date(slot2.startTimeSlot);
+            const slot2End = new Date(slot2.endTimeSlot);
+
+            // Check for overlap
+            if (slot1Start < slot2End && slot1End > slot2Start) {
+              // Merge slots
+              slot1.startTimeSlot = new Date(
+                Math.min(slot1Start.getTime(), slot2Start.getTime()),
+              );
+              slot1.endTimeSlot = new Date(
+                Math.max(slot1End.getTime(), slot2End.getTime()),
+              );
+              slot1.bookings = [...slot1.bookings, ...slot2.bookings];
+              consolidatedSlots.splice(j, 1);
+              hasChanges = true;
+              break;
+            }
+          }
+          if (hasChanges) break;
+        }
+      }
+
+      // Convert to response format
+      const results = consolidatedSlots.map((slot) => ({
+        startTimeSlot: slot.startTimeSlot,
+        endTimeSlot: slot.endTimeSlot,
+        count: slot.bookings.length,
+      }));
+
+      return {
+        serviceId,
+        groupBy,
+        total: allBookings.length,
+        data: results,
+      };
+    }
+
+    // Group by day or hour for other service types
+    if (groupBy === 'hour') {
+      query = query
+        .select("DATE_TRUNC('hour', booking.start_date_time)", 'startTimeSlot')
+        .addSelect("DATE_TRUNC('hour', booking.end_date_time)", 'endTimeSlot')
+        .addSelect('COUNT(DISTINCT booking.id)', 'count')
+        .groupBy("DATE_TRUNC('hour', booking.start_date_time)")
+        .addGroupBy("DATE_TRUNC('hour', booking.end_date_time)");
+    } else {
+      query = query
+        .select('DATE(booking.start_date_time)', 'startTimeSlot')
+        .addSelect('DATE(booking.end_date_time)', 'endTimeSlot')
+        .addSelect('COUNT(DISTINCT booking.id)', 'count')
+        .groupBy('DATE(booking.start_date_time)')
+        .addGroupBy('DATE(booking.end_date_time)');
+    }
+
+    query = query
+      .orderBy(
+        groupBy === 'hour'
+          ? "DATE_TRUNC('hour', booking.start_date_time)"
+          : 'DATE(booking.start_date_time)',
+        'ASC',
+      )
+      .addOrderBy(
+        groupBy === 'hour'
+          ? "DATE_TRUNC('hour', booking.end_date_time)"
+          : 'DATE(booking.end_date_time)',
+        'ASC',
+      );
+
+    let results = await query.getRawMany();
+
+    // For package type with hour grouping, consolidate results to use the actual time window
+    if (
+      filters.serviceType === 'packages' &&
+      groupBy === 'hour' &&
+      packageBookingData
+    ) {
+      const totalCount = results.reduce(
+        (sum, r) => sum + parseInt(r.count, 10),
+        0,
+      );
+      results = [
+        {
+          startTimeSlot: packageBookingData.startTime,
+          endTimeSlot: packageBookingData.endTime,
+          count: totalCount,
+        },
+      ];
+    }
+
+    return {
+      serviceId,
+      groupBy,
+      total: results.reduce((sum, r) => sum + parseInt(r.count, 10), 0),
+      data: results.map((r) => ({
+        startTimeSlot: r.startTimeSlot,
+        endTimeSlot: r.endTimeSlot,
+        count: parseInt(r.count, 10),
+      })),
+    };
   }
 }

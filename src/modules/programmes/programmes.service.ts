@@ -126,7 +126,8 @@ export class ProgrammesService {
       .leftJoinAndSelect('steps.translations', 'stepTranslations')
       .leftJoinAndSelect('programme.media', 'media')
       .where('programme.branchId = :branchId', { branchId })
-      .andWhere('programme.deletedAt IS NULL');
+      .andWhere('programme.deletedAt IS NULL')
+      .orderBy('media.createdAt', 'ASC');
 
     // Add search filter
     if (search && search.trim()) {
@@ -164,8 +165,11 @@ export class ProgrammesService {
       .leftJoinAndSelect('programme.steps', 'steps')
       .leftJoinAndSelect('steps.translations', 'stepTranslations')
       .leftJoinAndSelect('programme.media', 'media')
+      .leftJoinAndSelect('programme.branch', 'branch')
+      .leftJoinAndSelect('branch.operatingHours', 'operatingHours')
       .where('programme.id = :id', { id })
       .andWhere('programme.deletedAt IS NULL')
+      .orderBy('media.createdAt', 'ASC')
       .getOne();
 
     if (!programme) {
