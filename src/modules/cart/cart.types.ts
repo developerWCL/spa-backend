@@ -7,10 +7,12 @@ import {
   ValidateNested,
   IsArray,
   IsDateString,
+  IsEmail,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { CartStatus, CartItemType } from 'src/entities/enums/cart.enum';
+import { EntityGuestGender } from 'src/entities/enums/entity-guest.enum';
 
 export class CreateCartItemDto {
   @ApiProperty({
@@ -42,16 +44,68 @@ export class CreateCartItemDto {
 
   @ApiPropertyOptional({
     description: 'Scheduled date for booking',
-    format: 'date-time',
+    format: 'date',
   })
   @IsOptional()
   @IsDateString()
   scheduledDate?: Date;
 
+  @ApiPropertyOptional({
+    description: 'Scheduled time for booking',
+    format: 'time',
+  })
+  @IsOptional()
+  @IsString()
+  scheduledTime?: string;
+
   @ApiPropertyOptional({ description: 'Notes for this item' })
   @IsOptional()
   @IsString()
   notes?: string;
+}
+
+export class GuestDto {
+  @ApiPropertyOptional({
+    description: 'Guest ID (for updating existing guest)',
+  })
+  @IsOptional()
+  @IsUUID()
+  id?: string;
+
+  @ApiProperty({ description: 'Guest first name' })
+  @IsString()
+  firstName: string;
+
+  @ApiProperty({ description: 'Guest last name' })
+  @IsString()
+  lastName: string;
+
+  @ApiProperty({ description: 'Guest email' })
+  @IsEmail()
+  email: string;
+
+  @ApiPropertyOptional({ description: 'Guest phone number' })
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @ApiPropertyOptional({ description: 'Guest nationality' })
+  @IsOptional()
+  @IsString()
+  nationality?: string;
+
+  @ApiPropertyOptional({
+    description: 'Guest gender',
+    enum: EntityGuestGender,
+  })
+  @IsOptional()
+  @IsEnum(EntityGuestGender)
+  gender?: EntityGuestGender;
+
+  @ApiPropertyOptional({ description: 'Guest special request' })
+  @IsOptional()
+  @IsString()
+  specialRequests?: string;
 }
 
 export class UpdateCartItemDto {
@@ -60,18 +114,48 @@ export class UpdateCartItemDto {
   @IsNumber()
   quantity?: number;
 
+  @ApiPropertyOptional({ description: 'Sub-service ID' })
+  @IsOptional()
+  @IsUUID()
+  subServiceId?: string;
+
+  @ApiPropertyOptional({ description: 'Package ID' })
+  @IsOptional()
+  @IsUUID()
+  packageId?: string;
+
+  @ApiPropertyOptional({ description: 'Programme ID' })
+  @IsOptional()
+  @IsUUID()
+  programmeId?: string;
+
   @ApiPropertyOptional({
     description: 'Scheduled date for booking',
-    format: 'date-time',
+    format: 'date',
   })
   @IsOptional()
   @IsDateString()
   scheduledDate?: Date;
 
+  @ApiPropertyOptional({
+    description: 'Scheduled time for booking',
+    format: 'time',
+  })
+  @IsOptional()
+  @IsString()
+  scheduledTime?: string;
+
   @ApiPropertyOptional({ description: 'Notes for this item' })
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Guest information' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuestDto)
+  guests?: GuestDto[];
 }
 
 export class CreateCartDto {
@@ -133,14 +217,29 @@ export class AddToCartDto {
 
   @ApiPropertyOptional({
     description: 'Scheduled date for booking',
-    format: 'date-time',
+    format: 'date',
   })
   @IsOptional()
   @IsDateString()
   scheduledDate?: Date;
 
+  @ApiPropertyOptional({
+    description: 'Scheduled time for booking',
+    format: 'time',
+  })
+  @IsOptional()
+  @IsString()
+  scheduledTime?: string;
+
   @ApiPropertyOptional({ description: 'Notes for this item' })
   @IsOptional()
   @IsString()
   notes?: string;
+
+  @ApiPropertyOptional({ description: 'Guest information' })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => GuestDto)
+  guests?: GuestDto[];
 }

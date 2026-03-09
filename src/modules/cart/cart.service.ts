@@ -11,13 +11,16 @@ import { Customer } from 'src/entities/customers.entity';
 import { SubService } from 'src/entities/sub_services.entity';
 import { Package } from 'src/entities/packages.entity';
 import { Programme } from 'src/entities/programmes.entity';
+import { Guest } from 'src/entities/guests.entity';
 import {
   CreateCartDto,
   UpdateCartDto,
   AddToCartDto,
   UpdateCartItemDto,
+  GuestDto,
 } from './cart.types';
 import { CartStatus, CartItemType } from 'src/entities/enums/cart.enum';
+import { EntityGuestGender } from 'src/entities/enums/entity-guest.enum';
 
 @Injectable()
 export class CartService {
@@ -34,6 +37,8 @@ export class CartService {
     private packageRepo: Repository<Package>,
     @InjectRepository(Programme)
     private programmeRepo: Repository<Programme>,
+    @InjectRepository(Guest)
+    private guestRepo: Repository<Guest>,
   ) {}
 
   async createCart(customerId: string, dto: CreateCartDto): Promise<Cart> {
@@ -69,6 +74,7 @@ export class CartService {
       relations: [
         'customer',
         'items',
+        'items.guests',
         'items.subService',
         'items.subService.service',
         'items.subService.service.media',
@@ -127,6 +133,7 @@ export class CartService {
       relations: [
         'customer',
         'items',
+        'items.guests',
         'items.subService',
         'items.subService.service',
         'items.subService.service.media',
@@ -169,6 +176,7 @@ export class CartService {
   async addItem(cartId: string, dto: AddToCartDto): Promise<Cart> {
     const cart = await this.cartRepo.findOne({
       where: { id: cartId },
+      relations: ['customer', 'customer.spa'],
     });
 
     if (!cart) {
@@ -187,6 +195,7 @@ export class CartService {
     item.itemType = dto.itemType;
     item.quantity = dto.quantity || 1;
     item.scheduledDate = dto.scheduledDate;
+    item.scheduledTime = dto.scheduledTime;
     item.notes = dto.notes;
 
     switch (dto.itemType) {
@@ -251,7 +260,18 @@ export class CartService {
     item.price = price;
     item.subtotal = (parseFloat(price) * item.quantity).toString();
 
-    await this.cartItemRepo.save(item);
+    const savedItem = await this.cartItemRepo.save(item);
+
+    // Handle guest creation or update
+    if (dto.guests && dto.guests.length > 0) {
+      const guests = await Promise.all(
+        dto.guests.map((guestData) =>
+          this.createOrUpdateGuest(guestData, cart.customer),
+        ),
+      );
+      savedItem.guests = guests;
+      await this.cartItemRepo.save(savedItem);
+    }
 
     await this.updateCartTotals(cartId);
 
@@ -265,6 +285,7 @@ export class CartService {
   ): Promise<Cart> {
     const cartItem = await this.cartItemRepo.findOne({
       where: { id: itemId, cart: { id: cartId } },
+      relations: ['cart', 'cart.customer', 'cart.customer.spa'],
     });
 
     if (!cartItem) {
@@ -280,8 +301,51 @@ export class CartService {
       cartItem.quantity = dto.quantity;
     }
 
+    if (dto.subServiceId !== undefined) {
+      const subService = await this.subServiceRepo.findOne({
+        where: { id: dto.subServiceId },
+      });
+      if (!subService) {
+        throw new NotFoundException(
+          `SubService with ID ${dto.subServiceId} not found`,
+        );
+      }
+      cartItem.subService = subService;
+      cartItem.price = subService.price || '0';
+    }
+
+    if (dto.packageId !== undefined) {
+      const packageItem = await this.packageRepo.findOne({
+        where: { id: dto.packageId },
+      });
+      if (!packageItem) {
+        throw new NotFoundException(
+          `Package with ID ${dto.packageId} not found`,
+        );
+      }
+      cartItem.package = packageItem;
+      cartItem.price = packageItem.price || '0';
+    }
+
+    if (dto.programmeId !== undefined) {
+      const programme = await this.programmeRepo.findOne({
+        where: { id: dto.programmeId },
+      });
+      if (!programme) {
+        throw new NotFoundException(
+          `Programme with ID ${dto.programmeId} not found`,
+        );
+      }
+      cartItem.programme = programme;
+      cartItem.price = programme.price || '0';
+    }
+
     if (dto.scheduledDate !== undefined) {
       cartItem.scheduledDate = dto.scheduledDate;
+    }
+
+    if (dto.scheduledTime !== undefined) {
+      cartItem.scheduledTime = dto.scheduledTime;
     }
 
     if (dto.notes !== undefined) {
@@ -293,6 +357,16 @@ export class CartService {
     ).toString();
 
     await this.cartItemRepo.save(cartItem);
+    // Handle guest creation or update
+    if (dto.guests && dto.guests.length > 0) {
+      const guests = await Promise.all(
+        dto.guests.map((guestData) =>
+          this.createOrUpdateGuest(guestData, cartItem.cart.customer),
+        ),
+      );
+      cartItem.guests = guests;
+      await this.cartItemRepo.save(cartItem);
+    }
 
     await this.updateCartTotals(cartId);
 
@@ -381,6 +455,65 @@ export class CartService {
     await this.cartRepo.remove(cart);
 
     return { message: `Cart with ID ${cartId} has been deleted` };
+  }
+
+  private async createOrUpdateGuest(
+    guestData: GuestDto,
+    customer: Customer,
+  ): Promise<Guest> {
+    console.log('guestData', guestData);
+
+    // If guest ID is provided, update the existing guest
+    if (guestData.id) {
+      const guest = await this.guestRepo.findOne({
+        where: { id: guestData.id },
+      });
+
+      if (!guest) {
+        throw new NotFoundException(`Guest with ID ${guestData.id} not found`);
+      }
+
+      // Update guest fields
+      if (guestData.firstName !== undefined) {
+        guest.firstName = guestData.firstName;
+      }
+      if (guestData.lastName !== undefined) {
+        guest.lastName = guestData.lastName;
+      }
+      if (guestData.email !== undefined) {
+        guest.email = guestData.email;
+      }
+      if (guestData.phone !== undefined) {
+        guest.phone = guestData.phone;
+      }
+      if (guestData.nationality !== undefined) {
+        guest.nationality = guestData.nationality;
+      }
+      if (guestData.gender !== undefined) {
+        guest.gender = guestData.gender.toLowerCase() as EntityGuestGender;
+      }
+      if (guestData.specialRequests !== undefined) {
+        guest.specialRequest = guestData.specialRequests;
+      }
+
+      return await this.guestRepo.save(guest);
+    }
+
+    // Create new guest if ID is not provided
+    const guest = new Guest();
+    guest.firstName = guestData.firstName;
+    guest.lastName = guestData.lastName;
+    guest.email = guestData.email;
+    guest.phone = guestData.phone || undefined;
+    guest.nationality = guestData.nationality || undefined;
+    guest.gender = guestData.gender
+      ? (guestData.gender.toLowerCase() as EntityGuestGender)
+      : undefined;
+    guest.specialRequest = guestData.specialRequests || undefined;
+    guest.spa = customer.spa;
+    guest.customer = customer;
+
+    return await this.guestRepo.save(guest);
   }
 
   private async updateCartTotals(cartId: string): Promise<void> {

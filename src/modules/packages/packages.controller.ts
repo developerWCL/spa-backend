@@ -88,7 +88,7 @@ export class PackagesController {
     description: 'Items per page (default: 10)',
   })
   findAll(
-    @Query('branchId') branchId: string,
+    @Query('branchId') branchId?: string,
     @Query('search') search?: string,
     @Query('status') status?: EntityStatus,
     @Query() paginationParams?: PaginationParams,

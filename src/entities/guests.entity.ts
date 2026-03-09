@@ -13,6 +13,7 @@ import { Spa } from './spa.entity';
 import { Booking } from './bookings.entity';
 import { EntityGuestGender } from './enums/entity-guest.enum';
 import { Customer } from './customers.entity';
+import { CartItem } from './cart_items.entity';
 
 @Entity('guests')
 export class Guest {
@@ -27,6 +28,9 @@ export class Guest {
 
   @Column({ name: 'last_name' })
   lastName: string;
+
+  @Column({ name: 'special_request', nullable: true })
+  specialRequest: string;
 
   @Index({ unique: true })
   @Column()
@@ -57,6 +61,9 @@ export class Guest {
 
   @ManyToMany(() => Booking, (b) => b.guests)
   bookings: Booking[];
+
+  @ManyToMany(() => CartItem, (c) => c.guests)
+  cartItems: CartItem[];
 
   @ManyToOne(() => Customer, (c) => c.guests, { onDelete: 'SET NULL' })
   customer: Customer | null;

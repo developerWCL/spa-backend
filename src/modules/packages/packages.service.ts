@@ -123,7 +123,7 @@ export class PackagesService {
   }
 
   async findAll(
-    branchId: string,
+    branchId?: string,
     filters?: {
       search?: string;
       status?: EntityStatus;
@@ -136,9 +136,13 @@ export class PackagesService {
       .leftJoinAndSelect('subServices.service', 'service')
       .leftJoinAndSelect('pkg.translations', 'translations')
       .leftJoinAndSelect('pkg.media', 'media')
-      .leftJoinAndSelect('pkg.branch', 'branch')
-      .where('pkg.branchId = :branchId', { branchId })
-      .addOrderBy('media.createdAt', 'ASC');
+      .leftJoinAndSelect('pkg.branch', 'branch');
+
+    if (branchId && branchId !== 'undefined') {
+      query.where('pkg.branchId = :branchId', { branchId });
+    }
+
+    query.addOrderBy('media.createdAt', 'ASC');
 
     if (filters?.search) {
       query.andWhere('pkg.name ILIKE :search', {

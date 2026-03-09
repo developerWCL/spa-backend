@@ -5,12 +5,15 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   ManyToOne,
+  ManyToMany,
+  JoinTable,
 } from 'typeorm';
 import { Cart } from './cart.entity';
 import { SubService } from './sub_services.entity';
 import { Package } from './packages.entity';
 import { Programme } from './programmes.entity';
 import { CartItemType } from './enums/cart.enum';
+import { Guest } from './guests.entity';
 
 @Entity('cart_items')
 export class CartItem {
@@ -32,6 +35,10 @@ export class CartItem {
   @ManyToOne(() => Programme, { onDelete: 'SET NULL', nullable: true })
   programme: Programme | null;
 
+  @ManyToMany(() => Guest, (g) => g.cartItems)
+  @JoinTable({ name: 'cart_items_guests' })
+  guests: Guest[];
+
   @Column({
     type: 'enum',
     enum: CartItemType,
@@ -49,6 +56,9 @@ export class CartItem {
 
   @Column({ type: 'timestamp', nullable: true, name: 'scheduled_date' })
   scheduledDate: Date;
+
+  @Column({ type: 'time', nullable: true, name: 'scheduled_time' })
+  scheduledTime: string;
 
   @Column({ nullable: true, name: 'notes' })
   notes: string;

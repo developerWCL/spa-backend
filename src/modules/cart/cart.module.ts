@@ -8,6 +8,7 @@ import { Customer } from 'src/entities/customers.entity';
 import { SubService } from 'src/entities/sub_services.entity';
 import { Package } from 'src/entities/packages.entity';
 import { Programme } from 'src/entities/programmes.entity';
+import { Guest } from 'src/entities/guests.entity';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { Programme } from 'src/entities/programmes.entity';
       SubService,
       Package,
       Programme,
+      Guest,
     ]),
   ],
   controllers: [CartController],
