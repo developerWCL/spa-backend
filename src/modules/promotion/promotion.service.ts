@@ -32,38 +32,84 @@ export class PromotionService {
   }
 
   async findAll(
-    branchId: string,
-    currentUser: any,
-    page: number,
-    limit: number,
+    spaId?: string,
+    page?: number,
+    limit?: number,
     search?: string,
     status?: string,
+    branchId?: string,
   ): Promise<PaginatedResponse<Promotion>> {
-    if (!currentUser.branchIds.includes(branchId)) {
-      throw new ForbiddenException('Access denied to this branch');
-    }
+    // Sanitize string 'undefined' values to actual undefined
+    spaId = spaId === 'undefined' ? undefined : spaId;
+    search = search === 'undefined' ? undefined : search;
+    status = status === 'undefined' ? undefined : status;
+    branchId = branchId === 'undefined' ? undefined : branchId;
 
-    const where: FindOptionsWhere<Promotion> = {
-      branch: { id: branchId },
-    };
-    if (search) {
-      where.name = Raw((alias) => `LOWER(${alias}) LIKE :search`, {
-        search: `%${search.toLowerCase()}%`,
+    let where: FindOptionsWhere<Promotion> | FindOptionsWhere<Promotion>[];
+
+    if (branchId) {
+      const branch = await this.branchRepository.findOne({
+        where: { id: branchId },
+        relations: ['spa'],
       });
+      if (!branch) throw new NotFoundException('Branch not found');
     }
-    if (status) {
-      where.status = status as EntityStatus;
-    }
-    const skip = (page - 1) * limit;
 
-    const [promotions, total] = await this.promotionRepository.findAndCount({
+    if (search) {
+      const searchCondition = `%${search.toLowerCase()}%`;
+      where = [
+        {
+          branch: {
+            id: branchId,
+            spa: { id: spaId },
+          },
+          name: Raw((alias) => `LOWER(${alias}) LIKE :search`, {
+            search: searchCondition,
+          }),
+          status: status as EntityStatus,
+        },
+        {
+          branch: {
+            id: branchId,
+            spa: { id: spaId },
+          },
+          code: Raw((alias) => `LOWER(${alias}) LIKE :search`, {
+            search: searchCondition,
+          }),
+          status: status as EntityStatus,
+        },
+      ];
+    } else {
+      where = {
+        branch: {
+          id: branchId,
+          spa: { id: spaId },
+        },
+        status: status as EntityStatus,
+      };
+    }
+    if (page && limit && page > 0 && limit > 0) {
+      const skip = (page - 1) * limit;
+
+      const [promotions, total] = await this.promotionRepository.findAndCount({
+        where,
+        relations: ['branch', 'branch.spa'],
+        order: { createdAt: 'DESC' },
+        take: limit,
+        skip,
+      });
+      return paginate({ page, limit }, total, promotions);
+    }
+    const promotions = await this.promotionRepository.find({
       where,
-      relations: ['branch'],
+      relations: ['branch', 'branch.spa'],
       order: { createdAt: 'DESC' },
-      take: limit,
-      skip,
     });
-    return paginate({ page, limit }, total, promotions);
+    return paginate(
+      { page: 1, limit: promotions.length },
+      promotions.length,
+      promotions,
+    );
   }
 
   async findOne(id: string): Promise<Promotion> {
@@ -89,5 +135,65 @@ export class PromotionService {
   async remove(id: string): Promise<void> {
     const promotion = await this.findOne(id);
     await this.promotionRepository.softRemove(promotion);
+  }
+
+  async findAutoApply(spaId: string, branch?: string): Promise<Promotion[]> {
+    // Sanitize string 'undefined' values to actual undefined
+    spaId = spaId === 'undefined' ? undefined : spaId;
+    branch = branch === 'undefined' ? undefined : branch;
+
+    if (!spaId) {
+      return [];
+    }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    let where: FindOptionsWhere<Promotion> | FindOptionsWhere<Promotion>[];
+
+    if (branch) {
+      where = {
+        branch: {
+          id: branch,
+          spa: { id: spaId },
+        },
+        autoApply: true,
+        status: EntityStatus.ACTIVE,
+        startDate: branch
+          ? Raw((alias) => `${alias} IS NULL OR ${alias} <= :today`, {
+              today: today.toISOString().split('T')[0],
+            })
+          : undefined,
+        endDate: branch
+          ? Raw((alias) => `${alias} IS NULL OR ${alias} >= :today`, {
+              today: today.toISOString().split('T')[0],
+            })
+          : undefined,
+      };
+    } else {
+      where = {
+        autoApply: true,
+        status: EntityStatus.ACTIVE,
+        startDate: Raw((alias) => `${alias} IS NULL OR ${alias} <= :today`, {
+          today: today.toISOString().split('T')[0],
+        }),
+        endDate: Raw((alias) => `${alias} IS NULL OR ${alias} >= :today`, {
+          today: today.toISOString().split('T')[0],
+        }),
+      };
+    }
+
+    const promotions = await this.promotionRepository.find({
+      where,
+      relations: ['branch', 'branch.spa'],
+      order: { createdAt: 'DESC' },
+    });
+
+    // Filter by max used
+    const activePromotions = promotions.filter(
+      (p) => !p.maxUsed || p.used < p.maxUsed,
+    );
+
+    return activePromotions;
   }
 }

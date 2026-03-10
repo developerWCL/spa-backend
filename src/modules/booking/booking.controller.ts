@@ -10,14 +10,18 @@ import {
   Query,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
-import { CreateBookingDto, UpdateBookingDto } from './booking.dto';
+import {
+  CreateBookingDto,
+  UpdateBookingDto,
+  CreateBookingItemDto,
+  UpdateBookingItemDto,
+} from './booking.dto';
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { ApiBearerAuth } from '@nestjs/swagger/dist/decorators/api-bearer.decorator';
 import { ApiHeader, ApiOperation } from '@nestjs/swagger';
 
 @Controller('bookings')
-@UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
 @ApiBearerAuth()
 export class BookingController {
   constructor(private readonly bookingService: BookingService) {}
@@ -29,6 +33,7 @@ export class BookingController {
     return this.bookingService.create(data);
   }
 
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Get()
   @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
   findAll(
@@ -64,5 +69,34 @@ export class BookingController {
   @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
   remove(@Param('id') id: string) {
     return this.bookingService.remove(id);
+  }
+
+  // Booking items endpoints
+  @Post(':bookingId/items')
+  @ApiOperation({ summary: 'Add an item to a booking' })
+  @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
+  createBookingItem(
+    @Param('bookingId') bookingId: string,
+    @Body() itemData: CreateBookingItemDto,
+  ) {
+    return this.bookingService.createBookingItem(bookingId, itemData);
+  }
+
+  @Patch('items/:itemId')
+  @ApiOperation({ summary: 'Update a booking item' })
+  @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
+  updateBookingItem(
+    @Param('itemId') itemId: string,
+    @Body() itemData: UpdateBookingItemDto,
+  ) {
+    return this.bookingService.updateBookingItem(itemId, itemData);
+  }
+
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @Delete('items/:itemId')
+  @ApiOperation({ summary: 'Delete a booking item' })
+  @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
+  deleteBookingItem(@Param('itemId') itemId: string) {
+    return this.bookingService.deleteBookingItem(itemId);
   }
 }

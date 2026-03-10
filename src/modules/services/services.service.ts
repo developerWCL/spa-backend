@@ -448,15 +448,69 @@ export class ServicesService {
       applicableServiceIds = packageData.subServices.map((sub) => sub.id);
 
       // Get the package booking to find its actual time window
-      const packageBooking = await this.bookingRepo.findOne({
-        where: { package: { id: serviceId }, deletedAt: null },
-        order: { startDateTime: 'ASC', endDateTime: 'DESC' },
-      });
+      const packageBooking = await this.bookingRepo
+        .createQueryBuilder('booking')
+        .leftJoinAndSelect('booking.items', 'items')
+        .leftJoinAndSelect('items.package', 'package')
+        .where('package.id = :packageId', { packageId: serviceId })
+        .andWhere('booking.deletedAt IS NULL')
+        .orderBy('booking.startDateTime', 'ASC')
+        .addOrderBy('booking.endDateTime', 'DESC')
+        .getOne();
       if (packageBooking) {
-        packageBookingData = {
-          startTime: packageBooking.startDateTime,
-          endTime: packageBooking.endDateTime,
-        };
+        // Loop through all booking items to calculate time window
+        let earliestStart: Date | null = null;
+        let latestEnd: Date | null = null;
+
+        if (packageBooking.items && packageBooking.items.length > 0) {
+          for (const bookingItem of packageBooking.items) {
+            if (bookingItem.scheduledDate && bookingItem.scheduledTime) {
+              // Combine scheduledDate and scheduledTime to create start time
+              const startDateTime = new Date(bookingItem.scheduledDate);
+              const timeParts = bookingItem.scheduledTime.split(':');
+              if (timeParts.length >= 2) {
+                startDateTime.setHours(
+                  parseInt(timeParts[0], 10),
+                  parseInt(timeParts[1], 10),
+                  timeParts.length > 2 ? parseInt(timeParts[2], 10) : 0,
+                );
+              }
+
+              // Get duration from the numeric value
+              const durationMinutes =
+                typeof bookingItem.duration === 'string'
+                  ? parseInt(bookingItem.duration, 10)
+                  : bookingItem.duration || 0;
+
+              // Calculate endTime as startTime + duration
+              const endDateTime = new Date(
+                startDateTime.getTime() + durationMinutes * 60000,
+              );
+
+              // Update earliest start and latest end
+              if (
+                !earliestStart ||
+                startDateTime.getTime() < earliestStart.getTime()
+              ) {
+                earliestStart = startDateTime;
+              }
+              if (!latestEnd || endDateTime.getTime() > latestEnd.getTime()) {
+                latestEnd = endDateTime;
+              }
+            }
+          }
+        }
+
+        // Use calculated times if available, otherwise try to get from booking without items
+        if (earliestStart && latestEnd) {
+          packageBookingData = {
+            startTime: earliestStart,
+            endTime: latestEnd,
+          };
+        } else {
+          // No timing information available
+          packageBookingData = null;
+        }
       }
     } else if (filters.serviceType === 'programs') {
       const programme = await this.programmeRepo.findOne({
@@ -495,16 +549,17 @@ export class ServicesService {
 
     let query = this.bookingRepo
       .createQueryBuilder('booking')
-      .leftJoin('booking.subService', 'subService')
-      .leftJoin('booking.package', 'package')
-      .leftJoin('booking.programme', 'programme')
-      .leftJoinAndSelect('booking.guests', 'guests')
+      .leftJoin('booking.items', 'items')
+      .leftJoin('items.subService', 'subService')
+      .leftJoin('items.package', 'package')
+      .leftJoin('items.programme', 'programme')
+      .leftJoinAndSelect('items.guests', 'guests')
       .where('booking.deletedAt IS NULL');
 
     // Apply filters based on service type
     if (filters.serviceType === 'packages') {
       // For packages, count:
-      // 1. Direct package bookings (booking.package = packageId)
+      // 1. Direct package bookings (items.package = packageId)
       // 2. Bookings for all subservices in the package that overlap with package time
       if (applicableServiceIds.length > 0) {
         query = query.andWhere(

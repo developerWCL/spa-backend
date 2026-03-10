@@ -10,10 +10,10 @@ import {
   ManyToMany,
 } from 'typeorm';
 import { Spa } from './spa.entity';
-import { Booking } from './bookings.entity';
 import { EntityGuestGender } from './enums/entity-guest.enum';
 import { Customer } from './customers.entity';
 import { CartItem } from './cart_items.entity';
+import { BookingItem } from './booking_items.entity';
 
 @Entity('guests')
 export class Guest {
@@ -59,11 +59,11 @@ export class Guest {
   @DeleteDateColumn({ name: 'deleted_at', type: 'timestamp', nullable: true })
   deletedAt?: Date;
 
-  @ManyToMany(() => Booking, (b) => b.guests)
-  bookings: Booking[];
-
   @ManyToMany(() => CartItem, (c) => c.guests)
   cartItems: CartItem[];
+
+  @ManyToMany(() => BookingItem, (b) => b.guests)
+  bookingItems: BookingItem[];
 
   @ManyToOne(() => Customer, (c) => c.guests, { onDelete: 'SET NULL' })
   customer: Customer | null;

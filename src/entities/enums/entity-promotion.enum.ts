@@ -12,3 +12,8 @@ export enum PromotionActiveDay {
   FRIDAY = 'friday',
   SATURDAY = 'saturday',
 }
+
+export enum PromotionDayActivated {
+  BOOKING_DAY = 'booking_day',
+  SERVICE_DAY = 'service_day',
+}

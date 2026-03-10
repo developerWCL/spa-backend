@@ -10,6 +10,7 @@ import {
 import { Branch } from './branch.entity';
 import {
   PromotionActiveDay,
+  PromotionDayActivated,
   PromotionDiscountType,
 } from './enums/entity-promotion.enum';
 import { EntityStatus } from './enums/entity-status.enum';
@@ -59,6 +60,21 @@ export class Promotion {
     default: EntityStatus.ACTIVE,
   })
   status: EntityStatus;
+
+  @Column({
+    name: 'auto_apply',
+    type: 'boolean',
+    default: false,
+  })
+  autoApply: boolean;
+
+  @Column({
+    name: 'day_activated',
+    type: 'enum',
+    enum: PromotionDayActivated,
+    default: PromotionDayActivated.BOOKING_DAY,
+  })
+  dayActivated: PromotionDayActivated;
 
   @ManyToOne(() => Branch, (b) => b.promotions, { onDelete: 'CASCADE' })
   branch: Branch;

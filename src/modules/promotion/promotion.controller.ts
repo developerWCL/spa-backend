@@ -8,6 +8,7 @@ import {
   UseGuards,
   Query,
   Put,
+  Headers,
 } from '@nestjs/common';
 import { PromotionService } from './promotion.service';
 import { CreatePromotionDto, UpdatePromotionDto } from './promotion.dto';
@@ -19,10 +20,10 @@ import {
 } from 'src/decorator/current-user.decorator';
 
 @Controller('promotions')
-@UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
 export class PromotionController {
   constructor(private readonly promotionService: PromotionService) {}
 
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Post()
   create(@Body() dto: CreatePromotionDto) {
     return this.promotionService.create(dto);
@@ -30,8 +31,9 @@ export class PromotionController {
 
   @Get()
   findAll(
-    @Query('branchId') branchId: string,
-    @CurrentUser() currentUser?: CurrentUserPayload,
+    @Headers('spa-id') spaId?: string,
+    @Query('branchId')
+    branchId?: string,
 
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -39,13 +41,21 @@ export class PromotionController {
     @Query('status') status?: string,
   ) {
     return this.promotionService.findAll(
-      branchId,
-      currentUser,
+      spaId,
       page ? parseInt(page, 10) : 1,
       limit ? parseInt(limit, 10) : 10,
       search,
       status,
+      branchId,
     );
+  }
+
+  @Get('auto-apply/:spaId')
+  findAutoApply(
+    @Param('spaId') spaId: string,
+    @Query('branchId') branchId?: string,
+  ) {
+    return this.promotionService.findAutoApply(spaId, branchId);
   }
 
   @Get(':id')
@@ -53,11 +63,13 @@ export class PromotionController {
     return this.promotionService.findOne(id);
   }
 
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: UpdatePromotionDto) {
     return this.promotionService.update(id, dto);
   }
 
+  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.promotionService.remove(id);

@@ -9,6 +9,7 @@ import {
 } from 'class-validator';
 import {
   PromotionActiveDay,
+  PromotionDayActivated,
   PromotionDiscountType,
 } from '../../entities/enums/entity-promotion.enum';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
@@ -59,6 +60,13 @@ export class CreatePromotionDto {
   @IsOptional()
   @IsEnum(EntityStatus)
   status?: EntityStatus;
+
+  @IsOptional()
+  autoApply?: boolean;
+
+  @IsOptional()
+  @IsEnum(PromotionDayActivated)
+  dayActivated?: PromotionDayActivated;
 }
 
 export class UpdatePromotionDto {
@@ -110,4 +118,11 @@ export class UpdatePromotionDto {
   @IsOptional()
   @IsEnum(EntityStatus)
   status?: EntityStatus;
+
+  @IsOptional()
+  autoApply?: boolean;
+
+  @IsOptional()
+  @IsEnum(PromotionDayActivated)
+  dayActivated?: PromotionDayActivated;
 }
