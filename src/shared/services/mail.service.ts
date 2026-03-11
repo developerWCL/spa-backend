@@ -18,7 +18,7 @@ export class MailService {
     resetToken: string,
     staffName: string,
   ): Promise<void> {
-    const resetUrl = `${process.env.APP_URL}/reset-password?token=${resetToken}`;
+    const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
     try {
       await this.resend.emails.send({
