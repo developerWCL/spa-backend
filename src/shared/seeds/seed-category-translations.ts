@@ -3,7 +3,6 @@ import { ServiceCategory } from '../../entities/service_categories.entity';
 import { ServiceCategoryTranslation } from '../../entities/service_category_translations.entity';
 
 export async function seedServiceCategoryTranslations() {
-  await dataSource.initialize();
   const categoryRepo = dataSource.getRepository(ServiceCategory);
   const translationRepo = dataSource.getRepository(ServiceCategoryTranslation);
 

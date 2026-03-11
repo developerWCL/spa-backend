@@ -6,7 +6,6 @@ import { Branch } from '../../entities/branch.entity';
 import { hashPassword } from '../../shared/password.util';
 
 export async function seedStaff() {
-  await dataSource.initialize();
   const staffRepo = dataSource.getRepository(Staff);
   const roleRepo = dataSource.getRepository(Role);
   const permRepo = dataSource.getRepository(Permission);
@@ -179,6 +178,4 @@ export async function seedStaff() {
   } else {
     console.log(`Reception staff already exists: ${receptionEmail}`);
   }
-
-  await dataSource.destroy();
 }

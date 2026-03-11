@@ -3,7 +3,6 @@ import { ServiceCategory } from '../../entities/service_categories.entity';
 import { Branch } from '../../entities/branch.entity';
 
 export async function seedServiceCategories() {
-  await dataSource.initialize();
   const categoryRepo = dataSource.getRepository(ServiceCategory);
   const branchRepo = dataSource.getRepository(Branch);
 

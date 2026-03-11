@@ -3,7 +3,6 @@ import { Role } from '../../entities/role.entity';
 import { Permission } from '../../entities/permission.entity';
 
 export async function seedRoles() {
-  await dataSource.initialize();
   const roleRepo = dataSource.getRepository(Role);
   const permRepo = dataSource.getRepository(Permission);
 
@@ -103,6 +102,4 @@ export async function seedRoles() {
       console.log(`Updated role: ${roleConfig.name}`);
     }
   }
-
-  await dataSource.destroy();
 }

@@ -2,7 +2,6 @@ import { dataSource } from '../../config/typeorm';
 import { Language } from '../../entities/language.entity';
 
 export async function seedLanguages() {
-  await dataSource.initialize();
   const languageRepo = dataSource.getRepository(Language);
 
   const languages = [
