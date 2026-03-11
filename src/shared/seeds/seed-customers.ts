@@ -96,6 +96,4 @@ export async function seedCustomers() {
       console.log(`Customer '${customerData.email}' already exists`);
     }
   }
-
-  await dataSource.destroy();
 }

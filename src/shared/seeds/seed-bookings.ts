@@ -5,6 +5,7 @@ import { Customer } from '../../entities/customers.entity';
 import { Branch } from '../../entities/branch.entity';
 import { Service } from '../../entities/services.entity';
 import { Promotion } from '../../entities/promotions.entity';
+
 import {
   BookingStatus,
   PaymentStatus,
@@ -28,7 +29,6 @@ export async function seedBookings() {
     console.log(
       'Missing required data. Please run seed-customers, seed-branches, and seed-services first.',
     );
-    await dataSource.destroy();
     return;
   }
 
@@ -99,6 +99,7 @@ export async function seedBookings() {
           quantity: 1,
           price: service.basePrice,
           subtotal: service.basePrice,
+          duration: 60,
         });
         await bookingItemRepo.save(bookingItem);
       }
