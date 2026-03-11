@@ -20,8 +20,8 @@ import { seedGuests } from './seed-guests';
 import { seedCarts } from './seed-carts';
 import { seedCartItems } from './seed-cart-items';
 import { seedStaffDayoff } from './seed-staff-dayoff';
-import { seedBookings } from './seed-bookings';
-import { seedPayments } from './seed-payments';
+// import { seedBookings } from './seed-bookings';
+// import { seedPayments } from './seed-payments';
 import { dataSource } from '../../config/typeorm';
 
 async function run() {
@@ -33,7 +33,7 @@ async function run() {
     await dataSource.initialize();
     console.log('✅ Database connected\n');
 
-    // Base entities
+    // // Base entities
     console.log('=== Phase 1: Core Setup ===');
     console.log('Seeding Languages...');
     await seedLanguages();
@@ -108,11 +108,11 @@ async function run() {
     console.log('Seeding Cart Items...');
     await seedCartItems();
 
-    console.log('Seeding Bookings...');
-    await seedBookings();
+    // console.log('Seeding Bookings...');
+    // await seedBookings();
 
-    console.log('Seeding Payments...');
-    await seedPayments();
+    // console.log('Seeding Payments...');
+    // await seedPayments();
 
     console.log('\n✅ All seeds completed successfully!');
     console.log('🎉 Database is now populated with sample data.\n');
