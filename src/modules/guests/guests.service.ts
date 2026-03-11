@@ -88,6 +88,9 @@ export class GuestsService {
       query = query.leftJoinAndSelect('guest.customer', 'customer');
     }
 
+    // Load booking items for each guest
+    query = query.leftJoinAndSelect('guest.bookingItems', 'bookingItems');
+
     // Add search filter (case-insensitive) - search in first name, last name, email, or phone
     if (search) {
       const searchParam = `%${search.toLowerCase()}%`;
