@@ -454,8 +454,6 @@ export class ServicesService {
         .leftJoinAndSelect('items.package', 'package')
         .where('package.id = :packageId', { packageId: serviceId })
         .andWhere('booking.deletedAt IS NULL')
-        .orderBy('booking.startDateTime', 'ASC')
-        .addOrderBy('booking.endDateTime', 'DESC')
         .getOne();
       if (packageBooking) {
         // Loop through all booking items to calculate time window
@@ -598,23 +596,24 @@ export class ServicesService {
     // Apply date filters if provided
     if (startDate) {
       startDate.setHours(0, 0, 0, 0); // Start of the day
-      query = query.andWhere('booking.start_date_time >= :startDate', {
+      query = query.andWhere('items.scheduledDate >= :startDate', {
         startDate,
       });
     }
     if (endDate) {
       endDate.setHours(23, 59, 59, 999); // End of the day
-      query = query.andWhere('booking.end_date_time <= :endDate', { endDate });
+      query = query.andWhere('items.scheduledDate <= :endDate', { endDate });
     }
 
     // For services type, get actual booking times to consolidate overlaps
     if (filters.serviceType === 'services') {
       query = query
-        .select('booking.start_date_time', 'startTimeSlot')
-        .addSelect('booking.end_date_time', 'endTimeSlot')
+        .select('items.scheduledDate', 'scheduledDate')
+        .addSelect('items.scheduledTime', 'scheduledTime')
+        .addSelect('items.duration', 'duration')
         .addSelect('booking.id', 'bookingId')
-        .orderBy('booking.start_date_time', 'ASC')
-        .addOrderBy('booking.end_date_time', 'ASC');
+        .orderBy('items.scheduledDate', 'ASC')
+        .addOrderBy('items.scheduledTime', 'ASC');
 
       const allBookings = await query.getRawMany();
 
@@ -626,8 +625,25 @@ export class ServicesService {
       }> = [];
 
       for (const booking of allBookings) {
-        const bookingStart = new Date(booking.startTimeSlot);
-        const bookingEnd = new Date(booking.endTimeSlot);
+        // Calculate start time from scheduledDate and scheduledTime
+        const bookingStart = new Date(booking.scheduledDate);
+        const timeParts = booking.scheduledTime.split(':');
+        if (timeParts.length >= 2) {
+          bookingStart.setHours(
+            parseInt(timeParts[0], 10),
+            parseInt(timeParts[1], 10),
+            timeParts.length > 2 ? parseInt(timeParts[2], 10) : 0,
+          );
+        }
+
+        // Calculate end time as start + duration
+        const durationMinutes =
+          typeof booking.duration === 'string'
+            ? parseInt(booking.duration, 10)
+            : booking.duration || 0;
+        const bookingEnd = new Date(
+          bookingStart.getTime() + durationMinutes * 60000,
+        );
 
         let merged = false;
 
@@ -712,35 +728,46 @@ export class ServicesService {
     // Group by day or hour for other service types
     if (groupBy === 'hour') {
       query = query
-        .select("DATE_TRUNC('hour', booking.start_date_time)", 'startTimeSlot')
-        .addSelect("DATE_TRUNC('hour', booking.end_date_time)", 'endTimeSlot')
+        .select("DATE_TRUNC('hour', items.scheduledDate)", 'startTimeSlot')
+        .addSelect('items.duration', 'duration')
         .addSelect('COUNT(DISTINCT booking.id)', 'count')
-        .groupBy("DATE_TRUNC('hour', booking.start_date_time)")
-        .addGroupBy("DATE_TRUNC('hour', booking.end_date_time)");
+        .groupBy("DATE_TRUNC('hour', items.scheduledDate)")
+        .addGroupBy('items.duration');
     } else {
       query = query
-        .select('DATE(booking.start_date_time)', 'startTimeSlot')
-        .addSelect('DATE(booking.end_date_time)', 'endTimeSlot')
+        .select('DATE(items.scheduledDate)', 'startTimeSlot')
+        .addSelect('items.duration', 'duration')
         .addSelect('COUNT(DISTINCT booking.id)', 'count')
-        .groupBy('DATE(booking.start_date_time)')
-        .addGroupBy('DATE(booking.end_date_time)');
+        .groupBy('DATE(items.scheduledDate)')
+        .addGroupBy('items.duration');
     }
 
-    query = query
-      .orderBy(
-        groupBy === 'hour'
-          ? "DATE_TRUNC('hour', booking.start_date_time)"
-          : 'DATE(booking.start_date_time)',
-        'ASC',
-      )
-      .addOrderBy(
-        groupBy === 'hour'
-          ? "DATE_TRUNC('hour', booking.end_date_time)"
-          : 'DATE(booking.end_date_time)',
-        'ASC',
+    query = query.orderBy(
+      groupBy === 'hour'
+        ? "DATE_TRUNC('hour', items.scheduledDate)"
+        : 'DATE(items.scheduledDate)',
+      'ASC',
+    );
+
+    const results = await query.getRawMany();
+
+    // Transform results to include calculated end times based on duration
+    const transformedResults = results.map((r) => {
+      const startDateTime = new Date(r.startTimeSlot);
+      const durationMinutes =
+        typeof r.duration === 'string'
+          ? parseInt(r.duration, 10)
+          : r.duration || 0;
+      const endDateTime = new Date(
+        startDateTime.getTime() + durationMinutes * 60000,
       );
 
-    let results = await query.getRawMany();
+      return {
+        startTimeSlot: startDateTime,
+        endTimeSlot: endDateTime,
+        count: parseInt(r.count, 10),
+      };
+    });
 
     // For package type with hour grouping, consolidate results to use the actual time window
     if (
@@ -748,28 +775,23 @@ export class ServicesService {
       groupBy === 'hour' &&
       packageBookingData
     ) {
-      const totalCount = results.reduce(
-        (sum, r) => sum + parseInt(r.count, 10),
+      const totalCount = transformedResults.reduce(
+        (sum, r) => sum + r.count,
         0,
       );
-      results = [
-        {
-          startTimeSlot: packageBookingData.startTime,
-          endTimeSlot: packageBookingData.endTime,
-          count: totalCount,
-        },
-      ];
+      transformedResults.length = 0; // Clear array
+      transformedResults.push({
+        startTimeSlot: packageBookingData.startTime,
+        endTimeSlot: packageBookingData.endTime,
+        count: totalCount,
+      });
     }
 
     return {
       serviceId,
       groupBy,
-      total: results.reduce((sum, r) => sum + parseInt(r.count, 10), 0),
-      data: results.map((r) => ({
-        startTimeSlot: r.startTimeSlot,
-        endTimeSlot: r.endTimeSlot,
-        count: parseInt(r.count, 10),
-      })),
+      total: transformedResults.reduce((sum, r) => sum + r.count, 0),
+      data: transformedResults,
     };
   }
 }
