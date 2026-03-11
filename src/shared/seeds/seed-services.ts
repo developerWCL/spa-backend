@@ -1,6 +1,7 @@
 import { dataSource } from '../../config/typeorm';
 import { Service } from '../../entities/services.entity';
 import { ServiceCategory } from '../../entities/service_categories.entity';
+import { ServiceTranslation } from '../../entities/service_translations.entity';
 import { Branch } from '../../entities/branch.entity';
 import { EntityStatus } from '../../entities/enums/entity-status.enum';
 
@@ -8,6 +9,7 @@ export async function seedServices() {
   const serviceRepo = dataSource.getRepository(Service);
   const categoryRepo = dataSource.getRepository(ServiceCategory);
   const branchRepo = dataSource.getRepository(Branch);
+  const translationRepo = dataSource.getRepository(ServiceTranslation);
 
   const branch = await branchRepo.findOne({ where: {} });
 
@@ -144,7 +146,16 @@ export async function seedServices() {
         branch,
         status: EntityStatus.ACTIVE,
       });
-      await serviceRepo.save(service);
+      const savedService = await serviceRepo.save(service);
+
+      // Create translations separately
+      const translation = translationRepo.create({
+        service: savedService,
+        languageCode: 'en',
+        name: serviceData.name,
+        description: serviceData.description,
+      });
+      await translationRepo.save(translation);
       console.log(`Service '${serviceData.name}' seeded successfully`);
     } else {
       console.log(`Service '${serviceData.name}' already exists`);

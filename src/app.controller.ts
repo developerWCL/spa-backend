@@ -9,4 +9,9 @@ export class AppController {
   getHello(): string {
     return this.appService.getHello();
   }
+
+  @Get('country')
+  getCountry(): { code: string; title: string }[] {
+    return this.appService.getCountry();
+  }
 }

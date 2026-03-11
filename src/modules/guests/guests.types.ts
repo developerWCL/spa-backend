@@ -53,6 +53,14 @@ export class CreateGuestDto {
   @IsOptional()
   @IsUUID()
   customerId?: string;
+
+  @ApiProperty({
+    example: 'I have a special request for my massage session.',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  specialRequest?: string;
 }
 
 export class UpdateGuestDto {
@@ -94,4 +102,12 @@ export class UpdateGuestDto {
   @IsOptional()
   @IsUUID()
   customerId?: string;
+
+  @ApiProperty({
+    example: 'I have a special request for my massage session.',
+    required: false,
+  })
+  @IsOptional()
+  @IsString()
+  specialRequest?: string;
 }
