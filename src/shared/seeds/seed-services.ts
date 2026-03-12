@@ -57,13 +57,13 @@ export async function seedServices() {
       durationMinutes: 60,
       category: massageCategory,
     },
-    {
-      name: 'Hot Stone Massage',
-      description: 'Massage with heated stones',
-      basePrice: '1200',
-      durationMinutes: 60,
-      category: massageCategory,
-    },
+    // {
+    //   name: 'Hot Stone Massage',
+    //   description: 'Massage with heated stones',
+    //   basePrice: '1200',
+    //   durationMinutes: 60,
+    //   category: massageCategory,
+    // },
 
     // Facial Services
     {

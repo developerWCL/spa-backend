@@ -79,6 +79,83 @@ export async function seedSubServices() {
         },
       ],
     },
+    {
+      serviceName: 'Brightening Facial',
+      subServices: [
+        {
+          name: 'Radiance Brightening Facial',
+          description: 'Brightening and whitening treatment',
+          duration: 50,
+          price: '850',
+        },
+      ],
+    },
+    {
+      serviceName: 'Body Scrub',
+      subServices: [
+        {
+          name: 'Full Body Scrub',
+          description: 'Complete exfoliation treatment',
+          duration: 45,
+          price: '750',
+        },
+      ],
+    },
+    {
+      serviceName: 'Body Wrap',
+      subServices: [
+        {
+          name: 'Nourishing Body Wrap',
+          description: 'Hydrating and detoxifying wrap',
+          duration: 50,
+          price: '900',
+        },
+      ],
+    },
+    {
+      serviceName: 'Full Body Treatment',
+      subServices: [
+        {
+          name: 'Ultimate Full Body Treatment',
+          description: 'Comprehensive spa experience',
+          duration: 90,
+          price: '1500',
+        },
+      ],
+    },
+    {
+      serviceName: 'Thai Foot Massage',
+      subServices: [
+        {
+          name: 'Traditional Thai Foot Massage',
+          description: 'Ancient Thai technique for foot relaxation',
+          duration: 45,
+          price: '600',
+        },
+      ],
+    },
+    {
+      serviceName: 'Foot Reflexology',
+      subServices: [
+        {
+          name: 'Foot Reflexology',
+          description: 'Targeted pressure points for foot health',
+          duration: 45,
+          price: '650',
+        },
+      ],
+    },
+    {
+      serviceName: 'Pedicure Package',
+      subServices: [
+        {
+          name: 'Complete Pedicure Package',
+          description: 'Nail care and foot treatment',
+          duration: 50,
+          price: '650',
+        },
+      ],
+    },
   ];
 
   for (const config of subServiceConfigs) {
