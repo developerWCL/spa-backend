@@ -39,7 +39,7 @@ export async function seedGuests() {
     {
       firstName: 'Jennifer',
       lastName: 'Garcia',
-      email: 'jennifer.garcia@walkin.local',
+      email: 'jennifer.garcia@example.com',
       phone: '+66-90-123-4567',
       source: 'walk-in',
     },

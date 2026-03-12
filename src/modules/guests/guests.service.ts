@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Raw } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Guest } from 'src/entities/guests.entity';
 import { Customer } from 'src/entities/customers.entity';
 import { Spa } from 'src/entities/spa.entity';
@@ -52,6 +52,7 @@ export class GuestsService {
       gender: dto.gender || EntityGuestGender.MALE,
       spa: spa || undefined,
       customer: customer || null,
+      specialRequest: dto.specialRequest || null,
     });
 
     return this.guestRepo.save(guest);
@@ -64,41 +65,56 @@ export class GuestsService {
     search?: string,
     spaId?: string,
   ): Promise<PaginatedResponse<Guest> | Guest[]> {
-    const where: FindOptionsWhere<Guest> = {
-      spa: { id: spaId || '' },
-    };
+    let query = this.guestRepo.createQueryBuilder('guest');
+
+    // Filter by spa
+    if (spaId) {
+      query = query.innerJoinAndSelect('guest.spa', 'spa', 'spa.id = :spaId', {
+        spaId,
+      });
+    } else {
+      query = query.leftJoinAndSelect('guest.spa', 'spa');
+    }
 
     // Filter by customer ID if provided
     if (customerId) {
-      where.customer = { id: customerId };
+      query = query.innerJoinAndSelect(
+        'guest.customer',
+        'customer',
+        'customer.id = :customerId',
+        { customerId },
+      );
+    } else {
+      query = query.leftJoinAndSelect('guest.customer', 'customer');
     }
 
-    // Add search filter (case-insensitive) - search in first name, last name, or email
+    // Load booking items for each guest
+    query = query.leftJoinAndSelect('guest.bookingItems', 'bookingItems');
+
+    // Add search filter (case-insensitive) - search in first name, last name, email, or phone
     if (search) {
-      where.firstName = Raw((alias) => `LOWER(${alias}) LIKE :search`, {
-        search: `%${search.toLowerCase()}%`,
-      });
+      const searchParam = `%${search.toLowerCase()}%`;
+      query = query.where(
+        `LOWER(guest.firstName) LIKE :search 
+         OR LOWER(guest.lastName) LIKE :search 
+         OR LOWER(guest.email) LIKE :search 
+         OR LOWER(guest.phone) LIKE :search`,
+        { search: searchParam },
+      );
     }
+
+    query = query.orderBy('guest.createdAt', 'DESC');
 
     // If page and limit are not provided, return all guests
     if (!page || !limit) {
-      const guests = await this.guestRepo.find({
-        where,
-        relations: ['spa', 'customer'],
-        order: { createdAt: 'DESC' },
-      });
+      const guests = await query.getMany();
       return guests;
     }
 
     const skip = (page - 1) * limit;
+    query = query.take(limit).skip(skip);
 
-    const [guests, total] = await this.guestRepo.findAndCount({
-      where,
-      relations: ['spa', 'customer'],
-      order: { createdAt: 'DESC' },
-      take: limit,
-      skip,
-    });
+    const [guests, total] = await query.getManyAndCount();
 
     return paginate({ page, limit }, total, guests);
   }
@@ -140,6 +156,8 @@ export class GuestsService {
     if (dto.phone !== undefined) guest.phone = dto.phone;
     if (dto.nationality !== undefined) guest.nationality = dto.nationality;
     if (dto.gender) guest.gender = dto.gender;
+    if (dto.specialRequest !== undefined)
+      guest.specialRequest = dto.specialRequest;
 
     return this.guestRepo.save(guest);
   }

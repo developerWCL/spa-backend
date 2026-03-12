@@ -1,10 +1,12 @@
 import { dataSource } from '../../config/typeorm';
 import { ProgrammeStep } from '../../entities/programmes_step.entity';
 import { Programme } from '../../entities/programmes.entity';
+import { ProgrammeStepTranslation } from 'src/entities/programme_step_translation.entity';
 
 export async function seedProgrammeSteps() {
   const programmeStepRepo = dataSource.getRepository(ProgrammeStep);
   const programmeRepo = dataSource.getRepository(Programme);
+  const translationRepo = dataSource.getRepository(ProgrammeStepTranslation);
 
   const programmes = await programmeRepo.find();
 
@@ -80,6 +82,13 @@ export async function seedProgrammeSteps() {
           duration: stepData.duration,
         });
         await programmeStepRepo.save(step);
+        const translation = translationRepo.create({
+          title: stepData.title,
+          description: stepData.description,
+          languageCode: 'en',
+          programmeStep: step,
+        });
+        await translationRepo.save(translation);
         console.log(`Programme step '${stepData.title}' seeded successfully`);
       } else {
         console.log(`Programme step '${stepData.title}' already exists`);

@@ -31,7 +31,7 @@ export class SpaController {
 
   // Tenant-aware endpoint example: returns the subscription validated by JWT
   @Get('me')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   me(@Headers() headers: Record<string, string>) {
     console.log('Headers received:', headers);
 

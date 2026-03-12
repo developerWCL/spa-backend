@@ -2,10 +2,12 @@ import { dataSource } from '../../config/typeorm';
 import { Programme } from '../../entities/programmes.entity';
 import { Branch } from '../../entities/branch.entity';
 import { EntityStatus } from '../../entities/enums/entity-status.enum';
+import { ProgrammeTranslation } from 'src/entities/programme_translation.entity';
 
 export async function seedProgrammes() {
   const programmeRepo = dataSource.getRepository(Programme);
   const branchRepo = dataSource.getRepository(Branch);
+  const translationRepo = dataSource.getRepository(ProgrammeTranslation);
 
   const branch = await branchRepo.findOne({ where: {} });
 
@@ -61,6 +63,14 @@ export async function seedProgrammes() {
         branch,
       });
       await programmeRepo.save(programme);
+
+      const translation = translationRepo.create({
+        name: programmeData.name,
+        description: programmeData.description,
+        languageCode: 'en',
+        programme,
+      });
+      await translationRepo.save(translation);
       console.log(`Programme '${programmeData.name}' seeded successfully`);
     } else {
       console.log(`Programme '${programmeData.name}' already exists`);

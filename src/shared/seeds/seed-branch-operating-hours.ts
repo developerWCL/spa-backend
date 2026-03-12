@@ -6,9 +6,9 @@ export async function seedBranchOperatingHours() {
   const operatingHoursRepo = dataSource.getRepository(BranchOperatingHours);
   const branchRepo = dataSource.getRepository(Branch);
 
-  const branch = await branchRepo.findOne({ where: {} });
+  const branches = await branchRepo.find();
 
-  if (!branch) {
+  if (!branches.length) {
     console.log('No branch found. Please run seed-branches first.');
     return;
   }
@@ -25,35 +25,37 @@ export async function seedBranchOperatingHours() {
     { dayOfWeek: 0, openTime: '10:00', closeTime: '20:00' }, // Sunday
   ];
 
-  for (const hourConfig of operatingHoursConfig) {
-    const existingHours = await operatingHoursRepo.findOne({
-      where: {
-        branch: { id: branch.id },
-        dayOfWeek: hourConfig.dayOfWeek,
-      },
-    });
-
-    if (!existingHours) {
-      const hours = operatingHoursRepo.create({
-        branch,
-        dayOfWeek: hourConfig.dayOfWeek,
-        openTime: hourConfig.openTime,
-        closeTime: hourConfig.closeTime,
+  for (const branch of branches) {
+    for (const hourConfig of operatingHoursConfig) {
+      const existingHours = await operatingHoursRepo.findOne({
+        where: {
+          branch: { id: branch.id },
+          dayOfWeek: hourConfig.dayOfWeek,
+        },
       });
-      await operatingHoursRepo.save(hours);
 
-      const dayNames = [
-        'Sunday',
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-      ];
-      console.log(
-        `Operating hours for ${dayNames[hourConfig.dayOfWeek]} seeded successfully`,
-      );
+      if (!existingHours) {
+        const hours = operatingHoursRepo.create({
+          branch,
+          dayOfWeek: hourConfig.dayOfWeek,
+          openTime: hourConfig.openTime,
+          closeTime: hourConfig.closeTime,
+        });
+        await operatingHoursRepo.save(hours);
+
+        const dayNames = [
+          'Sunday',
+          'Monday',
+          'Tuesday',
+          'Wednesday',
+          'Thursday',
+          'Friday',
+          'Saturday',
+        ];
+        console.log(
+          `Operating hours for ${dayNames[hourConfig.dayOfWeek]} seeded successfully`,
+        );
+      }
     }
   }
 }

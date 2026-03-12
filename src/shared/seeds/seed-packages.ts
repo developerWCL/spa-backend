@@ -2,10 +2,12 @@ import { dataSource } from '../../config/typeorm';
 import { Package } from '../../entities/packages.entity';
 import { Branch } from '../../entities/branch.entity';
 import { EntityStatus } from '../../entities/enums/entity-status.enum';
+import { PackageTranslation } from 'src/entities/package_translation.entity';
 
 export async function seedPackages() {
   const packageRepo = dataSource.getRepository(Package);
   const branchRepo = dataSource.getRepository(Branch);
+  const translationRepo = dataSource.getRepository(PackageTranslation);
 
   const branch = await branchRepo.findOne({ where: {} });
 
@@ -75,6 +77,15 @@ export async function seedPackages() {
         branch,
       });
       await packageRepo.save(pkg);
+
+      const translation = translationRepo.create({
+        name: packageData.name,
+        description: packageData.description,
+        languageCode: 'en',
+        package: pkg,
+      });
+      await translationRepo.save(translation);
+
       console.log(`Package '${packageData.name}' seeded successfully`);
     } else {
       console.log(`Package '${packageData.name}' already exists`);
