@@ -26,7 +26,7 @@ import { PaginationParams } from 'src/shared/pagination.types';
 export class ServicesController {
   constructor(private readonly servicesService: ServicesService) {}
   @Post()
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @ApiOperation({
     summary: 'Create a new service with translations and sub-services',
   })
@@ -115,7 +115,7 @@ export class ServicesController {
   findOne(@Param('id') id: string) {
     return this.servicesService.findOne(id);
   }
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @Put(':id')
   @ApiOperation({
     summary: 'Update service with translations and sub-services',
@@ -123,14 +123,14 @@ export class ServicesController {
   update(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
     return this.servicesService.update(id, dto);
   }
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'Delete service' })
   remove(@Param('id') id: string) {
     return this.servicesService.remove(id);
   }
 
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @Delete('sub-services/:subServiceId')
   @ApiOperation({ summary: 'Delete sub-service' })
   removeSubService(@Param('subServiceId') subServiceId: string) {

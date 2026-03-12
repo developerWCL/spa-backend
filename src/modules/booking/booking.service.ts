@@ -4,6 +4,9 @@ import { Repository, Between } from 'typeorm';
 import { Booking } from '../../entities/bookings.entity';
 import { BookingItem } from '../../entities/booking_items.entity';
 import { Promotion } from '../../entities/promotions.entity';
+import { Guest } from '../../entities/guests.entity';
+import { EntityGuestGender } from '../../entities/enums/entity-guest.enum';
+import { GuestsService } from '../guests/guests.service';
 import {
   CreateBookingDto,
   UpdateBookingDto,
@@ -28,6 +31,9 @@ export class BookingService {
     private readonly bookingItemRepository: Repository<BookingItem>,
     @InjectRepository(Promotion)
     private readonly promotionRepository: Repository<Promotion>,
+    @InjectRepository(Guest)
+    private readonly guestRepository: Repository<Guest>,
+    private readonly guestsService: GuestsService,
   ) {}
 
   async create(data: CreateBookingDto): Promise<Booking> {
@@ -50,28 +56,30 @@ export class BookingService {
     date?: string,
     search?: string,
     status?: string,
+    lifeCycle?: 'all' | 'today' | 'upcoming' | 'past',
   ): Promise<PaginatedResponse<Booking>> {
     const where: any = { branch: { id: branchId } };
-
-    // filter by date if provided
-    if (date) {
-      const start = new Date(date);
-      start.setHours(0, 0, 0, 0);
-      const end = new Date(date);
-      end.setHours(23, 59, 59, 999);
-      where.bookingTime = Between(start, end);
-    } else {
-      // default to today
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-      const end = new Date(today);
-      end.setHours(23, 59, 59, 999);
-      where.bookingTime = Between(today, end);
-    }
 
     // Apply status filter if provided
     if (status && status !== 'all') {
       where.status = status;
+    }
+
+    // Apply lifeCycle filter if provided
+    if (lifeCycle && lifeCycle !== 'all') {
+      if (lifeCycle === 'today') {
+        const day = new Date();
+        day.setHours(0, 0, 0, 0);
+        const end = new Date(day);
+        end.setHours(23, 59, 59, 999);
+        where.items.scheduledDate = Between(day, end);
+      } else if (lifeCycle === 'upcoming') {
+        const now = new Date();
+        where.items.scheduledDate = Between(now, new Date('9999-12-31'));
+      } else if (lifeCycle === 'past') {
+        const now = new Date();
+        where.items.scheduledDate = Between(new Date('1970-01-01'), now);
+      }
     }
 
     const { skip, take } = getPaginationQueryTypeORM(params);
@@ -143,6 +151,81 @@ export class BookingService {
     });
     if (!booking) throw new NotFoundException('Booking not found');
 
+    // Handle guest creation/linking
+    const linkedGuests: Guest[] = [];
+
+    if (itemData.guestData && itemData.guestData.length > 0) {
+      // Create or find guests from guestData
+      for (const guestDataItem of itemData.guestData) {
+        if (guestDataItem?.id) {
+          // Guest already exists, just link it
+          const existingGuest = await this.guestRepository.findOne({
+            where: { id: guestDataItem.id },
+          });
+          if (existingGuest) {
+            linkedGuests.push(existingGuest);
+          }
+        } else if (
+          guestDataItem?.email &&
+          guestDataItem?.firstName &&
+          guestDataItem?.lastName
+        ) {
+          // Try to find or create guest by email
+          let guest = await this.guestRepository.findOne({
+            where: { email: guestDataItem.email },
+          });
+
+          if (!guest) {
+            // Determine gender enum value
+            let genderValue = EntityGuestGender.MALE;
+            if (guestDataItem.gender) {
+              const genderStr = String(guestDataItem.gender).toUpperCase();
+              if (genderStr === 'female' || genderStr === 'male') {
+                genderValue = genderStr as EntityGuestGender;
+              }
+            }
+
+            // Create new guest
+            guest = await this.guestsService.create({
+              firstName: guestDataItem.firstName || '',
+              lastName: guestDataItem.lastName || '',
+              email: guestDataItem.email || '',
+              phone: guestDataItem.phone || undefined,
+              nationality: guestDataItem.nationality || undefined,
+              gender: genderValue,
+              specialRequest: guestDataItem.specialRequest || undefined,
+              spaId: itemData.spaId,
+            });
+          }
+          linkedGuests.push(guest);
+        }
+      }
+    } else if (itemData.guests && itemData.guests.length > 0) {
+      // Handle guests as array of IDs or objects
+      for (const guestRef of itemData.guests) {
+        let guestId = '';
+
+        if (typeof guestRef === 'string') {
+          guestId = guestRef;
+        } else if (
+          guestRef &&
+          typeof guestRef === 'object' &&
+          'id' in guestRef
+        ) {
+          guestId = guestRef.id;
+        } else {
+          continue;
+        }
+
+        const guest = await this.guestRepository.findOne({
+          where: { id: guestId },
+        });
+        if (guest) {
+          linkedGuests.push(guest);
+        }
+      }
+    }
+
     const bookingItem = this.bookingItemRepository.create({
       booking,
       itemType: itemData.itemType,
@@ -157,7 +240,7 @@ export class BookingService {
       package: itemData.package,
       programme: itemData.programme,
       bed: itemData.bed,
-      guests: itemData.guests,
+      guests: linkedGuests.length > 0 ? linkedGuests : undefined,
     });
     return this.bookingItemRepository.save(bookingItem);
   }

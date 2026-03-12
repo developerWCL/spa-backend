@@ -7,6 +7,8 @@ import { ProgrammeTranslation } from 'src/entities/programme_translation.entity'
 import { ProgrammeStepTranslation } from 'src/entities/programme_step_translation.entity';
 import { Branch } from 'src/entities/branch.entity';
 import { Media } from 'src/entities/media.entity';
+import { validate as isValidUUID } from 'uuid';
+
 import {
   getPaginationQueryTypeORM,
   paginate,
@@ -235,7 +237,7 @@ export class ProgrammesService {
 
         // Create or update steps
         for (const stepDto of dto.steps) {
-          if (stepDto.id) {
+          if (stepDto.id && isValidUUID(stepDto.id)) {
             // Update existing step
             const step = await manager.findOne(ProgrammeStep, {
               where: { id: stepDto.id },
