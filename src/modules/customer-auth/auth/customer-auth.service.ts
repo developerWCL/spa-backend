@@ -53,6 +53,7 @@ export class AuthService {
           lastName,
           phone,
           spa: spa,
+          isVerified: true,
         },
         entityManager,
       );
