@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between } from 'typeorm';
+import { Repository, Between, Like } from 'typeorm';
 import { Booking } from '../../entities/bookings.entity';
 import { BookingItem } from '../../entities/booking_items.entity';
 import { Promotion } from '../../entities/promotions.entity';
@@ -53,58 +53,66 @@ export class BookingService {
   async findAll(
     branchId: string,
     params: PaginationParams = {},
-    date?: string,
     search?: string,
     status?: string,
     lifeCycle?: 'all' | 'today' | 'upcoming' | 'past',
   ): Promise<PaginatedResponse<Booking>> {
-    const where: any = { branch: { id: branchId } };
+    const { skip, take } = getPaginationQueryTypeORM(params);
 
-    // Apply status filter if provided
+    let query = this.bookingRepository
+      .createQueryBuilder('booking')
+      .leftJoinAndSelect('booking.customer', 'customer')
+      .leftJoinAndSelect('booking.branch', 'branch')
+      .leftJoinAndSelect('booking.promotion', 'promotion')
+      .leftJoinAndSelect('booking.items', 'items')
+      .leftJoinAndSelect('items.subService', 'subService')
+      .leftJoinAndSelect('subService.service', 'service')
+      .leftJoinAndSelect('items.package', 'package')
+      .leftJoinAndSelect('package.subServices', 'packageSubServices')
+      .leftJoinAndSelect('packageSubServices.service', 'packageService')
+      .leftJoinAndSelect('items.programme', 'programme')
+      .leftJoinAndSelect('programme.steps', 'steps')
+      .leftJoinAndSelect('items.bed', 'bed')
+      .leftJoinAndSelect('bed.room', 'room')
+      .leftJoinAndSelect('items.guests', 'guests')
+      .where('booking.branchId = :branchId', { branchId });
+
     if (status && status !== 'all') {
-      where.status = status;
+      query = query.andWhere('booking.status = :status', { status });
     }
 
-    // Apply lifeCycle filter if provided
+    if (search) {
+      query = query.andWhere(
+        '(LOWER(customer.firstName) LIKE LOWER(:search) OR LOWER(customer.lastName) LIKE LOWER(:search))',
+        { search: `%${search}%` },
+      );
+    }
+
     if (lifeCycle && lifeCycle !== 'all') {
       if (lifeCycle === 'today') {
         const day = new Date();
         day.setHours(0, 0, 0, 0);
         const end = new Date(day);
         end.setHours(23, 59, 59, 999);
-        where.items.scheduledDate = Between(day, end);
+        query = query.andWhere(
+          'items.scheduledDate BETWEEN :startDate AND :endDate',
+          {
+            startDate: day,
+            endDate: end,
+          },
+        );
       } else if (lifeCycle === 'upcoming') {
         const now = new Date();
-        where.items.scheduledDate = Between(now, new Date('9999-12-31'));
+        query = query.andWhere('items.scheduledDate >= :now', { now });
       } else if (lifeCycle === 'past') {
         const now = new Date();
-        where.items.scheduledDate = Between(new Date('1970-01-01'), now);
+        query = query.andWhere('items.scheduledDate <= :now', { now });
       }
     }
 
-    const { skip, take } = getPaginationQueryTypeORM(params);
-    const [data, total] = await this.bookingRepository.findAndCount({
-      where,
-      relations: [
-        'customer',
-        'branch',
-        'promotion',
-        'items',
-        'items.subService',
-        'items.subService.service',
-        'items.package',
-        'items.package.subServices',
-        'items.package.subServices.service',
-        'items.programme',
-        'items.programme.steps',
-        'items.bed',
-        'items.bed.room',
-        'items.guests',
-      ],
-      skip,
-      take,
-      order: { bookingTime: 'DESC' },
-    });
+    query = query.orderBy('booking.bookingTime', 'DESC').skip(skip).take(take);
+
+    const [data, total] = await query.getManyAndCount();
 
     return paginate(params, total, data);
   }

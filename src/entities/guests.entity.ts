@@ -32,7 +32,6 @@ export class Guest {
   @Column({ name: 'special_request', nullable: true })
   specialRequest: string;
 
-  @Index({ unique: true })
   @Column()
   email: string;
 
