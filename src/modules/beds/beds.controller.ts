@@ -20,7 +20,10 @@ import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 
 @Controller('beds')
-@UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+@UseGuards(
+  StaffJwtAuthGuard,
+  //ApiKeyGuard
+)
 @ApiBearerAuth()
 export class BedsController {
   constructor(private readonly bedsService: BedsService) {}

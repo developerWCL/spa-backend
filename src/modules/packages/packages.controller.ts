@@ -31,7 +31,7 @@ export class PackagesController {
   constructor(private readonly packagesService: PackagesService) {}
 
   @Post()
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @ApiOperation({
     summary: 'Create a new package with sub-services',
     description:
@@ -116,7 +116,7 @@ export class PackagesController {
   }
 
   @Put(':id')
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @ApiOperation({
     summary: 'Update a package',
     description:
@@ -132,7 +132,7 @@ export class PackagesController {
   }
 
   @Delete(':id')
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @ApiOperation({
     summary: 'Delete a package',
     description: 'Permanently delete a package and its associations.',
@@ -147,7 +147,7 @@ export class PackagesController {
   }
 
   @Get(':id/active-services')
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @ApiOperation({
     summary: 'Get active sub-services for a package',
     description: 'Retrieve only the active sub-services included in a package.',

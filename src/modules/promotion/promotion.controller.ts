@@ -23,7 +23,7 @@ import {
 export class PromotionController {
   constructor(private readonly promotionService: PromotionService) {}
 
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @Post()
   create(@Body() dto: CreatePromotionDto) {
     return this.promotionService.create(dto);
@@ -63,13 +63,13 @@ export class PromotionController {
     return this.promotionService.findOne(id);
   }
 
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @Put(':id')
   update(@Param('id') id: string, @Body() dto: UpdatePromotionDto) {
     return this.promotionService.update(id, dto);
   }
 
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.promotionService.remove(id);

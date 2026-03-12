@@ -33,23 +33,26 @@ export class BookingController {
     return this.bookingService.create(data);
   }
 
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(
+    StaffJwtAuthGuard,
+    //ApiKeyGuard
+  )
   @Get()
   @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
   findAll(
     @Query('branchId') branchId: string,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
-    @Query('date') date?: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
+    @Query('lifeCycle') lifeCycle?: 'all' | 'today' | 'upcoming' | 'past',
   ) {
     return this.bookingService.findAll(
       branchId,
       { page, limit },
-      date,
       search,
       status,
+      lifeCycle,
     );
   }
 

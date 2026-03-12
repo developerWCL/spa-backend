@@ -120,7 +120,7 @@ export class StaffsController {
   @ApiParam({ name: 'id', description: 'Staff ID' })
   @Put(':id')
   // @Permissions('manage:staffs')
-  @UseGuards(BranchGuard, ApiKeyGuard)
+  @UseGuards(BranchGuard)
   update(@Param('id') id: string, @Body() body: UpdateStaffDto) {
     return this.svc.update(id, body);
   }
@@ -129,7 +129,7 @@ export class StaffsController {
   @ApiParam({ name: 'id', description: 'Staff ID' })
   @Delete(':id')
   // @Permissions('manage:staffs')
-  @UseGuards(BranchGuard, ApiKeyGuard)
+  @UseGuards(BranchGuard)
   @HttpCode(204)
   remove(@Param('id') id: string) {
     return this.svc.remove(id);

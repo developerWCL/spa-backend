@@ -22,7 +22,7 @@ export class MediasController {
   constructor(private readonly mediasService: MediasService) {}
 
   @Post('upload-urls')
-  @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
+  @UseGuards(StaffJwtAuthGuard)
   @ApiBearerAuth()
   @ApiHeader({
     name: 'spa-id',
