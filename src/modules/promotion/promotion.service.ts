@@ -22,7 +22,10 @@ export class PromotionService {
   ) {}
 
   async create(dto: CreatePromotionDto): Promise<Promotion> {
-    const promotion = this.promotionRepository.create(dto);
+    const promotion = this.promotionRepository.create({
+      ...dto,
+      autoApply: true,
+    });
     if (dto.branchId) {
       promotion.branch = await this.branchRepository.findOne({
         where: { id: dto.branchId },
