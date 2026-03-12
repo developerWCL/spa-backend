@@ -132,6 +132,14 @@ export class StaffsService {
       }
     }
 
+    // find branch and staff email must be unique
+    const existingStaff = await this.staffRepo.findOne({
+      where: { email: dto.email, branches: { id: In(uniqueBranchIds) } },
+    });
+    if (existingStaff) {
+      throw new ForbiddenException('Email already in use');
+    }
+
     const staff = new Staff();
     staff.firstName = dto.firstName;
     staff.lastName = dto.lastName;
@@ -142,6 +150,7 @@ export class StaffsService {
     if (dto.password) {
       staff.passwordHash = await hashPassword(dto.password);
     }
+    console.log('dto', dto);
 
     if (dto.roleIds && dto.roleIds.length) {
       const roles = await this.roleRepo.findBy({ id: In(dto.roleIds) } as any);
@@ -152,6 +161,8 @@ export class StaffsService {
   }
 
   async update(id: string, dto: UpdateStaffDto) {
+    console.log('dto', dto);
+
     const staff = await this.staffRepo.findOne({
       where: { id },
       relations: ['roles'],
@@ -168,6 +179,14 @@ export class StaffsService {
         ? await this.roleRepo.findBy({ id: In(dto.roleIds) } as any)
         : [];
       staff.roles = roles;
+    }
+
+    // find branch and staff email must be unique
+    const existingStaff = await this.staffRepo.findOne({
+      where: { email: dto.email },
+    });
+    if (existingStaff && existingStaff.id !== id) {
+      throw new ForbiddenException('Email already in use');
     }
 
     return this.staffRepo.save(staff);
