@@ -58,7 +58,7 @@ export class AdminCustomerController {
   })
   @Get()
   @Permissions('manage:customers')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   list(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Query() paginationParams: PaginationParams,
@@ -73,7 +73,7 @@ export class AdminCustomerController {
   @ApiParam({ name: 'id', description: 'Customer ID' })
   @Get(':id')
   @Permissions('manage:customers')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   get(@Param('id') id: string): Promise<any> {
     return this.customerService.getById(id);
   }
@@ -81,7 +81,7 @@ export class AdminCustomerController {
   @ApiOperation({ summary: 'Create a new customer' })
   @Post()
   @Permissions('manage:customers')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   create(
     @Body() body: CreateCustomerDto,
     @CurrentUser() currentUser: CurrentUserPayload,
@@ -93,7 +93,7 @@ export class AdminCustomerController {
   @ApiParam({ name: 'id', description: 'Customer ID' })
   @Put(':id')
   @Permissions('manage:customers')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   update(
     @Param('id') id: string,
     @Body() body: UpdateCustomerDto,
@@ -105,7 +105,7 @@ export class AdminCustomerController {
   @ApiParam({ name: 'id', description: 'Customer ID' })
   @Delete(':id')
   @Permissions('manage:customers')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   @HttpCode(204)
   remove(@Param('id') id: string): Promise<any> {
     return this.customerService.delete(id);

@@ -35,7 +35,7 @@ import { PaginationParams } from '../../../shared/pagination.types';
 @ApiTags('Staff Management')
 @ApiBearerAuth()
 @Controller('admin/staffs')
-@UseGuards(StaffJwtAuthGuard, PermissionsGuard)
+@UseGuards(StaffJwtAuthGuard)
 export class StaffsController {
   constructor(private readonly svc: StaffsService) {}
 
@@ -66,7 +66,7 @@ export class StaffsController {
   })
   @Get()
   // @Permissions('manage:staffs')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   list(
     @CurrentUser() currentUser: CurrentUserPayload,
     @Query() paginationParams: PaginationParams,
@@ -108,7 +108,7 @@ export class StaffsController {
   @ApiOperation({ summary: 'Create a new staff' })
   @Post()
   // @Permissions('manage:staffs')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   create(
     @Body() body: CreateStaffDto,
     @CurrentUser() currentUser: CurrentUserPayload,

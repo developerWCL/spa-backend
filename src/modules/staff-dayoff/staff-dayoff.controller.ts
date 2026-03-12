@@ -35,7 +35,7 @@ export class StaffDayoffController {
 
   @Post()
   // @Permissions('manage:staff_dayoff')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   @ApiOperation({ summary: 'Create a new staff dayoff' })
   @ApiHeader({ name: 'branchId', description: 'Branch ID' })
   create(@Body() dto: CreateStaffDayoffDto) {
@@ -44,7 +44,7 @@ export class StaffDayoffController {
 
   @Get()
   // @Permissions('view:staff_dayoff')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   @ApiOperation({ summary: 'Get all staff dayoffs' })
   @ApiHeader({
     name: 'branchId',
@@ -87,7 +87,7 @@ export class StaffDayoffController {
 
   @Get('staff/:staffId')
   // @Permissions('view:staff_dayoff')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   @ApiOperation({ summary: 'Get all dayoffs for a specific staff' })
   @ApiHeader({
     name: 'branchId',
@@ -102,7 +102,7 @@ export class StaffDayoffController {
 
   @Get(':id')
   // @Permissions('view:staff_dayoff')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   @ApiOperation({ summary: 'Get staff dayoff by id' })
   @ApiHeader({
     name: 'branchId',
@@ -114,7 +114,7 @@ export class StaffDayoffController {
 
   @Put(':id')
   // @Permissions('manage:staff_dayoff')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   @ApiOperation({ summary: 'Update a staff dayoff' })
   @ApiHeader({ name: 'branchId', description: 'Branch ID' })
   update(
@@ -127,7 +127,7 @@ export class StaffDayoffController {
 
   @Delete(':id')
   // @Permissions('manage:staff_dayoff')
-  @UseGuards(ApiKeyGuard)
+  //@UseGuards(ApiKeyGuard)
   @ApiOperation({ summary: 'Delete a staff dayoff' })
   @ApiHeader({ name: 'branchId', description: 'Branch ID' })
   remove(@Param('id') id: string, @Headers('branchId') branchId?: string) {
