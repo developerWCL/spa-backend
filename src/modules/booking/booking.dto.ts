@@ -38,10 +38,14 @@ export class CreateGuestForBookingDto {
   specialRequest?: string;
 }
 
-export class CreateBookingItemDto implements Partial<BookingItem> {
+export class CreateBookingItemDto {
+  // Accept either full entities or IDs for relations
   subService?: any;
+  subServiceId?: string; // ID for SubService
   package?: any;
+  packageId?: string; // ID for Package
   programme?: any;
+  programmeId?: string; // ID for Programme
   bed?: any;
   guests?: any[]; // Guest IDs or CreateGuestForBookingDto objects
   guestData?: CreateGuestForBookingDto[]; // Guest data for creation
@@ -51,7 +55,7 @@ export class CreateBookingItemDto implements Partial<BookingItem> {
   quantity?: number;
   price?: string;
   subtotal?: string;
-  scheduledDate?: Date;
+  scheduledDate?: Date | string;
   scheduledTime?: string;
   notes?: string;
   duration?: number;

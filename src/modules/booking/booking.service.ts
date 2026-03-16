@@ -1,10 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Between, Like } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Booking } from '../../entities/bookings.entity';
 import { BookingItem } from '../../entities/booking_items.entity';
 import { Promotion } from '../../entities/promotions.entity';
 import { Guest } from '../../entities/guests.entity';
+import { SubService } from '../../entities/sub_services.entity';
+import { Package } from '../../entities/packages.entity';
+import { Programme } from '../../entities/programmes.entity';
 import { EntityGuestGender } from '../../entities/enums/entity-guest.enum';
 import { GuestsService } from '../guests/guests.service';
 import {
@@ -33,11 +36,57 @@ export class BookingService {
     private readonly promotionRepository: Repository<Promotion>,
     @InjectRepository(Guest)
     private readonly guestRepository: Repository<Guest>,
+    @InjectRepository(SubService)
+    private readonly subServiceRepository: Repository<SubService>,
+    @InjectRepository(Package)
+    private readonly packageRepository: Repository<Package>,
+    @InjectRepository(Programme)
+    private readonly programmeRepository: Repository<Programme>,
     private readonly guestsService: GuestsService,
   ) {}
 
   async create(data: CreateBookingDto): Promise<Booking> {
-    const booking = this.bookingRepository.create(data);
+    // Generate a unique booking ID: Branch code + running number
+    let branchCode = 'BKG'; // Default fallback
+
+    // If branch is provided, generate code from branch
+    if (data.branch) {
+      const branch =
+        typeof data.branch === 'string'
+          ? await this.bookingRepository.query(
+              `SELECT id, name FROM branch WHERE id = $1`,
+              [data.branch],
+            )
+          : data.branch;
+
+      if (branch && (branch.name || branch[0]?.name)) {
+        const branchName = branch.name || branch[0]?.name;
+        // Generate code from branch name (e.g., "Siam Branch" -> "SB")
+        branchCode =
+          branchName
+            .split(' ')
+            .map((word) => word.charAt(0).toUpperCase())
+            .join('')
+            .substring(0, 3) || 'BKG';
+      }
+    }
+
+    // Get the next running number for this branch
+    const bookingCount = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .where('booking.branchId = :branchId', {
+        branchId:
+          typeof data.branch === 'string' ? data.branch : data.branch?.id,
+      })
+      .getCount();
+
+    const runningNumber = String(bookingCount + 1).padStart(5, '0');
+    const bookingId = `${branchCode}-${runningNumber}`;
+
+    const booking = this.bookingRepository.create({
+      ...data,
+      bookingId,
+    });
     const savedBooking = await this.bookingRepository.save(booking);
 
     // Increment promotion usage counter if a promotion is applied
@@ -159,6 +208,35 @@ export class BookingService {
     });
     if (!booking) throw new NotFoundException('Booking not found');
 
+    // Fetch related entities by ID if IDs are provided
+    let subService: SubService | undefined;
+    let packageEntity: Package | undefined;
+    let programme: Programme | undefined;
+
+    if (itemData.subServiceId) {
+      subService = await this.subServiceRepository.findOne({
+        where: { id: itemData.subServiceId },
+      });
+    } else if (itemData.subService) {
+      subService = itemData.subService;
+    }
+
+    if (itemData.packageId) {
+      packageEntity = await this.packageRepository.findOne({
+        where: { id: itemData.packageId },
+      });
+    } else if (itemData.package) {
+      packageEntity = itemData.package;
+    }
+
+    if (itemData.programmeId) {
+      programme = await this.programmeRepository.findOne({
+        where: { id: itemData.programmeId },
+      });
+    } else if (itemData.programme) {
+      programme = itemData.programme;
+    }
+
     // Handle guest creation/linking
     const linkedGuests: Guest[] = [];
 
@@ -188,7 +266,7 @@ export class BookingService {
             let genderValue = EntityGuestGender.MALE;
             if (guestDataItem.gender) {
               const genderStr = String(guestDataItem.gender).toUpperCase();
-              if (genderStr === 'female' || genderStr === 'male') {
+              if (genderStr === 'FEMALE' || genderStr === 'MALE') {
                 genderValue = genderStr as EntityGuestGender;
               }
             }
@@ -203,6 +281,15 @@ export class BookingService {
               gender: genderValue,
               specialRequest: guestDataItem.specialRequest || undefined,
               spaId: itemData.spaId,
+            });
+          } else {
+            // update guest info
+            await this.guestsService.update(guest.id, {
+              firstName: guestDataItem.firstName || guest.firstName,
+              lastName: guestDataItem.lastName || guest.lastName,
+              phone: guestDataItem.phone || guest.phone,
+              specialRequest:
+                guestDataItem.specialRequest || guest.specialRequest,
             });
           }
           linkedGuests.push(guest);
@@ -234,19 +321,31 @@ export class BookingService {
       }
     }
 
+    // Handle scheduledDate - convert string to Date if needed
+    let scheduledDate: Date | undefined;
+    if (itemData.scheduledDate) {
+      if (typeof itemData.scheduledDate === 'string') {
+        scheduledDate = new Date(itemData.scheduledDate);
+      } else {
+        scheduledDate = itemData.scheduledDate;
+      }
+    }
+    console.log('scheduledDate', scheduledDate);
+    console.log('itemData', itemData.scheduledDate, itemData.scheduledTime);
+
     const bookingItem = this.bookingItemRepository.create({
       booking,
       itemType: itemData.itemType,
       quantity: itemData.quantity ?? 1,
       price: itemData.price,
       subtotal: itemData.subtotal,
-      scheduledDate: itemData.scheduledDate,
+      scheduledDate,
       scheduledTime: itemData.scheduledTime,
       notes: itemData.notes,
       duration: itemData.duration ?? 0,
-      subService: itemData.subService,
-      package: itemData.package,
-      programme: itemData.programme,
+      subService,
+      package: packageEntity,
+      programme,
       bed: itemData.bed,
       guests: linkedGuests.length > 0 ? linkedGuests : undefined,
     });

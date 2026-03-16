@@ -23,6 +23,9 @@ export class Booking {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column({ name: 'booking_id', unique: true })
+  bookingId: string;
+
   @ManyToOne(() => Customer, (c) => c.bookings, { onDelete: 'SET NULL' })
   customer: Customer;
 
