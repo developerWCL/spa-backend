@@ -9,6 +9,8 @@ import { Guest } from 'src/entities/guests.entity';
 import { SubService } from 'src/entities/sub_services.entity';
 import { Package } from 'src/entities/packages.entity';
 import { Programme } from 'src/entities/programmes.entity';
+import { Room } from 'src/entities/rooms.entity';
+import { Staff } from 'src/entities/staffs.entity';
 import { GuestsModule } from '../guests/guests.module';
 import { SubscriptionClientService } from 'src/shared/subscription-client.service';
 
@@ -22,6 +24,8 @@ import { SubscriptionClientService } from 'src/shared/subscription-client.servic
       SubService,
       Package,
       Programme,
+      Room,
+      Staff,
     ]),
     GuestsModule,
     TypeOrmModule,

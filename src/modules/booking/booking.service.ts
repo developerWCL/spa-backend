@@ -8,6 +8,8 @@ import { Guest } from '../../entities/guests.entity';
 import { SubService } from '../../entities/sub_services.entity';
 import { Package } from '../../entities/packages.entity';
 import { Programme } from '../../entities/programmes.entity';
+import { Room } from '../../entities/rooms.entity';
+import { Staff } from '../../entities/staffs.entity';
 import { EntityGuestGender } from '../../entities/enums/entity-guest.enum';
 import { GuestsService } from '../guests/guests.service';
 import {
@@ -42,6 +44,10 @@ export class BookingService {
     private readonly packageRepository: Repository<Package>,
     @InjectRepository(Programme)
     private readonly programmeRepository: Repository<Programme>,
+    @InjectRepository(Room)
+    private readonly roomRepository: Repository<Room>,
+    @InjectRepository(Staff)
+    private readonly staffRepository: Repository<Staff>,
     private readonly guestsService: GuestsService,
   ) {}
 
@@ -212,6 +218,8 @@ export class BookingService {
     let subService: SubService | undefined;
     let packageEntity: Package | undefined;
     let programme: Programme | undefined;
+    let room: Room | undefined;
+    let staff: Staff | undefined;
 
     if (itemData.subServiceId) {
       subService = await this.subServiceRepository.findOne({
@@ -235,6 +243,22 @@ export class BookingService {
       });
     } else if (itemData.programme) {
       programme = itemData.programme;
+    }
+
+    if (itemData.roomId) {
+      room = await this.roomRepository.findOne({
+        where: { id: itemData.roomId },
+      });
+    } else if (itemData.room) {
+      room = itemData.room;
+    }
+
+    if (itemData.staffId) {
+      staff = await this.staffRepository.findOne({
+        where: { id: itemData.staffId },
+      });
+    } else if (itemData.staff) {
+      staff = itemData.staff;
     }
 
     // Handle guest creation/linking
@@ -347,6 +371,8 @@ export class BookingService {
       package: packageEntity,
       programme,
       bed: itemData.bed,
+      room,
+      staff,
       guests: linkedGuests.length > 0 ? linkedGuests : undefined,
     });
     return this.bookingItemRepository.save(bookingItem);
@@ -379,6 +405,38 @@ export class BookingService {
       updateData.programme = itemData.programme;
     if (itemData.bed !== undefined) updateData.bed = itemData.bed;
     if (itemData.guests !== undefined) updateData.guests = itemData.guests;
+
+    // Handle room fetching by roomId
+    if (itemData.roomId !== undefined) {
+      if (itemData.roomId) {
+        const room = await this.roomRepository.findOne({
+          where: { id: itemData.roomId },
+        });
+        if (room) {
+          updateData.room = room;
+        }
+      } else {
+        updateData.room = null;
+      }
+    } else if (itemData.room !== undefined) {
+      updateData.room = itemData.room;
+    }
+
+    // Handle staff fetching by staffId
+    if (itemData.staffId !== undefined) {
+      if (itemData.staffId) {
+        const staff = await this.staffRepository.findOne({
+          where: { id: itemData.staffId },
+        });
+        if (staff) {
+          updateData.staff = staff;
+        }
+      } else {
+        updateData.staff = null;
+      }
+    } else if (itemData.staff !== undefined) {
+      updateData.staff = itemData.staff;
+    }
 
     await this.bookingItemRepository.update(itemId, updateData);
     return this.bookingItemRepository.findOne({ where: { id: itemId } });

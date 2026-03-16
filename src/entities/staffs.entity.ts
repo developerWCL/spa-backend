@@ -7,9 +7,11 @@ import {
   DeleteDateColumn,
   ManyToMany,
   JoinTable,
+  OneToMany,
 } from 'typeorm';
 import { Branch } from './branch.entity';
 import { Role } from './role.entity';
+import { BookingItem } from './booking_items.entity';
 
 @Entity('staffs')
 export class Staff {
@@ -19,6 +21,9 @@ export class Staff {
   @ManyToMany(() => Branch, (b) => b.staffs, { onDelete: 'CASCADE' })
   @JoinTable({ name: 'staff_branches' })
   branches: Branch[];
+
+  @OneToMany(() => BookingItem, (b) => b.staff)
+  bookingItems: BookingItem[];
 
   @Column({ name: 'first_name' })
   firstName: string;

@@ -50,6 +50,10 @@ export class CreateBookingItemDto {
   guests?: any[]; // Guest IDs or CreateGuestForBookingDto objects
   guestData?: CreateGuestForBookingDto[]; // Guest data for creation
   spaId?: string; // Required for guest creation
+  staff?: any;
+  staffId?: string; // ID for Staff
+  room?: any;
+  roomId?: string; // ID for Room
 
   itemType: CartItemType;
   quantity?: number;

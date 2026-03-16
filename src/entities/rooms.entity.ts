@@ -11,6 +11,7 @@ import {
 import { Branch } from './branch.entity';
 import { Bed } from './beds.entity';
 import { RoomStatus } from './enums/entity-room.enum';
+import { BookingItem } from './booking_items.entity';
 
 @Entity('rooms')
 export class Room {
@@ -54,4 +55,7 @@ export class Room {
 
   @OneToMany(() => Bed, (b) => b.room)
   beds: Bed[];
+
+  @OneToMany(() => BookingItem, (b) => b.room)
+  bookingItems: BookingItem[];
 }

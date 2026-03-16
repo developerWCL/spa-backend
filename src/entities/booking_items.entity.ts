@@ -15,6 +15,8 @@ import { Programme } from './programmes.entity';
 import { Bed } from './beds.entity';
 import { CartItemType } from './enums/cart.enum';
 import { Guest } from './guests.entity';
+import { Room } from './rooms.entity';
+import { Staff } from './staffs.entity';
 
 @Entity('booking_items')
 export class BookingItem {
@@ -38,6 +40,12 @@ export class BookingItem {
 
   @ManyToOne(() => Bed, { onDelete: 'SET NULL', nullable: true })
   bed: Bed | null;
+
+  @ManyToOne(() => Room, { onDelete: 'SET NULL', nullable: true })
+  room: Room | null;
+
+  @ManyToOne(() => Staff, { onDelete: 'SET NULL', nullable: true })
+  staff: Staff | null;
 
   @ManyToMany(() => Guest, (g) => g.bookingItems)
   @JoinTable({ name: 'booking_items_guests' })
