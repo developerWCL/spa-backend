@@ -139,6 +139,7 @@ export class BookingService {
       .leftJoinAndSelect('booking.branch', 'branch')
       .leftJoinAndSelect('booking.promotion', 'promotion')
       .leftJoinAndSelect('booking.items', 'items')
+      .leftJoinAndSelect('booking.payments', 'payments')
       .leftJoinAndSelect('items.subService', 'subService')
       .leftJoinAndSelect('subService.service', 'service')
       .leftJoinAndSelect('items.package', 'package')
