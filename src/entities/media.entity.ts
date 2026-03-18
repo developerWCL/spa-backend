@@ -9,6 +9,7 @@ import {
 import { Service } from './services.entity';
 import { Programme } from './programmes.entity';
 import { Package } from './packages.entity';
+import { Promotion } from './promotions.entity';
 
 @Entity('media')
 export class Media {
@@ -23,6 +24,9 @@ export class Media {
 
   @ManyToOne(() => Package, (p) => p.media, { onDelete: 'CASCADE' })
   package: Package;
+
+  @ManyToOne(() => Promotion, (p) => p.media, { onDelete: 'CASCADE' })
+  promotion: Promotion;
 
   @Column()
   filename: string;

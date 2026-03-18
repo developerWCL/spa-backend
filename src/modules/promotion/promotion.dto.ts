@@ -67,6 +67,11 @@ export class CreatePromotionDto {
   @IsOptional()
   @IsEnum(PromotionDayActivated)
   dayActivated?: PromotionDayActivated;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  mediaIds?: string[];
 }
 
 export class UpdatePromotionDto {
@@ -125,4 +130,9 @@ export class UpdatePromotionDto {
   @IsOptional()
   @IsEnum(PromotionDayActivated)
   dayActivated?: PromotionDayActivated;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  mediaIds?: string[];
 }
