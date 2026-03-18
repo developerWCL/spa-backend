@@ -8,7 +8,7 @@ import {
   ManyToOne,
 } from 'typeorm';
 import { Booking } from './bookings.entity';
-
+import { PaymentStatus, PaymentType } from './enums/booking.enum';
 @Entity('payments')
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
@@ -17,10 +17,16 @@ export class Payment {
   @ManyToOne(() => Booking, { onDelete: 'CASCADE' })
   booking: Booking;
 
-  @Column({ nullable: true })
-  status: string;
-  @Column({ nullable: true, name: 'payment_type' })
-  paymentType: string;
+  @Column({ type: 'enum', enum: PaymentStatus, default: PaymentStatus.PENDING })
+  status: PaymentStatus;
+
+  @Column({
+    type: 'enum',
+    enum: PaymentType,
+    nullable: true,
+    name: 'payment_type',
+  })
+  paymentType: PaymentType | null;
 
   @Column({ type: 'numeric' })
   amount: string;

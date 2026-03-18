@@ -32,13 +32,13 @@ export async function seedPayments() {
         PaymentStatus.FAILED,
       ][i];
 
-      const payment = paymentRepo.create({
-        booking,
-        paymentType: paymentType as string,
-        amount: booking.totalAmount,
-        status: paymentStatus,
-      });
-      await paymentRepo.save(payment);
+      // const payment = paymentRepo.create({
+      //   booking,
+      //   paymentType: paymentType as string,
+      //   amount: booking.totalAmount,
+      //   status: paymentStatus,
+      // });
+      // await paymentRepo.save(payment);
       console.log(`Payment created for booking '${booking.id}'`);
     }
   }

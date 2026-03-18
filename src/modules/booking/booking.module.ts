@@ -13,6 +13,7 @@ import { Room } from 'src/entities/rooms.entity';
 import { Staff } from 'src/entities/staffs.entity';
 import { GuestsModule } from '../guests/guests.module';
 import { SubscriptionClientService } from 'src/shared/subscription-client.service';
+import { Payment } from 'src/entities/payments.entity';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { SubscriptionClientService } from 'src/shared/subscription-client.servic
       Programme,
       Room,
       Staff,
+      Payment,
     ]),
     GuestsModule,
     TypeOrmModule,

@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { Booking } from '../../entities/bookings.entity';
 import { BookingItem } from '../../entities/booking_items.entity';
 import { Promotion } from '../../entities/promotions.entity';
+import { Payment } from '../../entities/payments.entity';
 import { Guest } from '../../entities/guests.entity';
 import { SubService } from '../../entities/sub_services.entity';
 import { Package } from '../../entities/packages.entity';
@@ -36,6 +37,8 @@ export class BookingService {
     private readonly bookingItemRepository: Repository<BookingItem>,
     @InjectRepository(Promotion)
     private readonly promotionRepository: Repository<Promotion>,
+    @InjectRepository(Payment)
+    private readonly paymentRepository: Repository<Payment>,
     @InjectRepository(Guest)
     private readonly guestRepository: Repository<Guest>,
     @InjectRepository(SubService)
@@ -89,11 +92,27 @@ export class BookingService {
     const runningNumber = String(bookingCount + 1).padStart(5, '0');
     const bookingId = `${branchCode}-${runningNumber}`;
 
+    // Exclude payments array from booking data to prevent duplication
+    const { payments, ...bookingDataWithoutPayments } = data;
+
     const booking = this.bookingRepository.create({
-      ...data,
+      ...bookingDataWithoutPayments,
       bookingId,
     });
     const savedBooking = await this.bookingRepository.save(booking);
+
+    // Create payment records for the booking
+    if (payments && Array.isArray(payments) && payments.length > 0) {
+      const paymentRecords = payments.map((payment) =>
+        this.paymentRepository.create({
+          booking: savedBooking,
+          amount: payment.amount,
+          status: payment.status,
+          paymentType: payment.paymentType,
+        }),
+      );
+      await this.paymentRepository.save(paymentRecords);
+    }
 
     // Increment promotion usage counter if a promotion is applied
     if (data.promotion) {
@@ -129,6 +148,8 @@ export class BookingService {
       .leftJoinAndSelect('programme.steps', 'steps')
       .leftJoinAndSelect('items.bed', 'bed')
       .leftJoinAndSelect('bed.room', 'room')
+      .leftJoinAndSelect('items.staff', 'staff')
+      .leftJoinAndSelect('items.room', 'itemRoom')
       .leftJoinAndSelect('items.guests', 'guests')
       .where('booking.branchId = :branchId', { branchId });
 
@@ -189,15 +210,80 @@ export class BookingService {
         'items.programme.steps',
         'items.bed',
         'items.bed.room',
+        'items.staff',
+        'items.room',
         'items.guests',
       ],
     });
     if (!booking) throw new NotFoundException('Booking not found');
+
+    // Load payments separately to avoid one-to-many join issues
+    const payments = await this.paymentRepository
+      .createQueryBuilder('payment')
+      .where('payment.bookingId = :bookingId', { bookingId: id })
+      .getMany();
+    booking.payments = payments;
+
     return booking;
   }
 
   async update(id: string, data: UpdateBookingDto): Promise<Booking> {
-    await this.bookingRepository.update(id, data);
+    // Separate items and payments data from booking data
+    const { items, payments, ...bookingData } = data;
+    // update payments if provided
+    if (payments && Array.isArray(payments)) {
+      for (const payment of payments) {
+        if (payment.id) {
+          // Update existing payment
+          await this.paymentRepository.update(payment.id, {
+            amount: payment.amount,
+            status: payment.status,
+            paymentType: payment.paymentType,
+          });
+        } else {
+          // Create new payment
+          const newPayment = this.paymentRepository.create({
+            booking: { id },
+            amount: payment.amount,
+            status: payment.status,
+            paymentType: payment.paymentType,
+          });
+          await this.paymentRepository.save(newPayment);
+        }
+      }
+    }
+
+    // Update booking
+    await this.bookingRepository.update(id, bookingData);
+
+    // Handle bookingItems updates if provided
+    if (items && Array.isArray(items) && items.length > 0) {
+      for (const itemData of items) {
+        if (itemData._destroy && itemData.id) {
+          // Delete item
+          await this.deleteBookingItem(itemData.id);
+          if (itemData.guests && itemData.guests.length > 0) {
+            // Unlink guests from the deleted booking item
+            const guestIds = itemData.guests.map((guest) =>
+              typeof guest === 'string' ? guest : guest.id,
+            );
+            await this.bookingItemRepository
+              .createQueryBuilder()
+              .relation(BookingItem, 'guests')
+              .of(itemData.id)
+              .remove(guestIds);
+          }
+        } else if (itemData.id) {
+          // Update existing item
+          const { id: itemId, ...updateItemData } = itemData;
+          await this.updateBookingItem(itemId, updateItemData);
+        } else {
+          // Create new item
+          await this.createBookingItem(id, itemData);
+        }
+      }
+    }
+
     return this.findOne(id);
   }
 
@@ -357,6 +443,12 @@ export class BookingService {
     console.log('scheduledDate', scheduledDate);
     console.log('itemData', itemData.scheduledDate, itemData.scheduledTime);
 
+    // Resolve bed - can come as full object or as bed ID
+    let resolvedBed = itemData.bed;
+    if (itemData.bedId && !itemData.bed) {
+      resolvedBed = { id: itemData.bedId };
+    }
+
     const bookingItem = this.bookingItemRepository.create({
       booking,
       itemType: itemData.itemType,
@@ -370,7 +462,7 @@ export class BookingService {
       subService,
       package: packageEntity,
       programme,
-      bed: itemData.bed,
+      bed: resolvedBed,
       room,
       staff,
       guests: linkedGuests.length > 0 ? linkedGuests : undefined,
@@ -383,6 +475,7 @@ export class BookingService {
     itemData: UpdateBookingItemDto,
   ): Promise<BookingItem> {
     const updateData: any = {};
+    let guestsToUpdate: any[] | undefined;
 
     if (itemData.itemType !== undefined)
       updateData.itemType = itemData.itemType;
@@ -391,8 +484,14 @@ export class BookingService {
     if (itemData.price !== undefined) updateData.price = itemData.price;
     if (itemData.subtotal !== undefined)
       updateData.subtotal = itemData.subtotal;
-    if (itemData.scheduledDate !== undefined)
-      updateData.scheduledDate = itemData.scheduledDate;
+    if (itemData.scheduledDate !== undefined) {
+      // Handle scheduledDate - convert string to Date if needed
+      if (typeof itemData.scheduledDate === 'string') {
+        updateData.scheduledDate = new Date(itemData.scheduledDate);
+      } else {
+        updateData.scheduledDate = itemData.scheduledDate;
+      }
+    }
     if (itemData.scheduledTime !== undefined)
       updateData.scheduledTime = itemData.scheduledTime;
     if (itemData.notes !== undefined) updateData.notes = itemData.notes;
@@ -404,7 +503,25 @@ export class BookingService {
     if (itemData.programme !== undefined)
       updateData.programme = itemData.programme;
     if (itemData.bed !== undefined) updateData.bed = itemData.bed;
-    if (itemData.guests !== undefined) updateData.guests = itemData.guests;
+
+    // Store guests for separate handling (many-to-many)
+    if (itemData.guestData !== undefined) {
+      guestsToUpdate = itemData.guestData;
+    } else if (itemData.guests !== undefined) {
+      guestsToUpdate = itemData.guests;
+    }
+
+    // Handle bed fetching by bedId - similar to roomId handling
+    if (itemData.bedId !== undefined) {
+      if (itemData.bedId) {
+        // Assuming beds have an entity, fetch it
+        // If you don't have a bedRepository, you may need to add it
+        // For now, just set the bedId as the bed relationship
+        updateData.bed = { id: itemData.bedId };
+      } else {
+        updateData.bed = null;
+      }
+    }
 
     // Handle room fetching by roomId
     if (itemData.roomId !== undefined) {
@@ -439,7 +556,142 @@ export class BookingService {
     }
 
     await this.bookingItemRepository.update(itemId, updateData);
-    return this.bookingItemRepository.findOne({ where: { id: itemId } });
+
+    // Handle many-to-many guest relationship separately
+    if (guestsToUpdate !== undefined) {
+      const linkedGuests: Guest[] = [];
+
+      // Process guest data - update guest info and link them
+      for (const guestItem of guestsToUpdate) {
+        let guest: Guest | null = null;
+
+        if (typeof guestItem === 'string') {
+          // Just a guest ID, load it
+          guest = await this.guestRepository.findOne({
+            where: { id: guestItem },
+          });
+        } else if (guestItem && typeof guestItem === 'object') {
+          if (guestItem.id) {
+            // Guest with ID - might need update
+            guest = await this.guestRepository.findOne({
+              where: { id: guestItem.id },
+            });
+
+            // Update guest properties if provided
+            if (
+              guest &&
+              (guestItem.firstName ||
+                guestItem.lastName ||
+                guestItem.phone ||
+                guestItem.specialRequest)
+            ) {
+              await this.guestsService.update(guest.id, {
+                firstName: guestItem.firstName || guest.firstName,
+                lastName: guestItem.lastName || guest.lastName,
+                phone: guestItem.phone || guest.phone,
+                specialRequest:
+                  guestItem.specialRequest || guest.specialRequest,
+              });
+              // Reload to get updated data
+              guest = await this.guestRepository.findOne({
+                where: { id: guestItem.id },
+              });
+            }
+          } else if (
+            guestItem.email &&
+            guestItem.firstName &&
+            guestItem.lastName
+          ) {
+            // New or existing guest by email
+            guest = await this.guestRepository.findOne({
+              where: { email: guestItem.email },
+            });
+
+            if (!guest) {
+              // Create new guest
+              let genderValue = EntityGuestGender.MALE;
+              if (guestItem.gender) {
+                const genderStr = String(guestItem.gender).toUpperCase();
+                if (genderStr === 'FEMALE' || genderStr === 'MALE') {
+                  genderValue = genderStr as EntityGuestGender;
+                }
+              }
+
+              guest = await this.guestsService.create({
+                firstName: guestItem.firstName || '',
+                lastName: guestItem.lastName || '',
+                email: guestItem.email || '',
+                phone: guestItem.phone || undefined,
+                nationality: guestItem.nationality || undefined,
+                gender: genderValue,
+                specialRequest: guestItem.specialRequest || undefined,
+                spaId: itemData.spaId,
+              });
+            } else {
+              // Update existing guest
+              await this.guestsService.update(guest.id, {
+                firstName: guestItem.firstName || guest.firstName,
+                lastName: guestItem.lastName || guest.lastName,
+                phone: guestItem.phone || guest.phone,
+                specialRequest:
+                  guestItem.specialRequest || guest.specialRequest,
+              });
+              guest = await this.guestRepository.findOne({
+                where: { id: guest.id },
+              });
+            }
+          }
+        }
+
+        if (guest) {
+          linkedGuests.push(guest);
+        }
+      }
+
+      // Now update the many-to-many relationship
+      const guestIds = linkedGuests.map((g) => g.id);
+      const relationQueryBuilder = this.bookingItemRepository
+        .createQueryBuilder()
+        .relation(BookingItem, 'guests')
+        .of(itemId);
+
+      // Remove all existing guests first
+      try {
+        const bookingItem = await this.bookingItemRepository.findOne({
+          where: { id: itemId },
+          relations: ['guests'],
+        });
+
+        if (
+          bookingItem &&
+          bookingItem.guests &&
+          bookingItem.guests.length > 0
+        ) {
+          const existingGuestIds = bookingItem.guests.map((g) => g.id);
+          await relationQueryBuilder.remove(existingGuestIds);
+        }
+      } catch (error) {
+        // If there's an error loading, continue with adding new guests
+      }
+
+      // Add the new guests
+      if (guestIds.length > 0) {
+        await relationQueryBuilder.add(guestIds);
+      }
+    }
+
+    return this.bookingItemRepository.findOne({
+      where: { id: itemId },
+      relations: [
+        'guests',
+        'subService',
+        'package',
+        'programme',
+        'bed',
+        'room',
+        'staff',
+      ],
+    });
   }
 
   async deleteBookingItem(itemId: string): Promise<void> {

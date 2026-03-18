@@ -1,6 +1,5 @@
 import { PartialType } from '@nestjs/mapped-types';
 import { Booking } from '../../entities/bookings.entity';
-import { BookingItem } from '../../entities/booking_items.entity';
 import { CartItemType } from '../../entities/enums/cart.enum';
 import {
   BookingStatus,
@@ -8,6 +7,7 @@ import {
   PaymentType,
 } from '../../entities/enums/booking.enum';
 import { EntityGuestGender } from '../../entities/enums/entity-guest.enum';
+import { Payment } from 'src/entities/payments.entity';
 
 export class CreateBookingDto implements Partial<Booking> {
   customer?: any;
@@ -18,6 +18,9 @@ export class CreateBookingDto implements Partial<Booking> {
 
   status?: BookingStatus;
   totalAmount?: string;
+  amount?: string;
+  discountAmount?: string;
+  payments?: Payment[];
   itemsCount?: number;
   notes?: string;
 
@@ -25,7 +28,9 @@ export class CreateBookingDto implements Partial<Booking> {
   paymentStatus?: PaymentStatus;
 }
 
-export class UpdateBookingDto extends PartialType(CreateBookingDto) {}
+export class UpdateBookingDto extends PartialType(CreateBookingDto) {
+  items?: (CreateBookingItemDto & { id?: string; _destroy?: boolean })[];
+}
 
 export class CreateGuestForBookingDto {
   id?: string; // If guest already exists
@@ -47,6 +52,7 @@ export class CreateBookingItemDto {
   programme?: any;
   programmeId?: string; // ID for Programme
   bed?: any;
+  bedId?: string; // ID for Bed
   guests?: any[]; // Guest IDs or CreateGuestForBookingDto objects
   guestData?: CreateGuestForBookingDto[]; // Guest data for creation
   spaId?: string; // Required for guest creation
