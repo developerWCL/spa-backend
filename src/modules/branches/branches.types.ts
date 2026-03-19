@@ -37,6 +37,17 @@ export class CreateBranchDto {
   @IsOptional()
   @IsString()
   website?: string;
+
+  @IsOptional()
+  @IsString({ each: true })
+  mediaIds?: string[];
+
+  @IsOptional()
+  operatingHours?: {
+    dayOfWeek: number;
+    openTime: string;
+    closeTime: string;
+  }[];
 }
 
 export class UpdateBranchDto {
@@ -64,4 +75,15 @@ export class UpdateBranchDto {
   @IsOptional()
   @IsString()
   website?: string;
+
+  @IsOptional()
+  @IsString({ each: true })
+  mediaIds?: string[];
+
+  @IsOptional()
+  operatingHours?: {
+    dayOfWeek: number;
+    openTime: string;
+    closeTime: string;
+  }[];
 }
