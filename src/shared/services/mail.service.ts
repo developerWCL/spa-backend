@@ -95,4 +95,61 @@ export class MailService {
       throw new InternalServerErrorException('Failed to send OTP email');
     }
   }
+
+  async sendBookingConfirmationEmail(
+    booking: any,
+    customerEmail?: string,
+    customerName?: string,
+  ): Promise<void> {
+    // Determine recipient email: if customer exists, send to customer; otherwise send to first guest
+    let recipientEmail: string | null = null;
+    let recipientName: string = customerName || 'Guest';
+
+    if (customerEmail) {
+      // Customer exists - send to customer email
+      recipientEmail = customerEmail;
+    } else if (
+      booking.items &&
+      booking.items.length > 0 &&
+      booking.items[0].guests &&
+      booking.items[0].guests.length > 0
+    ) {
+      // Anonymous booking - send to first guest email
+      const firstGuest = booking.items[0].guests[0];
+      recipientEmail = firstGuest.email;
+      recipientName = `${firstGuest.firstName} ${firstGuest.lastName}`;
+    }
+
+    if (!recipientEmail) {
+      console.warn('No recipient email found for booking confirmation');
+      return;
+    }
+
+    try {
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: recipientEmail,
+        subject: `Booking Confirmation - ${booking.bookingId}`,
+        html: `
+          <h2>Booking Confirmation</h2>
+          <p>Dear ${recipientName},</p>
+          <p>Your booking has been successfully created.</p>
+          <br/>
+          <h3>Booking Details</h3>
+          <ul>
+            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
+            <li><strong>Status:</strong> ${booking.status || 'Pending'}</li>
+            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
+          </ul>
+          <br/>
+          <p>Thank you for booking with Orientala Spa. We look forward to serving you!</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending booking confirmation email:', error);
+      // Don't throw error to prevent booking creation from failing
+    }
+  }
 }

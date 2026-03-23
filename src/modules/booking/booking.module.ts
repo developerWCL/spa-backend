@@ -13,6 +13,7 @@ import { Room } from 'src/entities/rooms.entity';
 import { Staff } from 'src/entities/staffs.entity';
 import { GuestsModule } from '../guests/guests.module';
 import { SubscriptionClientService } from 'src/shared/subscription-client.service';
+import { MailService } from 'src/shared/services/mail.service';
 import { Payment } from 'src/entities/payments.entity';
 
 @Module({
@@ -32,7 +33,7 @@ import { Payment } from 'src/entities/payments.entity';
     GuestsModule,
     TypeOrmModule,
   ],
-  providers: [BookingService, SubscriptionClientService],
+  providers: [BookingService, SubscriptionClientService, MailService],
   controllers: [BookingController],
   exports: [BookingService],
 })
