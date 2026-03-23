@@ -33,6 +33,9 @@ export class SubService {
   @Column({ type: 'numeric', nullable: true })
   price: string;
 
+  @Column({ type: 'boolean', default: false, name: 'only_package' })
+  onlyPackage: boolean;
+
   @Column({
     type: 'enum',
     enum: EntityStatus,

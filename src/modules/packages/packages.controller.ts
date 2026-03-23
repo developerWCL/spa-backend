@@ -20,7 +20,6 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
-import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 

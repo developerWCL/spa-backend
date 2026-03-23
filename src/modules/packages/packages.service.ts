@@ -7,6 +7,8 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In, DataSource, EntityManager } from 'typeorm';
 import { Package } from 'src/entities/packages.entity';
 import { SubService } from 'src/entities/sub_services.entity';
+import { SubServiceTranslation } from 'src/entities/sub_service_translations.entity';
+import { Service } from 'src/entities/services.entity';
 import { PackageTranslation } from 'src/entities/package_translation.entity';
 import { Branch } from 'src/entities/branch.entity';
 import { Media } from 'src/entities/media.entity';
@@ -16,7 +18,11 @@ import {
   getPaginationQueryTypeORM,
 } from 'src/shared/pagination.util';
 import { PaginationParams } from 'src/shared/pagination.types';
-import { CreatePackageDto, UpdatePackageDto } from './packages.types';
+import {
+  CreatePackageDto,
+  UpdatePackageDto,
+  CreateNewSubServiceDto,
+} from './packages.types';
 
 @Injectable()
 export class PackagesService {
@@ -25,6 +31,10 @@ export class PackagesService {
     private packageRepo: Repository<Package>,
     @InjectRepository(SubService)
     private subServiceRepo: Repository<SubService>,
+    @InjectRepository(SubServiceTranslation)
+    private subServiceTranslationRepo: Repository<SubServiceTranslation>,
+    @InjectRepository(Service)
+    private serviceRepo: Repository<Service>,
     @InjectRepository(PackageTranslation)
     private packageTranslationRepo: Repository<PackageTranslation>,
     @InjectRepository(Branch)
@@ -33,6 +43,54 @@ export class PackagesService {
     private mediaRepo: Repository<Media>,
     private dataSource: DataSource,
   ) {}
+
+  private async createNewSubServices(
+    newSubServices: CreateNewSubServiceDto[],
+    manager: EntityManager,
+  ): Promise<SubService[]> {
+    const createdSubServices: SubService[] = [];
+
+    for (const newSubService of newSubServices) {
+      // Verify service exists
+      const service = await manager.findOne(Service, {
+        where: { id: newSubService.serviceId },
+      });
+
+      if (!service) {
+        throw new BadRequestException(
+          `Service with ID ${newSubService.serviceId} not found`,
+        );
+      }
+
+      // Create new sub-service
+      const subService = new SubService();
+      subService.service = service;
+      subService.name = newSubService.name;
+      subService.durationMinutes = newSubService.durationMinutes || null;
+      subService.price = newSubService.price;
+      subService.status = newSubService.status || EntityStatus.ACTIVE;
+      subService.onlyPackage = true; // New sub-services created in packages are only available as part of package
+
+      const savedSubService = await manager.save(subService);
+
+      // Create translations if provided
+      if (newSubService.translations && newSubService.translations.length > 0) {
+        const translations = newSubService.translations.map((t) => {
+          const translation = new SubServiceTranslation();
+          translation.subService = savedSubService;
+          translation.languageCode = t.languageCode;
+          translation.name = t.name;
+          translation.description = t.description || null;
+          return translation;
+        });
+        await manager.save(translations);
+      }
+
+      createdSubServices.push(savedSubService);
+    }
+
+    return createdSubServices;
+  }
 
   async create(dto: CreatePackageDto) {
     return this.dataSource.transaction(async (manager: EntityManager) => {
@@ -44,37 +102,51 @@ export class PackagesService {
         throw new NotFoundException(`Branch with ID ${dto.branchId} not found`);
       }
 
-      // Validate and filter sub-services (only active)
-      if (!dto.subServiceIds || dto.subServiceIds.length === 0) {
+      // Collect sub-services from both existing IDs and new sub-services
+      const allSubServices: SubService[] = [];
+
+      // Handle existing sub-services
+      if (dto.subServiceIds && dto.subServiceIds.length > 0) {
+        const existingSubServices = await manager.find(SubService, {
+          where: {
+            id: In(dto.subServiceIds),
+            status: EntityStatus.ACTIVE,
+          },
+        });
+
+        if (existingSubServices.length < dto.subServiceIds.length) {
+          const foundIds = new Set(existingSubServices.map((s) => s.id));
+          const missingIds = dto.subServiceIds.filter(
+            (id) => !foundIds.has(id),
+          );
+          throw new BadRequestException(
+            `Some sub-services are inactive or not found: ${missingIds.join(', ')}`,
+          );
+        }
+
+        allSubServices.push(...existingSubServices);
+      }
+
+      // Handle new sub-services
+      if (dto.newSubServices && dto.newSubServices.length > 0) {
+        const newSubServices = await this.createNewSubServices(
+          dto.newSubServices,
+          manager,
+        );
+        allSubServices.push(...newSubServices);
+      }
+
+      // Validate that we have at least 1 sub-service total
+      if (allSubServices.length === 0) {
         throw new BadRequestException(
           'Package must have at least 1 sub-service',
         );
       }
 
-      if (dto.subServiceIds.length > 10) {
+      // Validate max 10 sub-services
+      if (allSubServices.length > 10) {
         throw new BadRequestException(
           'Package can have at most 10 sub-services',
-        );
-      }
-
-      const subServices = await manager.find(SubService, {
-        where: {
-          id: In(dto.subServiceIds),
-          status: EntityStatus.ACTIVE,
-        },
-      });
-
-      if (subServices.length === 0) {
-        throw new BadRequestException(
-          'No active sub-services found with provided IDs',
-        );
-      }
-
-      if (subServices.length < dto.subServiceIds.length) {
-        const foundIds = new Set(subServices.map((s) => s.id));
-        const missingIds = dto.subServiceIds.filter((id) => !foundIds.has(id));
-        throw new BadRequestException(
-          `Some sub-services are inactive or not found: ${missingIds.join(', ')}`,
         );
       }
 
@@ -86,7 +158,7 @@ export class PackagesService {
       pkg.startDate = new Date(dto.startDate);
       pkg.endDate = new Date(dto.endDate);
       pkg.status = dto.status || EntityStatus.ACTIVE;
-      pkg.subServices = subServices;
+      pkg.subServices = allSubServices;
 
       const savedPackage = await manager.save(pkg);
 
@@ -206,43 +278,58 @@ export class PackagesService {
       if (dto.status !== undefined) pkg.status = dto.status;
 
       // Update sub-services if provided
-      if (dto.subServiceIds !== undefined) {
-        if (dto.subServiceIds.length === 0) {
+      if (
+        (dto.subServiceIds !== undefined && dto.subServiceIds.length > 0) ||
+        (dto.newSubServices !== undefined && dto.newSubServices.length > 0)
+      ) {
+        const allSubServices: SubService[] = [];
+
+        // Handle existing sub-services
+        if (dto.subServiceIds && dto.subServiceIds.length > 0) {
+          const existingSubServices = await manager.find(SubService, {
+            where: {
+              id: In(dto.subServiceIds),
+              status: EntityStatus.ACTIVE,
+            },
+          });
+
+          if (existingSubServices.length < dto.subServiceIds.length) {
+            const foundIds = new Set(existingSubServices.map((s) => s.id));
+            const missingIds = dto.subServiceIds.filter(
+              (id) => !foundIds.has(id),
+            );
+            throw new BadRequestException(
+              `Some sub-services are inactive or not found: ${missingIds.join(', ')}`,
+            );
+          }
+
+          allSubServices.push(...existingSubServices);
+        }
+
+        // Handle new sub-services
+        if (dto.newSubServices && dto.newSubServices.length > 0) {
+          const newSubServices = await this.createNewSubServices(
+            dto.newSubServices,
+            manager,
+          );
+          allSubServices.push(...newSubServices);
+        }
+
+        // Validate that we have at least 1 sub-service total
+        if (allSubServices.length === 0) {
           throw new BadRequestException(
             'Package must have at least 1 sub-service',
           );
         }
 
-        if (dto.subServiceIds.length > 10) {
+        // Validate max 10 sub-services
+        if (allSubServices.length > 10) {
           throw new BadRequestException(
             'Package can have at most 10 sub-services',
           );
         }
 
-        const subServices = await manager.find(SubService, {
-          where: {
-            id: In(dto.subServiceIds),
-            status: EntityStatus.ACTIVE,
-          },
-        });
-
-        if (subServices.length === 0) {
-          throw new BadRequestException(
-            'No active sub-services found with provided IDs',
-          );
-        }
-
-        if (subServices.length < dto.subServiceIds.length) {
-          const foundIds = new Set(subServices.map((s) => s.id));
-          const missingIds = dto.subServiceIds.filter(
-            (id) => !foundIds.has(id),
-          );
-          throw new BadRequestException(
-            `Some sub-services are inactive or not found: ${missingIds.join(', ')}`,
-          );
-        }
-
-        pkg.subServices = subServices;
+        pkg.subServices = allSubServices;
       }
 
       const updatedPackage = await manager.save(pkg);
