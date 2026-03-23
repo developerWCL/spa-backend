@@ -1,10 +1,14 @@
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import cookieParser from 'cookie-parser';
+import { json } from 'express';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  // Increase body size limit to 5MB for image uploads
+  app.use(json({ limit: '5mb' }));
 
   // Enable CORS with credentials
   app.enableCors({

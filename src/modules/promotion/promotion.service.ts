@@ -1,12 +1,9 @@
-import {
-  ForbiddenException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { FindOptionsWhere, Raw, Repository } from 'typeorm';
+import { FindOptionsWhere, In, Raw, Repository } from 'typeorm';
 import { Promotion } from '../../entities/promotions.entity';
 import { Branch } from '../../entities/branch.entity';
+import { Media } from '../../entities/media.entity';
 import { CreatePromotionDto, UpdatePromotionDto } from './promotion.dto';
 import { PaginatedResponse } from 'src/shared/pagination.types';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
@@ -19,11 +16,14 @@ export class PromotionService {
     private readonly promotionRepository: Repository<Promotion>,
     @InjectRepository(Branch)
     private readonly branchRepository: Repository<Branch>,
+    @InjectRepository(Media)
+    private readonly mediaRepository: Repository<Media>,
   ) {}
 
   async create(dto: CreatePromotionDto): Promise<Promotion> {
+    const { mediaIds, ...dtoWithoutMediaIds } = dto;
     const promotion = this.promotionRepository.create({
-      ...dto,
+      ...dtoWithoutMediaIds,
       autoApply: true,
     });
     if (dto.branchId) {
@@ -31,7 +31,21 @@ export class PromotionService {
         where: { id: dto.branchId },
       });
     }
-    return this.promotionRepository.save(promotion);
+    const savedPromotion = await this.promotionRepository.save(promotion);
+
+    // Link media to promotion if mediaIds are provided
+    if (mediaIds && mediaIds.length > 0) {
+      await this.mediaRepository.update(
+        { id: In(mediaIds) },
+        { promotion: savedPromotion },
+      );
+    }
+
+    // Return promotion with linked media
+    return await this.promotionRepository.findOne({
+      where: { id: savedPromotion.id },
+      relations: ['branch', 'branch.spa', 'media'],
+    });
   }
 
   async findAll(
@@ -96,7 +110,7 @@ export class PromotionService {
 
       const [promotions, total] = await this.promotionRepository.findAndCount({
         where,
-        relations: ['branch', 'branch.spa'],
+        relations: ['branch', 'branch.spa', 'media'],
         order: { createdAt: 'DESC' },
         take: limit,
         skip,
@@ -105,7 +119,7 @@ export class PromotionService {
     }
     const promotions = await this.promotionRepository.find({
       where,
-      relations: ['branch', 'branch.spa'],
+      relations: ['branch', 'branch.spa', 'media'],
       order: { createdAt: 'DESC' },
     });
     return paginate(
@@ -118,7 +132,7 @@ export class PromotionService {
   async findOne(id: string): Promise<Promotion> {
     const promotion = await this.promotionRepository.findOne({
       where: { id },
-      relations: ['branch'],
+      relations: ['branch', 'branch.spa', 'media'],
     });
     if (!promotion) throw new NotFoundException('Promotion not found');
     return promotion;
@@ -131,8 +145,49 @@ export class PromotionService {
         where: { id: dto.branchId },
       });
     }
-    Object.assign(promotion, dto);
-    return this.promotionRepository.save(promotion);
+
+    // Handle media unlinking - unlink all media not in the new list
+    if (dto.mediaIds !== undefined) {
+      // First, unlink old media (set promotion to null for media not in the new list)
+      const oldMediaIds = promotion.media?.map((m) => m.id) || [];
+      const mediaIdsToUnlink = oldMediaIds.filter(
+        (id) => !dto.mediaIds?.includes(id),
+      );
+
+      if (mediaIdsToUnlink.length > 0) {
+        await this.mediaRepository.update(
+          { id: In(mediaIdsToUnlink) },
+          { promotion: null },
+        );
+      }
+
+      // Then, link new media to this promotion
+      if (dto.mediaIds.length > 0) {
+        await this.mediaRepository.update(
+          { id: In(dto.mediaIds) },
+          { promotion },
+        );
+      }
+    }
+
+    // Remove mediaIds from the object assignment since it's not a column
+    const { mediaIds, ...dtoWithoutMediaIds } = dto;
+    Object.assign(promotion, dtoWithoutMediaIds);
+    const savedPromotion = await this.promotionRepository.save(promotion);
+
+    // Link new media to promotion if mediaIds are provided
+    if (mediaIds && mediaIds.length > 0) {
+      await this.mediaRepository.update(
+        { id: In(mediaIds) },
+        { promotion: savedPromotion },
+      );
+    }
+
+    // Return promotion with linked media
+    return await this.promotionRepository.findOne({
+      where: { id: savedPromotion.id },
+      relations: ['branch', 'branch.spa', 'media'],
+    });
   }
 
   async remove(id: string): Promise<void> {

@@ -18,6 +18,7 @@ import { Package } from './packages.entity';
 import { Promotion } from './promotions.entity';
 import { ServiceCategory } from './service_categories.entity';
 import { Bed } from './beds.entity';
+import { Media } from './media.entity';
 
 @Entity('branch')
 export class Branch {
@@ -50,6 +51,9 @@ export class Branch {
 
   @DeleteDateColumn({ type: 'timestamp', nullable: true, name: 'deleted_at' })
   deletedAt?: Date;
+
+  @OneToMany(() => Media, (m) => m.branch)
+  media: Media[];
 
   @OneToMany(() => BranchOperatingHours, (h) => h.branch)
   operatingHours: BranchOperatingHours[];

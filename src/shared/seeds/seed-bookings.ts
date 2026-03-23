@@ -74,35 +74,34 @@ export async function seedBookings() {
     });
 
     if (!existingBooking) {
-      const booking = bookingRepo.create({
-        customer: bookingConfig.customer,
-        branch,
-        promotion: bookingConfig.promotion,
-        bookingTime: new Date(
-          new Date().getFullYear(),
-          new Date().getMonth(),
-          new Date().getDate() + 1,
-        ),
-        status: bookingConfig.status,
-        paymentStatus: bookingConfig.paymentStatus,
-        totalAmount: bookingConfig.totalAmount,
-      });
+      // const booking = bookingRepo.create({
+      //   customer: bookingConfig.customer,
+      //   branch,
+      //   promotion: bookingConfig.promotion,
+      //   bookingTime: new Date(
+      //     new Date().getFullYear(),
+      //     new Date().getMonth(),
+      //     new Date().getDate() + 1,
+      //   ),
+      //   status: bookingConfig.status,
+      //   paymentStatus: bookingConfig.paymentStatus,
+      //   totalAmount: bookingConfig.totalAmount,
+      // });
 
-      const savedBooking = await bookingRepo.save(booking);
+      // const savedBooking = await bookingRepo.save(booking);
 
-      // Create booking items
-      for (const service of bookingConfig.services) {
-        const bookingItem = bookingItemRepo.create({
-          booking: savedBooking,
-          subService: null,
-          itemType: CartItemType.SUB_SERVICE,
-          quantity: 1,
-          price: service.basePrice,
-          subtotal: service.basePrice,
-          duration: 60,
-        });
-        await bookingItemRepo.save(bookingItem);
-      }
+      // // Create booking items
+      // for (const service of bookingConfig.services) {
+      //   const bookingItem = bookingItemRepo.create({
+      //     booking: savedBooking,
+      //     subService: null,
+      //     itemType: CartItemType.SUB_SERVICE,
+      //     quantity: 1,
+      //     price: service.basePrice,
+      //     subtotal: service.basePrice,
+      //   });
+      //   await bookingItemRepo.save(bookingItem);
+      // }
 
       console.log(
         `Booking created for customer '${bookingConfig.customer.email}' with ${bookingConfig.services.length} service(s)`,

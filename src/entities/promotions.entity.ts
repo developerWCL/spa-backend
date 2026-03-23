@@ -6,6 +6,7 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { Branch } from './branch.entity';
 import {
@@ -14,6 +15,7 @@ import {
   PromotionDiscountType,
 } from './enums/entity-promotion.enum';
 import { EntityStatus } from './enums/entity-status.enum';
+import { Media } from './media.entity';
 
 @Entity('promotions')
 export class Promotion {
@@ -78,6 +80,9 @@ export class Promotion {
 
   @ManyToOne(() => Branch, (b) => b.promotions, { onDelete: 'CASCADE' })
   branch: Branch;
+
+  @OneToMany(() => Media, (media) => media.promotion)
+  media: Media[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

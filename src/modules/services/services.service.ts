@@ -17,6 +17,7 @@ import { PaginationParams } from 'src/shared/pagination.types';
 import { CreateServiceDto, UpdateServiceDto } from './services.types';
 import { Package } from 'src/entities/packages.entity';
 import { Programme } from 'src/entities/programmes.entity';
+import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 
 @Injectable()
 export class ServicesService {
@@ -793,5 +794,16 @@ export class ServicesService {
       total: transformedResults.reduce((sum, r) => sum + r.count, 0),
       data: transformedResults,
     };
+  }
+
+  async getSubServices() {
+    return await this.subServiceRepo.find({
+      where: {
+        deletedAt: null,
+        status: EntityStatus.ACTIVE,
+        service: { deletedAt: null, status: EntityStatus.ACTIVE },
+      },
+      relations: ['service', 'translations'],
+    });
   }
 }

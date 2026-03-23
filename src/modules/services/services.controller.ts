@@ -110,6 +110,12 @@ export class ServicesController {
     return this.servicesService.getServiceCategories(branchId);
   }
 
+  @Get('sub-services')
+  @ApiOperation({ summary: 'Get sub-services for a main service' })
+  getSubServices() {
+    return this.servicesService.getSubServices();
+  }
+
   @Get(':id')
   @ApiOperation({ summary: 'Get service by ID with all relations' })
   findOne(@Param('id') id: string) {
