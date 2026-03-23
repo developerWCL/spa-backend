@@ -220,4 +220,93 @@ export class MailService {
       // Don't throw error to prevent booking creation from failing
     }
   }
+
+  async sendBookingStatusUpdateEmail(
+    booking: any,
+    newStatus: string,
+    customerEmail?: string,
+    customerName?: string,
+  ): Promise<void> {
+    // Determine recipient email: if customer exists, send to customer; otherwise send to first guest
+    let recipientEmail: string | null = null;
+    let recipientName: string = customerName || 'Guest';
+
+    if (customerEmail) {
+      // Customer exists - send to customer email
+      recipientEmail = customerEmail;
+    } else if (
+      booking.items &&
+      booking.items.length > 0 &&
+      booking.items[0].guests &&
+      booking.items[0].guests.length > 0
+    ) {
+      // Anonymous booking - send to first guest email
+      const firstGuest = booking.items[0].guests[0];
+      recipientEmail = firstGuest.email;
+      recipientName = `${firstGuest.firstName} ${firstGuest.lastName}`;
+    }
+
+    if (!recipientEmail) {
+      console.warn('No recipient email found for booking status update');
+      return;
+    }
+
+    try {
+      let emailSubject = '';
+      let emailMessage = '';
+      let emailTemplate = '';
+
+      if (newStatus.toLowerCase() === 'confirmed') {
+        emailSubject = `Booking Confirmed - ${booking.bookingId}`;
+        emailMessage = 'Your booking has been confirmed.';
+        emailTemplate = `
+          <h2>Booking Confirmed</h2>
+          <p>Dear ${recipientName},</p>
+          <p>${emailMessage}</p>
+          <br/>
+          <h3>Booking Details</h3>
+          <ul>
+            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
+            <li><strong>Status:</strong> ${newStatus}</li>
+            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
+          </ul>
+          <br/>
+          <p>We look forward to welcoming you at Orientala Spa!</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `;
+      } else if (newStatus.toLowerCase() === 'cancelled') {
+        emailSubject = `Booking Cancelled - ${booking.bookingId}`;
+        emailMessage = 'Your booking has been cancelled.';
+        emailTemplate = `
+          <h2>Booking Cancelled</h2>
+          <p>Dear ${recipientName},</p>
+          <p>${emailMessage}</p>
+          <br/>
+          <h3>Booking Details</h3>
+          <ul>
+            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
+            <li><strong>Status:</strong> ${newStatus}</li>
+            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
+          </ul>
+          <br/>
+          <p>If you have any questions or would like to make a new booking, please contact us.</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `;
+      }
+
+      if (emailTemplate) {
+        await this.resend.emails.send({
+          from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+          to: recipientEmail,
+          subject: emailSubject,
+          html: emailTemplate,
+        });
+      }
+    } catch (error) {
+      console.error('Error sending booking status update email:', error);
+      // Don't throw error to prevent booking update from failing
+    }
+  }
 }

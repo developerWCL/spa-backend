@@ -287,7 +287,29 @@ export class BookingService {
       }
     }
 
-    return this.findOne(id);
+    // Get the updated booking with all details
+    const updatedBooking = await this.findOne(id);
+
+    // Send status update email if status changed to confirmed or cancelled
+    if (
+      bookingData.status &&
+      (bookingData.status.toLowerCase() === 'confirmed' ||
+        bookingData.status.toLowerCase() === 'cancelled')
+    ) {
+      const customerEmail = updatedBooking.customer?.email;
+      const customerName = updatedBooking.customer
+        ? `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`
+        : undefined;
+
+      await this.mailService.sendBookingStatusUpdateEmail(
+        updatedBooking,
+        bookingData.status,
+        customerEmail,
+        customerName,
+      );
+    }
+
+    return updatedBooking;
   }
 
   async remove(id: string): Promise<void> {
