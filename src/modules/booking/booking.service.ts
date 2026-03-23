@@ -484,6 +484,16 @@ export class BookingService {
       customerEmail,
       customerName,
     );
+
+    // Send booking notification email to branch admin
+    if (bookingWithDetails.branch?.email) {
+      await this.mailService.sendBookingNotificationToAdmin(
+        bookingWithDetails,
+        bookingWithDetails.branch.email,
+        bookingWithDetails.branch.name,
+      );
+    }
+
     return savedItem;
   }
 

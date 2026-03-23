@@ -152,4 +152,72 @@ export class MailService {
       // Don't throw error to prevent booking creation from failing
     }
   }
+
+  async sendBookingNotificationToAdmin(
+    booking: any,
+    adminEmail: string,
+    branchName?: string,
+  ): Promise<void> {
+    if (!adminEmail) {
+      console.warn('No admin email found for booking notification');
+      return;
+    }
+
+    try {
+      const itemsList =
+        booking.items && booking.items.length > 0
+          ? booking.items
+              .map(
+                (item: any) => `
+              <li>
+                <strong>${item.itemType}:</strong> ${item.subService?.name || item.package?.name || item.programme?.name || 'N/A'}
+                (Qty: ${item.quantity}, Price: ${item.price})
+              </li>
+            `,
+              )
+              .join('')
+          : '<li>No items</li>';
+
+      const customerInfo = booking.customer
+        ? `
+            <p><strong>Customer Name:</strong> ${booking.customer.firstName} ${booking.customer.lastName}</p>
+            <p><strong>Customer Email:</strong> ${booking.customer.email}</p>
+            <p><strong>Customer Phone:</strong> ${booking.customer.phone || 'N/A'}</p>
+          `
+        : '<p><em>Anonymous booking (no registered customer)</em></p>';
+
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: adminEmail,
+        subject: `New Booking Created - ${booking.bookingId}`,
+        html: `
+          <h2>New Booking Notification</h2>
+          <p>A new booking has been created at ${branchName || 'your branch'}.</p>
+          <br/>
+          <h3>Booking Information</h3>
+          <ul>
+            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
+            <li><strong>Status:</strong> ${booking.status || 'Pending'}</li>
+            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
+            <li><strong>Booking Time:</strong> ${new Date(booking.bookingTime).toLocaleString() || 'N/A'}</li>
+          </ul>
+          <br/>
+          <h3>Customer Details</h3>
+          ${customerInfo}
+          <br/>
+          <h3>Booking Items</h3>
+          <ul>
+            ${itemsList}
+          </ul>
+          <br/>
+          <p>Please log in to the admin panel to view full booking details.</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa System</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending booking notification to admin:', error);
+      // Don't throw error to prevent booking creation from failing
+    }
+  }
 }
