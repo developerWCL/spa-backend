@@ -96,6 +96,60 @@ export class MailService {
     }
   }
 
+  async sendRegistrationVerificationEmail(
+    email: string,
+    firstName: string,
+  ): Promise<void> {
+    try {
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: email,
+        subject: 'Registration Verified - Orientala Spa',
+        html: `
+          <h2>Registration Successful</h2>
+          <p>Dear ${firstName},</p>
+          <p>Your email has been verified and your account is now active!</p>
+          <br/>
+          <p>You can now log in and start booking our spa services.</p>
+          <br/>
+          <p>Thank you for choosing Orientala Spa. We look forward to welcoming you!</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending registration verification email:', error);
+      // Don't throw error to prevent verification from failing
+    }
+  }
+
+  async sendPasswordResetVerificationEmail(
+    email: string,
+    firstName: string,
+  ): Promise<void> {
+    try {
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: email,
+        subject: 'Password Reset Completed - Orientala Spa',
+        html: `
+          <h2>Password Reset Completed</h2>
+          <p>Dear ${firstName},</p>
+          <p>Your password has been successfully reset!</p>
+          <br/>
+          <p>You can now log in with your new password.</p>
+          <br/>
+          <p>If you did not request this password reset, please contact our support team immediately.</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending password reset verification email:', error);
+      // Don't throw error to prevent verification from failing
+    }
+  }
+
   async sendBookingConfirmationEmail(
     booking: any,
     customerEmail?: string,

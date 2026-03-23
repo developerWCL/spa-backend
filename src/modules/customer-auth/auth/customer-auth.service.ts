@@ -89,15 +89,37 @@ export class AuthService {
           where: {
             email: email.toLowerCase(),
             code: otp,
-            type: 'registration',
             spa: { id: spaId },
           },
         });
         if (!customer || !otpRecord || otpRecord.expiresAt < new Date())
           throw new BadRequestException('Invalid or expired OTP');
+
+        // Determine OTP type for sending appropriate email
+        const otpType = otpRecord.type;
+
         customer.isVerified = true;
         await otpRepo.update(otpRecord.id, { usedAt: new Date() });
         await this.customerService.update(customer.id, customer, entityManager);
+
+        // Send appropriate email based on OTP type
+        try {
+          if (otpType === 'registration') {
+            await this.mailService.sendRegistrationVerificationEmail(
+              customer.email,
+              customer.firstName,
+            );
+          } else if (otpType === 'password_reset') {
+            await this.mailService.sendPasswordResetVerificationEmail(
+              customer.email,
+              customer.firstName,
+            );
+          }
+        } catch (error) {
+          console.error('Failed to send verification email:', error);
+          // Don't fail the verification if email sending fails
+        }
+
         return { message: 'Verified' };
       },
     );
