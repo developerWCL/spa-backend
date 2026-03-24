@@ -95,4 +95,272 @@ export class MailService {
       throw new InternalServerErrorException('Failed to send OTP email');
     }
   }
+
+  async sendRegistrationVerificationEmail(
+    email: string,
+    firstName: string,
+  ): Promise<void> {
+    try {
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: email,
+        subject: 'Registration Verified - Orientala Spa',
+        html: `
+          <h2>Registration Successful</h2>
+          <p>Dear ${firstName},</p>
+          <p>Your email has been verified and your account is now active!</p>
+          <br/>
+          <p>You can now log in and start booking our spa services.</p>
+          <br/>
+          <p>Thank you for choosing Orientala Spa. We look forward to welcoming you!</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending registration verification email:', error);
+      // Don't throw error to prevent verification from failing
+    }
+  }
+
+  async sendPasswordResetVerificationEmail(
+    email: string,
+    firstName: string,
+  ): Promise<void> {
+    try {
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: email,
+        subject: 'Password Reset Completed - Orientala Spa',
+        html: `
+          <h2>Password Reset Completed</h2>
+          <p>Dear ${firstName},</p>
+          <p>Your password has been successfully reset!</p>
+          <br/>
+          <p>You can now log in with your new password.</p>
+          <br/>
+          <p>If you did not request this password reset, please contact our support team immediately.</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending password reset verification email:', error);
+      // Don't throw error to prevent verification from failing
+    }
+  }
+
+  async sendBookingConfirmationEmail(
+    booking: any,
+    customerEmail?: string,
+    customerName?: string,
+  ): Promise<void> {
+    // Determine recipient email: if customer exists, send to customer; otherwise send to first guest
+    let recipientEmail: string | null = null;
+    let recipientName: string = customerName || 'Guest';
+
+    if (customerEmail) {
+      // Customer exists - send to customer email
+      recipientEmail = customerEmail;
+    } else if (
+      booking.items &&
+      booking.items.length > 0 &&
+      booking.items[0].guests &&
+      booking.items[0].guests.length > 0
+    ) {
+      // Anonymous booking - send to first guest email
+      const firstGuest = booking.items[0].guests[0];
+      recipientEmail = firstGuest.email;
+      recipientName = `${firstGuest.firstName} ${firstGuest.lastName}`;
+    }
+
+    if (!recipientEmail) {
+      console.warn('No recipient email found for booking confirmation');
+      return;
+    }
+
+    try {
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: recipientEmail,
+        subject: `Booking Confirmation - ${booking.bookingId}`,
+        html: `
+          <h2>Booking Confirmation</h2>
+          <p>Dear ${recipientName},</p>
+          <p>Your booking has been successfully created.</p>
+          <br/>
+          <h3>Booking Details</h3>
+          <ul>
+            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
+            <li><strong>Status:</strong> ${booking.status || 'Pending'}</li>
+            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
+          </ul>
+          <br/>
+          <p>Thank you for booking with Orientala Spa. We look forward to serving you!</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending booking confirmation email:', error);
+      // Don't throw error to prevent booking creation from failing
+    }
+  }
+
+  async sendBookingNotificationToAdmin(
+    booking: any,
+    adminEmail: string,
+    branchName?: string,
+  ): Promise<void> {
+    if (!adminEmail) {
+      console.warn('No admin email found for booking notification');
+      return;
+    }
+
+    try {
+      const itemsList =
+        booking.items && booking.items.length > 0
+          ? booking.items
+              .map(
+                (item: any) => `
+              <li>
+                <strong>${item.itemType}:</strong> ${item.subService?.name || item.package?.name || item.programme?.name || 'N/A'}
+                (Qty: ${item.quantity}, Price: ${item.price})
+              </li>
+            `,
+              )
+              .join('')
+          : '<li>No items</li>';
+
+      const customerInfo = booking.customer
+        ? `
+            <p><strong>Customer Name:</strong> ${booking.customer.firstName} ${booking.customer.lastName}</p>
+            <p><strong>Customer Email:</strong> ${booking.customer.email}</p>
+            <p><strong>Customer Phone:</strong> ${booking.customer.phone || 'N/A'}</p>
+          `
+        : '<p><em>Anonymous booking (no registered customer)</em></p>';
+
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: adminEmail,
+        subject: `New Booking Created - ${booking.bookingId}`,
+        html: `
+          <h2>New Booking Notification</h2>
+          <p>A new booking has been created at ${branchName || 'your branch'}.</p>
+          <br/>
+          <h3>Booking Information</h3>
+          <ul>
+            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
+            <li><strong>Status:</strong> ${booking.status || 'Pending'}</li>
+            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
+            <li><strong>Booking Time:</strong> ${new Date(booking.bookingTime).toLocaleString() || 'N/A'}</li>
+          </ul>
+          <br/>
+          <h3>Customer Details</h3>
+          ${customerInfo}
+          <br/>
+          <h3>Booking Items</h3>
+          <ul>
+            ${itemsList}
+          </ul>
+          <br/>
+          <p>Please log in to the admin panel to view full booking details.</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa System</p>
+        `,
+      });
+    } catch (error) {
+      console.error('Error sending booking notification to admin:', error);
+      // Don't throw error to prevent booking creation from failing
+    }
+  }
+
+  async sendBookingStatusUpdateEmail(
+    booking: any,
+    newStatus: string,
+    customerEmail?: string,
+    customerName?: string,
+  ): Promise<void> {
+    // Determine recipient email: if customer exists, send to customer; otherwise send to first guest
+    let recipientEmail: string | null = null;
+    let recipientName: string = customerName || 'Guest';
+
+    if (customerEmail) {
+      // Customer exists - send to customer email
+      recipientEmail = customerEmail;
+    } else if (
+      booking.items &&
+      booking.items.length > 0 &&
+      booking.items[0].guests &&
+      booking.items[0].guests.length > 0
+    ) {
+      // Anonymous booking - send to first guest email
+      const firstGuest = booking.items[0].guests[0];
+      recipientEmail = firstGuest.email;
+      recipientName = `${firstGuest.firstName} ${firstGuest.lastName}`;
+    }
+
+    if (!recipientEmail) {
+      console.warn('No recipient email found for booking status update');
+      return;
+    }
+
+    try {
+      let emailSubject = '';
+      let emailMessage = '';
+      let emailTemplate = '';
+
+      if (newStatus.toLowerCase() === 'confirmed') {
+        emailSubject = `Booking Confirmed - ${booking.bookingId}`;
+        emailMessage = 'Your booking has been confirmed.';
+        emailTemplate = `
+          <h2>Booking Confirmed</h2>
+          <p>Dear ${recipientName},</p>
+          <p>${emailMessage}</p>
+          <br/>
+          <h3>Booking Details</h3>
+          <ul>
+            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
+            <li><strong>Status:</strong> ${newStatus}</li>
+            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
+          </ul>
+          <br/>
+          <p>We look forward to welcoming you at Orientala Spa!</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `;
+      } else if (newStatus.toLowerCase() === 'cancelled') {
+        emailSubject = `Booking Cancelled - ${booking.bookingId}`;
+        emailMessage = 'Your booking has been cancelled.';
+        emailTemplate = `
+          <h2>Booking Cancelled</h2>
+          <p>Dear ${recipientName},</p>
+          <p>${emailMessage}</p>
+          <br/>
+          <h3>Booking Details</h3>
+          <ul>
+            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
+            <li><strong>Status:</strong> ${newStatus}</li>
+            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
+          </ul>
+          <br/>
+          <p>If you have any questions or would like to make a new booking, please contact us.</p>
+          <br/>
+          <p>Best regards,<br/>Orientala Spa Team</p>
+        `;
+      }
+
+      if (emailTemplate) {
+        await this.resend.emails.send({
+          from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+          to: recipientEmail,
+          subject: emailSubject,
+          html: emailTemplate,
+        });
+      }
+    } catch (error) {
+      console.error('Error sending booking status update email:', error);
+      // Don't throw error to prevent booking update from failing
+    }
+  }
 }

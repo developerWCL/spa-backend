@@ -13,6 +13,7 @@ import { Room } from '../../entities/rooms.entity';
 import { Staff } from '../../entities/staffs.entity';
 import { EntityGuestGender } from '../../entities/enums/entity-guest.enum';
 import { GuestsService } from '../guests/guests.service';
+import { MailService } from '../../shared/services/mail.service';
 import {
   CreateBookingDto,
   UpdateBookingDto,
@@ -52,6 +53,7 @@ export class BookingService {
     @InjectRepository(Staff)
     private readonly staffRepository: Repository<Staff>,
     private readonly guestsService: GuestsService,
+    private readonly mailService: MailService,
   ) {}
 
   async create(data: CreateBookingDto): Promise<Booking> {
@@ -285,7 +287,29 @@ export class BookingService {
       }
     }
 
-    return this.findOne(id);
+    // Get the updated booking with all details
+    const updatedBooking = await this.findOne(id);
+
+    // Send status update email if status changed to confirmed or cancelled
+    if (
+      bookingData.status &&
+      (bookingData.status.toLowerCase() === 'confirmed' ||
+        bookingData.status.toLowerCase() === 'cancelled')
+    ) {
+      const customerEmail = updatedBooking.customer?.email;
+      const customerName = updatedBooking.customer
+        ? `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`
+        : undefined;
+
+      await this.mailService.sendBookingStatusUpdateEmail(
+        updatedBooking,
+        bookingData.status,
+        customerEmail,
+        customerName,
+      );
+    }
+
+    return updatedBooking;
   }
 
   async remove(id: string): Promise<void> {
@@ -441,8 +465,6 @@ export class BookingService {
         scheduledDate = itemData.scheduledDate;
       }
     }
-    console.log('scheduledDate', scheduledDate);
-    console.log('itemData', itemData.scheduledDate, itemData.scheduledTime);
 
     // Resolve bed - can come as full object or as bed ID
     let resolvedBed = itemData.bed;
@@ -468,7 +490,33 @@ export class BookingService {
       staff,
       guests: linkedGuests.length > 0 ? linkedGuests : undefined,
     });
-    return this.bookingItemRepository.save(bookingItem);
+    const savedItem = await this.bookingItemRepository.save(bookingItem);
+    // Load booking with customer and items/guests for email sending
+    const bookingWithDetails = await this.findOne(booking.id);
+
+    // Send booking confirmation email
+    // If customer exists, send to customer email; otherwise send to first guest email
+    const customerEmail = bookingWithDetails.customer?.email;
+    const customerName = bookingWithDetails.customer
+      ? `${bookingWithDetails.customer.firstName} ${bookingWithDetails.customer.lastName}`
+      : undefined;
+
+    await this.mailService.sendBookingConfirmationEmail(
+      bookingWithDetails,
+      customerEmail,
+      customerName,
+    );
+
+    // Send booking notification email to branch admin
+    if (bookingWithDetails.branch?.email) {
+      await this.mailService.sendBookingNotificationToAdmin(
+        bookingWithDetails,
+        bookingWithDetails.branch.email,
+        bookingWithDetails.branch.name,
+      );
+    }
+
+    return savedItem;
   }
 
   async updateBookingItem(
