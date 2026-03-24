@@ -21,6 +21,7 @@ import {
 } from './cart.types';
 import { CartStatus, CartItemType } from 'src/entities/enums/cart.enum';
 import { EntityGuestGender } from 'src/entities/enums/entity-guest.enum';
+import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 
 @Injectable()
 export class CartService {
@@ -539,5 +540,76 @@ export class CartService {
     cart.itemsCount = itemsCount;
 
     await this.cartRepo.save(cart);
+  }
+
+  async getAvailableItems(
+    serviceId: string,
+    itemType: CartItemType,
+    branchId: string,
+  ): Promise<(SubService | Package | Programme)[]> {
+    console.log(
+      'Getting available items for serviceId:',
+      serviceId,
+      'itemType:',
+      itemType,
+      'branchId:',
+      branchId,
+    );
+
+    switch (itemType) {
+      case CartItemType.SUB_SERVICE: {
+        const data = await this.subServiceRepo.find({
+          where: {
+            id: serviceId,
+            service: { status: EntityStatus.ACTIVE, branch: { id: branchId } },
+            status: EntityStatus.ACTIVE,
+          },
+          relations: ['service', 'service.branch'],
+        });
+        if (!data || data.length === 0) {
+          throw new NotFoundException(
+            `No active sub-service found with ID ${serviceId} in branch ${branchId}`,
+          );
+        }
+        return data;
+      }
+
+      case CartItemType.PACKAGE: {
+        const data = await this.packageRepo.find({
+          where: {
+            id: serviceId,
+            status: EntityStatus.ACTIVE,
+            branch: { id: branchId },
+          },
+          relations: ['branch'],
+        });
+        if (!data || data.length === 0) {
+          throw new NotFoundException(
+            `No active package found with ID ${serviceId} in branch ${branchId}`,
+          );
+        }
+        return data;
+      }
+
+      case CartItemType.PROGRAMME: {
+        const data = await this.programmeRepo.find({
+          where: {
+            id: serviceId,
+            status: EntityStatus.ACTIVE,
+            branch: { id: branchId },
+          },
+          relations: ['branch'],
+        });
+        if (!data || data.length === 0) {
+          throw new NotFoundException(
+            `No active programme found with ID ${serviceId} in branch ${branchId}`,
+          );
+        }
+        return data;
+      }
+
+      default:
+        throw new BadRequestException('Invalid item type');
+    }
   }
 }
