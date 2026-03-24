@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 import { Booking } from './bookings.entity';
 import { PaymentStatus, PaymentType } from './enums/booking.enum';
+
 @Entity('payments')
 export class Payment {
   @PrimaryGeneratedColumn('uuid')
@@ -30,6 +31,12 @@ export class Payment {
 
   @Column({ type: 'numeric' })
   amount: string;
+
+  @Column({ name: 'paypal_order_id', nullable: true })
+  paypalOrderId: string | null;
+
+  @Column({ name: 'paypal_capture_id', nullable: true })
+  paypalCaptureId: string | null;
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

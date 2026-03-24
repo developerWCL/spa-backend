@@ -11,8 +11,12 @@ async function bootstrap() {
   app.use(json({ limit: '5mb' }));
 
   // Enable CORS with credentials
+  const allowedOrigins = [
+    process.env.FRONTEND_URL || 'http://localhost:3000',
+    process.env.BOOKING_ENGINE_URL || 'http://localhost:3002',
+  ].filter(Boolean);
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: allowedOrigins,
     credentials: true,
     allowedHeaders: ['Content-Type', 'Authorization'],
   });
