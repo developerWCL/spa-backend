@@ -125,13 +125,72 @@ export class AuthService {
     );
   }
 
+  async resendOtp(email: string, spaId: string) {
+    const customer = await this.customerService.findByEmail(
+      email.toLowerCase(),
+    );
+    if (!customer) throw new BadRequestException('Customer not found');
+
+    const spa = await this.spaRepository.findOne({ where: { id: spaId } });
+    if (!spa) throw new BadRequestException('Invalid spaId');
+
+    // Generate new OTP
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Use transaction for atomicity
+    await this.otpRepository.manager.transaction(async (entityManager) => {
+      // Mark previous OTPs as expired/revoked (optional: you could delete or mark them)
+      const otpRepo = entityManager.getRepository(Otp);
+      await otpRepo.update(
+        {
+          email: email.toLowerCase(),
+          usedAt: null,
+          spa: { id: spaId },
+        },
+        { usedAt: new Date() },
+      );
+
+      // Create new OTP
+      await otpRepo.save(
+        otpRepo.create({
+          email: email.toLowerCase(),
+          code: otpCode,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          type: 'registration',
+          spa: spa,
+        }),
+      );
+    });
+
+    try {
+      await this.mailService.sendOtpEmail(email.toLowerCase(), otpCode);
+    } catch (error) {
+      console.error('Failed to send OTP email:', error);
+      throw new BadRequestException('Failed to send OTP email');
+    }
+
+    return { message: 'OTP resent to email' };
+  }
+
   async login(email: string, password: string) {
     const customer = await this.customerService.findByEmail(
       email.toLowerCase(),
     );
+    console.log('customer', customer);
+    const plain = 'Test@1234';
+    const hash = '$2b$10$u58heCimYBVOiNQv0814uexfzz/FKjnKPzeFdf2V3/hQeWTPTIjgK';
+
+    bcrypt.compare(plain, hash).then((res) => {
+      console.log('Is it valid?', res); // Should be true
+    });
     if (!customer || !customer.isVerified)
       throw new UnauthorizedException('Not verified');
     const valid = await bcrypt.compare(password, customer.password);
+    console.log('password', password);
+    console.log('customer.password', customer.password);
+
+    console.log('valid', valid);
+
     if (!valid) throw new UnauthorizedException('Invalid credentials');
     const payload = { sub: customer.id, email: customer.email };
     console.log('customer', customer.spa.id);
@@ -146,5 +205,172 @@ export class AuthService {
         spaIds: customer.spa ? [customer.spa.id] : [],
       },
     };
+  }
+
+  async requestPasswordReset(email: string, spaId: string) {
+    const customer = await this.customerService.findByEmail(
+      email.toLowerCase(),
+    );
+    if (!customer) throw new BadRequestException('Email not found');
+
+    const spa = await this.spaRepository.findOne({ where: { id: spaId } });
+    if (!spa) throw new BadRequestException('Invalid spaId');
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Use transaction for atomicity
+    await this.otpRepository.manager.transaction(async (entityManager) => {
+      const otpRepo = entityManager.getRepository(Otp);
+
+      // Invalidate previous password reset OTPs
+      await otpRepo.update(
+        {
+          email: email.toLowerCase(),
+          type: 'password_reset',
+          usedAt: null,
+          spa: { id: spaId },
+        },
+        { usedAt: new Date() },
+      );
+
+      // Create new password reset OTP
+      await otpRepo.save(
+        otpRepo.create({
+          email: email.toLowerCase(),
+          code: otpCode,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          type: 'password_reset',
+          spa: spa,
+        }),
+      );
+    });
+
+    try {
+      await this.mailService.sendOtpEmail(email.toLowerCase(), otpCode);
+    } catch (error) {
+      console.error('Failed to send OTP email:', error);
+    }
+
+    return { message: 'OTP sent to email' };
+  }
+
+  async verifyPasswordResetOtp(email: string, otp: string, spaId: string) {
+    return await this.customerRepo.manager.transaction(
+      async (entityManager) => {
+        const customer = await this.customerService.findByEmail(
+          email.toLowerCase(),
+        );
+        const otpRepo = entityManager.getRepository(Otp);
+        const otpRecord = await otpRepo.findOne({
+          where: {
+            email: email.toLowerCase(),
+            code: otp,
+            type: 'password_reset',
+            spa: { id: spaId },
+          },
+        });
+
+        if (!customer || !otpRecord || otpRecord.expiresAt < new Date()) {
+          throw new BadRequestException('Invalid or expired OTP');
+        }
+
+        // Mark OTP as used
+        await otpRepo.update(otpRecord.id, { usedAt: new Date() });
+
+        return { message: 'OTP verified' };
+      },
+    );
+  }
+
+  async resetPassword(
+    email: string,
+    otp: string,
+    newPassword: string,
+    spaId: string,
+  ) {
+    return await this.customerRepo.manager.transaction(
+      async (entityManager) => {
+        const customer = await this.customerService.findByEmail(
+          email.toLowerCase(),
+        );
+        const otpRepo = entityManager.getRepository(Otp);
+
+        // Verify OTP exists and was used for password reset
+        const otpRecord = await otpRepo.findOne({
+          where: {
+            email: email.toLowerCase(),
+            code: otp,
+            type: 'password_reset',
+            spa: { id: spaId },
+          },
+        });
+
+        if (!customer || !otpRecord || otpRecord.expiresAt < new Date()) {
+          throw new BadRequestException('Invalid or expired OTP');
+        }
+
+        // Update customer password
+        customer.password = newPassword;
+        await this.customerService.update(customer.id, customer, entityManager);
+
+        try {
+          await this.mailService.sendPasswordResetVerificationEmail(
+            customer.email,
+            customer.firstName,
+          );
+        } catch (error) {
+          console.error('Failed to send password reset confirmation:', error);
+        }
+
+        return { message: 'Password reset successfully' };
+      },
+    );
+  }
+
+  async resendPasswordResetOtp(email: string, spaId: string) {
+    const customer = await this.customerService.findByEmail(
+      email.toLowerCase(),
+    );
+    if (!customer) throw new BadRequestException('Email not found');
+
+    const spa = await this.spaRepository.findOne({ where: { id: spaId } });
+    if (!spa) throw new BadRequestException('Invalid spaId');
+
+    const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await this.otpRepository.manager.transaction(async (entityManager) => {
+      const otpRepo = entityManager.getRepository(Otp);
+
+      // Invalidate previous password reset OTPs
+      await otpRepo.update(
+        {
+          email: email.toLowerCase(),
+          type: 'password_reset',
+          usedAt: null,
+          spa: { id: spaId },
+        },
+        { usedAt: new Date() },
+      );
+
+      // Create new OTP
+      await otpRepo.save(
+        otpRepo.create({
+          email: email.toLowerCase(),
+          code: otpCode,
+          expiresAt: new Date(Date.now() + 10 * 60 * 1000),
+          type: 'password_reset',
+          spa: spa,
+        }),
+      );
+    });
+
+    try {
+      await this.mailService.sendOtpEmail(email.toLowerCase(), otpCode);
+    } catch (error) {
+      console.error('Failed to send OTP email:', error);
+      throw new BadRequestException('Failed to send OTP email');
+    }
+
+    return { message: 'OTP resent to email' };
   }
 }
