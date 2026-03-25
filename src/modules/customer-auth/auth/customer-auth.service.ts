@@ -12,6 +12,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Customer } from 'src/entities/customers.entity';
 import { MailService } from 'src/shared/services/mail.service';
 import { Spa } from 'src/entities/spa.entity';
+import { GoogleOAuthService, GoogleUserInfo } from './google-oauth.service';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +27,7 @@ export class AuthService {
     private readonly mailService: MailService,
     @InjectRepository(Spa)
     private readonly spaRepository: Repository<Spa>,
+    private readonly googleOAuthService: GoogleOAuthService,
   ) {}
 
   async register(
@@ -205,6 +207,77 @@ export class AuthService {
         spaIds: customer.spa ? [customer.spa.id] : [],
       },
     };
+  }
+
+  /**
+   * Login or create customer with Google OAuth
+   * @param googleUserInfo - User info from Google (via NextAuth)
+   * @param spaId - Spa ID to associate customer with
+   * @returns Access token and customer info
+   */
+  async loginWithGoogle(googleUserInfo: GoogleUserInfo, spaId: string) {
+    const spa = await this.spaRepository.findOne({ where: { id: spaId } });
+    if (!spa) throw new BadRequestException('Invalid spaId');
+
+    return await this.customerRepo.manager.transaction(
+      async (entityManager) => {
+        const customerRepo = entityManager.getRepository(Customer);
+
+        let customer = await customerRepo.findOne({
+          where: {
+            email: googleUserInfo.email.toLowerCase(),
+            spa: { id: spaId },
+          },
+          relations: ['spa'],
+        });
+
+        // If customer doesn't exist, create new one
+        if (!customer) {
+          customer = customerRepo.create({
+            email: googleUserInfo.email.toLowerCase(),
+            firstName: googleUserInfo.firstName,
+            lastName: googleUserInfo.lastName,
+            password: null, // No password for OAuth users
+            authProvider: 'google',
+            isVerified: true, // Auto-verify Google users
+            spa: spa,
+          });
+          await customerRepo.save(customer);
+        } else {
+          // Update authProvider if it was a local account
+          if (customer.authProvider === 'local' || !customer.authProvider) {
+            customer.authProvider = 'google';
+            customer.isVerified = true;
+            await customerRepo.save(customer);
+          }
+        }
+
+        const payload = { sub: customer.id, email: customer.email };
+
+        return {
+          accessToken: this.jwtService.sign(payload),
+          customer: {
+            id: customer.id,
+            email: customer.email,
+            firstName: customer.firstName,
+            lastName: customer.lastName,
+            authProvider: customer.authProvider,
+            spaIds: customer.spa ? [customer.spa.id] : [],
+          },
+        };
+      },
+    );
+  }
+
+  /**
+   * Verify Google ID token and login/create customer
+   * @param idToken - Google ID token from NextAuth
+   * @param spaId - Spa ID to associate customer with
+   * @returns Access token and customer info
+   */
+  async loginWithGoogleIdToken(idToken: string, spaId: string) {
+    const googleUserInfo = await this.googleOAuthService.verifyIdToken(idToken);
+    return this.loginWithGoogle(googleUserInfo, spaId);
   }
 
   async requestPasswordReset(email: string, spaId: string) {

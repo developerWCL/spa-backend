@@ -28,11 +28,14 @@ export class Customer {
   lastName: string;
 
   @Index({ unique: true })
-  @Column()
-  email: string;
+  @Column({ nullable: true })
+  email: string | null;
 
-  @Column()
-  password: string;
+  @Column({ nullable: true })
+  password: string | null;
+
+  @Column({ default: 'local' })
+  authProvider: string;
 
   @Column({ nullable: true })
   phone: string;
