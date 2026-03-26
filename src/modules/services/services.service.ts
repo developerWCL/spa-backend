@@ -18,6 +18,7 @@ import { CreateServiceDto, UpdateServiceDto } from './services.types';
 import { Package } from 'src/entities/packages.entity';
 import { Programme } from 'src/entities/programmes.entity';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
+import { PriceOverride } from 'src/entities/price_overides.entity';
 
 @Injectable()
 export class ServicesService {
@@ -330,8 +331,15 @@ export class ServicesService {
               if (subServiceDto.name) subService.name = subServiceDto.name;
               if (subServiceDto.durationMinutes !== undefined)
                 subService.durationMinutes = subServiceDto.durationMinutes;
-              if (subServiceDto.price !== undefined)
+              if (subServiceDto.price !== undefined) {
                 subService.price = subServiceDto.price;
+                if (dto.isOverride !== undefined && dto.isOverride === true) {
+                  // soft delete existing price overrides for this sub-service
+                  await manager.softDelete(PriceOverride, {
+                    subService: In(service.subServices.map((sub) => sub.id)),
+                  });
+                }
+              }
               if (subServiceDto.status)
                 subService.status = subServiceDto.status;
 

@@ -15,6 +15,7 @@ import {
 } from 'src/shared/pagination.util';
 import { PaginationParams } from 'src/shared/pagination.types';
 import { CreateProgrammeDto, UpdateProgrammeDto } from './programmes.types';
+import { PriceOverride } from 'src/entities/price_overides.entity';
 
 @Injectable()
 export class ProgrammesService {
@@ -195,7 +196,15 @@ export class ProgrammesService {
       if (dto.name !== undefined) programme.name = dto.name;
       if (dto.description !== undefined)
         programme.description = dto.description;
-      if (dto.price !== undefined) programme.price = dto.price;
+      if (dto.price !== undefined) {
+        programme.price = dto.price;
+        if (dto.isOverride !== undefined && dto.isOverride === true) {
+          // soft delete existing price overrides for this sub-service
+          await manager.softDelete(PriceOverride, {
+            programme: { id: programme.id },
+          });
+        }
+      }
       if (dto.maxConcurrentBookings !== undefined)
         programme.maxConcurrentBookings = dto.maxConcurrentBookings;
       if (dto.maxBookingsPerDay !== undefined)

@@ -23,6 +23,7 @@ import {
   UpdatePackageDto,
   CreateNewSubServiceDto,
 } from './packages.types';
+import { PriceOverride } from 'src/entities/price_overides.entity';
 
 @Injectable()
 export class PackagesService {
@@ -272,7 +273,15 @@ export class PackagesService {
 
       // Update basic fields
       if (dto.name !== undefined) pkg.name = dto.name;
-      if (dto.price !== undefined) pkg.price = dto.price;
+      if (dto.price !== undefined) {
+        pkg.price = dto.price;
+        if (dto.isOverride !== undefined && dto.isOverride === true) {
+          // soft delete existing price overrides for this sub-service
+          await manager.softDelete(PriceOverride, {
+            package: { id: pkg.id },
+          });
+        }
+      }
       if (dto.startDate !== undefined) pkg.startDate = new Date(dto.startDate);
       if (dto.endDate !== undefined) pkg.endDate = new Date(dto.endDate);
       if (dto.status !== undefined) pkg.status = dto.status;

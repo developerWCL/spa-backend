@@ -205,4 +205,10 @@ export class UpdateProgrammeDto {
   @IsOptional()
   @IsArray()
   mediaIds?: string[];
+
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Indicates if this programme is a price override',
+  })
+  isOverride?: boolean;
 }

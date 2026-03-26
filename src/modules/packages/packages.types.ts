@@ -230,4 +230,10 @@ export class UpdatePackageDto {
   @IsArray()
   @IsUUID('all', { each: true })
   mediaIds?: string[];
+
+  @ApiPropertyOptional({
+    description: 'Indicates if this package is a price override',
+  })
+  @IsOptional()
+  isOverride?: boolean;
 }
