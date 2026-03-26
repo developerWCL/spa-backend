@@ -2,9 +2,10 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, FindOptionsWhere, Raw } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Bed } from 'src/entities/beds.entity';
 import { CreateBedDto, UpdateBedDto } from './beds.types';
 import { paginate } from 'src/shared/pagination.util';
@@ -51,36 +52,79 @@ export class BedsService {
     limit: number = 10,
     search?: string,
     status?: string,
+    date?: string,
   ): Promise<PaginatedResponse<Bed>> {
     if (!userBranchIds.includes(branchId)) {
       throw new ForbiddenException('Access denied to this branch');
     }
+    console.log('date', date);
 
-    const where: FindOptionsWhere<Bed> = {
-      branch: { id: branchId },
-    };
+    // Validate date format if provided
+    if (date) {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) {
+        throw new BadRequestException('Invalid date format');
+      }
+    }
 
-    // Add search filter (case-insensitive)
+    const skip = (page - 1) * limit;
+
+    // Build the base query using QueryBuilder
+    let query = this.bedRepo
+      .createQueryBuilder('bed')
+      .leftJoinAndSelect('bed.room', 'room')
+      .leftJoinAndSelect('room.branch', 'branch')
+      .where('bed.branchId = :branchId', { branchId })
+      .orderBy('bed.createdAt', 'DESC');
+
+    // Add search filter
     if (search) {
-      where.name = Raw((alias) => `LOWER(${alias}) LIKE :search`, {
-        search: `%${search.toLowerCase()}%`,
+      query = query.andWhere('bed.name LIKE :search', {
+        search: `%${search}%`,
       });
     }
 
     // Add status filter
     if (status) {
-      where.status = status as RoomStatus;
+      query = query.andWhere('bed.status = :status', {
+        status: status as RoomStatus,
+      });
     }
 
-    const skip = (page - 1) * limit;
+    // Add date filter - exclude beds whose rooms have closures on the specified date
+    if (date) {
+      const dateObj = new Date(date);
+      const startOfDay = new Date(
+        dateObj.getFullYear(),
+        dateObj.getMonth(),
+        dateObj.getDate(),
+      );
+      const endOfDay = new Date(
+        dateObj.getFullYear(),
+        dateObj.getMonth(),
+        dateObj.getDate() + 1,
+      );
 
-    const [beds, total] = await this.bedRepo.findAndCount({
-      where,
-      relations: ['room', 'room.branch'],
-      order: { createdAt: 'DESC' },
-      take: limit,
-      skip,
-    });
+      // Find beds whose rooms have closures on the date
+      const subquery = this.bedRepo
+        .createQueryBuilder('closureBed')
+        .select('closureBed.id')
+        .leftJoin('closureBed.room', 'closureRoom')
+        .leftJoin('closureRoom.closure', 'roomClosure')
+        .leftJoin('closureBed.closure', 'closure')
+        .where(
+          'closure.closureDate >= :startOfDay AND closure.closureDate < :endOfDay',
+          { startOfDay, endOfDay },
+        )
+        .andWhere('closure.deletedAt IS NULL');
+
+      query = query.andWhere(`bed.id NOT IN (${subquery.getQuery()})`, {
+        startOfDay,
+        endOfDay,
+      });
+    }
+
+    const [beds, total] = await query.take(limit).skip(skip).getManyAndCount();
     console.log(beds);
 
     // Return beds with full room and branch data

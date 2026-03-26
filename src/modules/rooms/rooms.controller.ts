@@ -42,6 +42,7 @@ export class RoomsController {
     @Query('limit') limit?: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
+    @Query('date') date?: string,
     @CurrentUser() currentUser?: CurrentUserPayload,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
@@ -53,6 +54,7 @@ export class RoomsController {
       limitNum,
       search,
       status,
+      date,
     );
   }
 

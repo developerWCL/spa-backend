@@ -5,7 +5,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, Like, FindOptionsWhere } from 'typeorm';
+import { Repository } from 'typeorm';
 import { Room } from 'src/entities/rooms.entity';
 import { Branch } from 'src/entities/branch.entity';
 import { CreateRoomDto, UpdateRoomDto } from './rooms.types';
@@ -48,34 +48,77 @@ export class RoomsService {
     limit: number = 10,
     search?: string,
     status?: string,
+    date?: string,
   ): Promise<PaginatedResponse<Room>> {
     if (!userBranchIds.includes(branchId)) {
       throw new ForbiddenException('Access denied to this branch');
     }
 
-    const where: FindOptionsWhere<Room> = {
-      branch: { id: branchId },
-    };
-
-    // Add search filter
-    if (search) {
-      where.name = Like(`%${search}%`);
-    }
-
-    // Add status filter
-    if (status) {
-      where.status = status as RoomStatus;
+    // Validate date format if provided
+    if (date) {
+      const dateObj = new Date(date);
+      if (isNaN(dateObj.getTime())) {
+        throw new BadRequestException('Invalid date format');
+      }
     }
 
     const skip = (page - 1) * limit;
 
-    const [rooms, total] = await this.roomRepo.findAndCount({
-      where,
-      relations: ['branch', 'beds'],
-      order: { createdAt: 'DESC' },
-      take: limit,
-      skip,
-    });
+    // Build the base query
+    let query = this.roomRepo
+      .createQueryBuilder('room')
+      .leftJoinAndSelect('room.branch', 'branch')
+      .leftJoinAndSelect('room.beds', 'beds')
+      .leftJoinAndSelect('room.closure', 'closure')
+      .where('room.branchId = :branchId', { branchId })
+      .orderBy('room.createdAt', 'DESC');
+
+    // Add search filter
+    if (search) {
+      query = query.andWhere('room.name LIKE :search', {
+        search: `%${search}%`,
+      });
+    }
+
+    // Add status filter
+    if (status) {
+      query = query.andWhere('room.status = :status', {
+        status: status as RoomStatus,
+      });
+    }
+
+    // Add date filter - exclude rooms that have closures on the specified date
+    if (date) {
+      const dateObj = new Date(date);
+      const startOfDay = new Date(
+        dateObj.getFullYear(),
+        dateObj.getMonth(),
+        dateObj.getDate(),
+      );
+      const endOfDay = new Date(
+        dateObj.getFullYear(),
+        dateObj.getMonth(),
+        dateObj.getDate() + 1,
+      );
+
+      // Use a subquery with QueryBuilder to find rooms without closures on the date
+      const subquery = this.roomRepo
+        .createQueryBuilder('closureRoom')
+        .select('closureRoom.id')
+        .leftJoin('closureRoom.closure', 'roomClosure')
+        .where(
+          'roomClosure.closureDate >= :startOfDay AND roomClosure.closureDate < :endOfDay AND roomClosure.bedId IS NULL',
+          { startOfDay, endOfDay },
+        )
+        .andWhere('roomClosure.deletedAt IS NULL');
+
+      query = query.andWhere(`room.id NOT IN (${subquery.getQuery()})`, {
+        startOfDay,
+        endOfDay,
+      });
+    }
+
+    const [rooms, total] = await query.take(limit).skip(skip).getManyAndCount();
     return paginate({ page, limit }, total, rooms);
   }
 
