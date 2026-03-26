@@ -13,6 +13,7 @@ import { ProgrammeStep } from './programmes_step.entity';
 import { ProgrammeTranslation } from './programme_translation.entity';
 import { Media } from './media.entity';
 import { EntityStatus } from './enums/entity-status.enum';
+import { PriceOverride } from './price_overides.entity';
 
 @Entity('programmes')
 export class Programme {
@@ -63,6 +64,9 @@ export class Programme {
     eager: true,
   })
   translations: ProgrammeTranslation[];
+
+  @OneToMany(() => PriceOverride, (po) => po.programme)
+  priceOverrides: PriceOverride[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

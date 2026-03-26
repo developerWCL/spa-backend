@@ -22,6 +22,7 @@ import { BookingModule } from './modules/booking/booking.module';
 import { CustomerAuthModule } from './modules/customer-auth/customer-auth.module';
 import { GuestsModule } from './modules/guests/guests.module';
 import { CartModule } from './modules/cart/cart.module';
+import { PriceOverridesModule } from './modules/price-overrides/price-overrides.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { CartModule } from './modules/cart/cart.module';
     CustomerAuthModule,
     GuestsModule,
     CartModule,
+    PriceOverridesModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],

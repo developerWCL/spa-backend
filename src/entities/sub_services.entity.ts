@@ -12,6 +12,7 @@ import { Service } from './services.entity';
 import { SubServiceTranslation } from './sub_service_translations.entity';
 import { EntityStatus } from './enums/entity-status.enum';
 import { BookingItem } from './booking_items.entity';
+import { PriceOverride } from './price_overides.entity';
 
 @Entity('sub_services')
 export class SubService {
@@ -23,6 +24,9 @@ export class SubService {
 
   @OneToMany(() => BookingItem, (bi) => bi.subService)
   bookingItems: BookingItem[];
+
+  @OneToMany(() => PriceOverride, (po) => po.subService)
+  priceOverrides: PriceOverride[];
 
   @Column()
   name: string;
