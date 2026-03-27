@@ -217,6 +217,12 @@ export class UpdateServiceDto {
   @Type(() => SubServiceDto)
   @IsArray()
   subServices?: SubServiceDto[];
+
+  @IsOptional()
+  @ApiPropertyOptional({
+    description: 'Indicates if this service is a price override',
+  })
+  isOverride?: boolean;
 }
 
 export class BookingCountEntryDto {

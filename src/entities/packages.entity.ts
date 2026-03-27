@@ -15,6 +15,7 @@ import { EntityStatus } from './enums/entity-status.enum';
 import { Media } from './media.entity';
 import { PackageTranslation } from './package_translation.entity';
 import { SubService } from './sub_services.entity';
+import { PriceOverride } from './price_overides.entity';
 
 @Entity('packages')
 export class Package {
@@ -54,6 +55,9 @@ export class Package {
     inverseJoinColumn: { name: 'sub_service_id', referencedColumnName: 'id' },
   })
   subServices: SubService[];
+
+  @OneToMany(() => PriceOverride, (po) => po.package)
+  priceOverrides: PriceOverride[];
 
   @ManyToOne(() => Branch, (b) => b.packages, { onDelete: 'CASCADE' })
   branch: Branch;

@@ -8,6 +8,7 @@ import { CustomerSubmodule } from '../customer/customer.module';
 import { JwtModule } from '@nestjs/jwt';
 import { Otp } from 'src/entities/otp.entity';
 import { Spa } from 'src/entities/spa.entity';
+import { GoogleOAuthService } from './google-oauth.service';
 
 @Module({
   imports: [
@@ -18,8 +19,8 @@ import { Spa } from 'src/entities/spa.entity';
       signOptions: { expiresIn: '1d' },
     }),
   ],
-  providers: [AuthService, MailService],
+  providers: [AuthService, MailService, GoogleOAuthService],
   controllers: [AuthController],
-  exports: [AuthService, MailService],
+  exports: [AuthService, MailService, GoogleOAuthService],
 })
 export class AuthSubmodule {}

@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Req,
+  Query,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import {
@@ -18,6 +19,7 @@ import {
 } from './cart.types';
 import { ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CustomerJwtAuthGuard } from 'src/guards/customer-jwt.guard';
+import { CartItemType } from 'src/entities/enums/cart.enum';
 
 @Controller('carts')
 @ApiBearerAuth()
@@ -50,6 +52,16 @@ export class CartController {
       return { message: 'No active cart found' };
     }
     return cart;
+  }
+
+  @Get('available-items')
+  @ApiOperation({ summary: 'Get available items for cart' })
+  async getAvailableItems(
+    @Query('serviceId') serviceId: string,
+    @Query('itemType') itemType: CartItemType,
+    @Query('branchId') branchId: string,
+  ) {
+    return this.cartService.getAvailableItems(serviceId, itemType, branchId);
   }
 
   @Get(':cartId')

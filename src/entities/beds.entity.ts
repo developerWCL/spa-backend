@@ -6,10 +6,12 @@ import {
   UpdateDateColumn,
   DeleteDateColumn,
   ManyToOne,
+  OneToMany,
 } from 'typeorm';
 import { Room } from './rooms.entity';
 import { BedType, RoomStatus } from './enums/entity-room.enum';
 import { Branch } from './branch.entity';
+import { RoomBedClosure } from './room_bed_closure.entity';
 
 @Entity('beds')
 export class Bed {
@@ -38,6 +40,9 @@ export class Bed {
     enum: RoomStatus,
   })
   status: RoomStatus;
+
+  @OneToMany(() => RoomBedClosure, (closure) => closure.bed)
+  closure: RoomBedClosure[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

@@ -17,11 +17,13 @@ import { PackagesModule } from './modules/packages/packages.module';
 import { RoomsModule } from './modules/rooms/rooms.module';
 
 import { BedsModule } from './modules/beds/beds.module';
+import { RoomBedClosureModule } from './modules/room-bed-closure/room-bed-closure.module';
 import { BookingModule } from './modules/booking/booking.module';
 import { CustomerAuthModule } from './modules/customer-auth/customer-auth.module';
 import { GuestsModule } from './modules/guests/guests.module';
 import { CartModule } from './modules/cart/cart.module';
 import { PaypalModule } from './modules/paypal/paypal.module';
+import { PriceOverridesModule } from './modules/price-overrides/price-overrides.module';
 
 @Module({
   imports: [
@@ -37,12 +39,14 @@ import { PaypalModule } from './modules/paypal/paypal.module';
     PackagesModule,
     RoomsModule,
     BedsModule,
+    RoomBedClosureModule,
     BookingModule,
     PromotionModule,
     CustomerAuthModule,
     GuestsModule,
     CartModule,
     PaypalModule,
+    PriceOverridesModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],

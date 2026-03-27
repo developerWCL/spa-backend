@@ -12,6 +12,7 @@ import { Branch } from './branch.entity';
 import { Bed } from './beds.entity';
 import { RoomStatus } from './enums/entity-room.enum';
 import { BookingItem } from './booking_items.entity';
+import { RoomBedClosure } from './room_bed_closure.entity';
 
 @Entity('rooms')
 export class Room {
@@ -43,6 +44,9 @@ export class Room {
     enum: RoomStatus,
   })
   status: RoomStatus;
+
+  @OneToMany(() => RoomBedClosure, (closure) => closure.room)
+  closure: RoomBedClosure[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
