@@ -127,8 +127,51 @@ export class PriceOverridesService {
 
       const rangeStart = `${startDay} 00:00:00.000`;
       const rangeEnd = `${endDay} 23:59:59.999`;
+
       query.andWhere(
         'priceOverride.overrideStartDate >= :rangeStart AND priceOverride.overrideEndDate <= :rangeEnd',
+        {
+          rangeStart,
+          rangeEnd,
+        },
+      );
+    }
+
+    const priceOverrides = await query
+      .orderBy('priceOverride.overrideStartDate', 'DESC')
+      .getMany();
+
+    return priceOverrides;
+  }
+  async findByDate(
+    date: string,
+    branchId?: string,
+  ): Promise<PriceOverride[] | PaginatedResponse<PriceOverride>> {
+    const query = this.priceOverrideRepo
+      .createQueryBuilder('priceOverride')
+      .leftJoinAndSelect('priceOverride.subService', 'subService')
+      .leftJoinAndSelect('priceOverride.package', 'package')
+      .leftJoinAndSelect('priceOverride.programme', 'programme')
+      .leftJoinAndSelect('subService.service', 'subServiceService');
+
+    if (branchId) {
+      query.andWhere(
+        new Brackets((qb) => {
+          qb.where(
+            'subServiceService.branchId = :branchId OR package.branchId = :branchId OR programme.branchId = :branchId',
+            { branchId: branchId },
+          );
+        }),
+      );
+    }
+    if (date) {
+      const day = date.split('T')[0];
+
+      const rangeStart = `${day} 00:00:00.000`;
+      const rangeEnd = `${day} 23:59:59.999`;
+
+      query.andWhere(
+        'priceOverride.overrideStartDate <= :rangeStart AND priceOverride.overrideEndDate >= :rangeEnd',
         {
           rangeStart,
           rangeEnd,

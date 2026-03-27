@@ -108,6 +108,23 @@ export class PriceOverridesController {
     });
   }
 
+  @Get('by-date')
+  @ApiOperation({
+    summary: 'Get price overrides active on a specific date',
+  })
+  @ApiQuery({
+    name: 'date',
+    required: true,
+    type: 'string',
+    description: 'Date to check for active overrides (ISO format)',
+  })
+  findByDate(
+    @Query('date') date: string,
+    @Headers('branchId') branchId?: string,
+  ) {
+    return this.priceOverridesService.findByDate(date, branchId);
+  }
+
   @Get('sub-service/:subServiceId')
   @ApiOperation({
     summary: 'Get all price overrides for a specific sub-service',
