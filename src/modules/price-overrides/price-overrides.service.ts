@@ -36,12 +36,12 @@ export class PriceOverridesService {
 
     // Set start date with custom hours or default (00:00:00) - Use local timezone
     const startDate = new Date(dto.overrideStartDate);
-    startDate.setUTCHours(0, 0, 0, 0);
+    startDate.setHours(0, 0, 0, 0);
     priceOverride.overrideStartDate = startDate;
 
     // Set end date with custom hours or default (23:59:59) - Use local timezone
     const endDate = new Date(dto.overrideEndDate);
-    endDate.setUTCHours(23, 59, 59, 999);
+    endDate.setHours(23, 59, 59, 999);
     priceOverride.overrideEndDate = endDate;
 
     priceOverride.price = dto.price;
@@ -98,21 +98,6 @@ export class PriceOverridesService {
       .leftJoinAndSelect('priceOverride.programme', 'programme')
       .leftJoinAndSelect('subService.service', 'subServiceService');
 
-    if (filters?.startDate && filters?.endDate) {
-      const startDate = new Date(filters.startDate);
-      startDate.setUTCHours(0, 0, 0, 0);
-
-      const endDate = new Date(filters.endDate);
-      endDate.setUTCHours(23, 59, 59, 999);
-      // query.andWhere(
-      //   'priceOverride.overrideStartDate >= :startDate AND priceOverride.overrideEndDate <= :endDate',
-      //   {
-      //     startDate,
-      //     endDate,
-      //   },
-      // );
-    }
-
     if (filters?.search) {
       query.andWhere(
         new Brackets((qb) => {
@@ -128,10 +113,29 @@ export class PriceOverridesService {
 
     if (filters?.branchId) {
       query.andWhere(
-        'subServiceService.branchId = :branchId OR package.branchId = :branchId OR programme.branchId = :branchId',
-        { branchId: filters.branchId },
+        new Brackets((qb) => {
+          qb.where(
+            'subServiceService.branchId = :branchId OR package.branchId = :branchId OR programme.branchId = :branchId',
+            { branchId: filters.branchId },
+          );
+        }),
       );
     }
+    if (filters?.startDate && filters?.endDate) {
+      const startDay = filters.startDate.split('T')[0];
+      const endDay = filters.endDate.split('T')[0];
+
+      const rangeStart = `${startDay} 00:00:00.000`;
+      const rangeEnd = `${endDay} 23:59:59.999`;
+      query.andWhere(
+        'priceOverride.overrideStartDate >= :rangeStart AND priceOverride.overrideEndDate <= :rangeEnd',
+        {
+          rangeStart,
+          rangeEnd,
+        },
+      );
+    }
+
     const priceOverrides = await query
       .orderBy('priceOverride.overrideStartDate', 'DESC')
       .getMany();
@@ -188,13 +192,13 @@ export class PriceOverridesService {
 
     if (dto.overrideStartDate) {
       const startDate = new Date(dto.overrideStartDate);
-      startDate.setUTCHours(0, 0, 0, 0);
+      startDate.setHours(0, 0, 0, 0);
       priceOverride.overrideStartDate = startDate;
     }
 
     if (dto.overrideEndDate) {
       const endDate = new Date(dto.overrideEndDate);
-      endDate.setUTCHours(23, 59, 59, 999);
+      endDate.setHours(23, 59, 59, 999);
       priceOverride.overrideEndDate = endDate;
     }
 

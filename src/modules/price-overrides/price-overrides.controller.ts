@@ -75,6 +75,25 @@ export class PriceOverridesController {
     type: 'number',
     description: 'Items per page (default: 10, max: 100)',
   })
+  @ApiQuery({
+    name: 'startDate',
+    required: false,
+    type: 'string',
+    description: 'Filter overrides active from this date (ISO format)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: false,
+    type: 'string',
+    description: 'Filter overrides active until this date (ISO format)',
+  })
+  @ApiQuery({
+    name: 'search',
+    required: false,
+    type: 'string',
+    description:
+      'Search term to filter by sub-service, package, or programme name',
+  })
   findAll(
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,

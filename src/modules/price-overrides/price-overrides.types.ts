@@ -1,4 +1,10 @@
-import { IsNumber, IsDateString, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsNumber,
+  IsDateString,
+  IsOptional,
+  IsUUID,
+  IsString,
+} from 'class-validator';
 
 export class CreatePriceOverrideDto {
   @IsDateString()
@@ -25,11 +31,11 @@ export class CreatePriceOverrideDto {
 
 export class UpdatePriceOverrideDto {
   @IsOptional()
-  @IsDateString()
+  @IsString()
   overrideStartDate?: string;
 
   @IsOptional()
-  @IsDateString()
+  @IsString()
   overrideEndDate?: string;
 
   @IsOptional()
