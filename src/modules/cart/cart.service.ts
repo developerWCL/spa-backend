@@ -215,7 +215,7 @@ export class CartService {
             );
           }
           item.subService = subService;
-          price = subService.price || '0';
+          price = dto.price || subService.price || '0';
         }
         break;
 
@@ -234,7 +234,7 @@ export class CartService {
             );
           }
           item.package = packageItem;
-          price = packageItem.price || '0';
+          price = dto.price || packageItem.price || '0';
         }
         break;
 
@@ -312,7 +312,7 @@ export class CartService {
         );
       }
       cartItem.subService = subService;
-      cartItem.price = subService.price || '0';
+      cartItem.price = dto.price || subService.price || '0';
     }
 
     if (dto.packageId !== undefined) {
@@ -325,7 +325,7 @@ export class CartService {
         );
       }
       cartItem.package = packageItem;
-      cartItem.price = packageItem.price || '0';
+      cartItem.price = dto.price || packageItem.price || '0';
     }
 
     if (dto.programmeId !== undefined) {
@@ -338,7 +338,7 @@ export class CartService {
         );
       }
       cartItem.programme = programme;
-      cartItem.price = programme.price || '0';
+      cartItem.price = dto.price || programme.price || '0';
     }
 
     if (dto.scheduledDate !== undefined) {

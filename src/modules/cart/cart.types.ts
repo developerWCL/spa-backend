@@ -156,6 +156,11 @@ export class UpdateCartItemDto {
   @ValidateNested({ each: true })
   @Type(() => GuestDto)
   guests?: GuestDto[];
+
+  @ApiPropertyOptional({ description: 'Price for this item' })
+  @IsOptional()
+  @IsString()
+  price?: string;
 }
 
 export class CreateCartDto {
@@ -214,6 +219,11 @@ export class AddToCartDto {
   @IsOptional()
   @IsNumber()
   quantity?: number;
+
+  @ApiPropertyOptional({ description: 'Price for this item' })
+  @IsOptional()
+  @IsString()
+  price?: string;
 
   @ApiPropertyOptional({
     description: 'Scheduled date for booking',

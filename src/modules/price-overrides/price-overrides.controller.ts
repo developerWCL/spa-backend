@@ -26,11 +26,12 @@ import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
 
 @Controller('price-overrides')
-@UseGuards(StaffJwtAuthGuard)
+// @UseGuards(StaffJwtAuthGuard)
 @ApiBearerAuth()
 export class PriceOverridesController {
   constructor(private readonly priceOverridesService: PriceOverridesService) {}
 
+  @UseGuards(StaffJwtAuthGuard)
   @Post()
   @ApiOperation({
     summary:
@@ -130,6 +131,7 @@ export class PriceOverridesController {
     return this.priceOverridesService.findOne(id);
   }
 
+  @UseGuards(StaffJwtAuthGuard)
   @Put(':id')
   @ApiOperation({ summary: 'Update a price override' })
   @ApiParam({
@@ -141,6 +143,7 @@ export class PriceOverridesController {
     return this.priceOverridesService.update(id, dto);
   }
 
+  @UseGuards(StaffJwtAuthGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'Delete a price override (soft delete)' })
   @ApiParam({

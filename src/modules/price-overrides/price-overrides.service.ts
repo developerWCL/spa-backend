@@ -104,13 +104,13 @@ export class PriceOverridesService {
 
       const endDate = new Date(filters.endDate);
       endDate.setUTCHours(23, 59, 59, 999);
-      query.andWhere(
-        'priceOverride.overrideStartDate >= :startDate AND priceOverride.overrideEndDate <= :endDate',
-        {
-          startDate,
-          endDate,
-        },
-      );
+      // query.andWhere(
+      //   'priceOverride.overrideStartDate >= :startDate AND priceOverride.overrideEndDate <= :endDate',
+      //   {
+      //     startDate,
+      //     endDate,
+      //   },
+      // );
     }
 
     if (filters?.search) {
