@@ -112,8 +112,8 @@ export class ServicesController {
 
   @Get('sub-services')
   @ApiOperation({ summary: 'Get sub-services for a main service' })
-  getSubServices() {
-    return this.servicesService.getSubServices();
+  getSubServices(@Query('branchId') branchId?: string) {
+    return this.servicesService.getSubServices(branchId);
   }
 
   @Get(':id')

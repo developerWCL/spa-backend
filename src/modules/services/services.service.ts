@@ -804,12 +804,16 @@ export class ServicesService {
     };
   }
 
-  async getSubServices() {
+  async getSubServices(branchId: string) {
     return await this.subServiceRepo.find({
       where: {
         deletedAt: null,
         status: EntityStatus.ACTIVE,
-        service: { deletedAt: null, status: EntityStatus.ACTIVE },
+        service: {
+          deletedAt: null,
+          status: EntityStatus.ACTIVE,
+          branch: { id: branchId },
+        },
       },
       relations: ['service', 'translations'],
     });
