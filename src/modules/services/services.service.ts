@@ -143,7 +143,7 @@ export class ServicesService {
 
   async findAll(
     branchId: string,
-    filters?: { search?: string; categoryId?: string },
+    filters?: { search?: string; categoryId?: string; status?: EntityStatus },
     paginationParams?: PaginationParams,
   ) {
     // Build query with filters
@@ -172,6 +172,12 @@ export class ServicesService {
     if (filters?.categoryId) {
       query = query.andWhere('service.categoryId = :categoryId', {
         categoryId: filters.categoryId,
+      });
+    }
+
+    if (filters?.status) {
+      query = query.andWhere('service.status = :status', {
+        status: filters.status,
       });
     }
 

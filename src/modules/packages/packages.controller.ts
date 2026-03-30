@@ -90,11 +90,12 @@ export class PackagesController {
     @Query('branchId') branchId?: string,
     @Query('search') search?: string,
     @Query('status') status?: EntityStatus,
+    @Query('onlyAvailable') onlyAvailable?: boolean,
     @Query() paginationParams?: PaginationParams,
   ) {
     return this.packagesService.findAll(
       branchId,
-      { search, status },
+      { search, status, onlyAvailable },
       paginationParams,
     );
   }

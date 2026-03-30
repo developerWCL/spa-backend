@@ -200,6 +200,7 @@ export class PackagesService {
     filters?: {
       search?: string;
       status?: EntityStatus;
+      onlyAvailable?: boolean;
     },
     paginationParams?: PaginationParams,
   ) {
@@ -213,6 +214,12 @@ export class PackagesService {
 
     if (branchId && branchId !== 'undefined') {
       query.where('pkg.branchId = :branchId', { branchId });
+    }
+    if (filters?.onlyAvailable) {
+      const today = new Date();
+      query.andWhere('pkg.startDate <= :today AND pkg.endDate >= :today', {
+        today,
+      });
     }
 
     query.addOrderBy('media.createdAt', 'ASC');

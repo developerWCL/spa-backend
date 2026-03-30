@@ -20,6 +20,7 @@ import {
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
+import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 
 @Controller('services')
 @ApiBearerAuth()
@@ -84,6 +85,7 @@ export class ServicesController {
     @Query('categoryId') categoryId?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('status') status?: EntityStatus,
   ) {
     const paginationParams: PaginationParams =
       page || limit
@@ -94,7 +96,7 @@ export class ServicesController {
         : undefined;
     return this.servicesService.findAll(
       branchId,
-      { search, categoryId },
+      { search, categoryId, status },
       paginationParams,
     );
   }
