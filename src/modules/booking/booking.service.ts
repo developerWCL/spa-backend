@@ -1,6 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Brackets, Repository } from 'typeorm';
 import { Booking } from '../../entities/bookings.entity';
 import { BookingItem } from '../../entities/booking_items.entity';
 import { Promotion } from '../../entities/promotions.entity';
@@ -154,16 +154,27 @@ export class BookingService {
       .leftJoinAndSelect('items.staff', 'staff')
       .leftJoinAndSelect('items.room', 'itemRoom')
       .leftJoinAndSelect('items.guests', 'guests')
-      .where('booking.branchId = :branchId', { branchId });
+      .where('booking.branchId = :branchId', { branchId })
+      .andWhere('payments.status != :paidStatus', { paidStatus: 'failed' });
 
     if (status && status !== 'all') {
       query = query.andWhere('booking.status = :status', { status });
     }
 
     if (search) {
+      const searchTerm = `%${search.toLowerCase()}%`;
       query = query.andWhere(
-        '(LOWER(customer.firstName) LIKE LOWER(:search) OR LOWER(customer.lastName) LIKE LOWER(:search))',
-        { search: `%${search}%` },
+        new Brackets((qb) => {
+          qb.where('LOWER(customer.firstName) LIKE :search', {
+            search: searchTerm,
+          })
+            .orWhere('LOWER(customer.lastName) LIKE :search', {
+              search: searchTerm,
+            })
+            .orWhere('LOWER(booking.bookingId) LIKE :search', {
+              search: searchTerm,
+            });
+        }),
       );
     }
 
@@ -293,6 +304,7 @@ export class BookingService {
     // Send status update email if status changed to confirmed or cancelled
     if (
       bookingData.status &&
+      updatedBooking.status !== bookingData.status &&
       (bookingData.status.toLowerCase() === 'confirmed' ||
         bookingData.status.toLowerCase() === 'cancelled')
     ) {
