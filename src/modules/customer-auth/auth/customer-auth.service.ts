@@ -40,7 +40,10 @@ export class AuthService {
   ) {
     const existing = await this.customerService.findByEmail(email);
     if (existing) throw new BadRequestException('Email already exists');
-    const hashed = await bcrypt.hash(password, 10);
+    // const hashed = await bcrypt.hash(password, 10);
+    // console.log('password', password);
+    // console.log('hashed', hashed);
+
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
     // Use transaction for atomicity
     await this.customerRepo.manager.transaction(async (entityManager) => {
@@ -50,12 +53,12 @@ export class AuthService {
       await this.customerService.create(
         {
           email: email.toLowerCase(),
-          password: hashed,
+          password,
           firstName,
           lastName,
           phone,
           spa: spa,
-          isVerified: true,
+          isVerified: false,
         },
         entityManager,
       );
