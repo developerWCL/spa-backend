@@ -110,19 +110,26 @@ export class PriceOverridesController {
 
   @Get('by-date')
   @ApiOperation({
-    summary: 'Get price overrides active on a specific date',
+    summary: 'Get price overrides active within a specific date range',
   })
   @ApiQuery({
-    name: 'date',
+    name: 'startDate',
     required: true,
     type: 'string',
-    description: 'Date to check for active overrides (ISO format)',
+    description: 'Start date to check for active overrides (ISO format)',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    required: true,
+    type: 'string',
+    description: 'End date to check for active overrides (ISO format)',
   })
   findByDate(
-    @Query('date') date: string,
+    @Query('startDate') startDate: string,
+    @Query('endDate') endDate: string,
     @Headers('branchId') branchId?: string,
   ) {
-    return this.priceOverridesService.findByDate(date, branchId);
+    return this.priceOverridesService.findByDate(startDate, endDate, branchId);
   }
 
   @Get('sub-service/:subServiceId')

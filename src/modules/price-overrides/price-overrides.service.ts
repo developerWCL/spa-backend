@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { PriceOverride } from 'src/entities/price_overides.entity';
@@ -53,6 +57,24 @@ export class PriceOverridesService {
         );
       }
       priceOverride.subService = subService;
+
+      // Check for overlapping date ranges with the same subService
+      const overlappingSubServices = await this.priceOverrideRepo.find({
+        where: {
+          subService: { id: dto.subServiceId },
+        },
+      });
+      if (overlappingSubServices && overlappingSubServices.length > 0) {
+        for (const existing of overlappingSubServices) {
+          const existingStart = new Date(existing.overrideStartDate);
+          const existingEnd = new Date(existing.overrideEndDate);
+          if (startDate <= existingEnd && endDate >= existingStart) {
+            throw new BadRequestException(
+              `Price override with overlapping date range already exists for this Service`,
+            );
+          }
+        }
+      }
     }
 
     if (dto.packageId) {
@@ -65,6 +87,24 @@ export class PriceOverridesService {
         );
       }
       priceOverride.package = pkg;
+
+      // Check for overlapping date ranges with the same package
+      const overlappingPackages = await this.priceOverrideRepo.find({
+        where: {
+          package: { id: dto.packageId },
+        },
+      });
+      if (overlappingPackages && overlappingPackages.length > 0) {
+        for (const existing of overlappingPackages) {
+          const existingStart = new Date(existing.overrideStartDate);
+          const existingEnd = new Date(existing.overrideEndDate);
+          if (startDate <= existingEnd && endDate >= existingStart) {
+            throw new BadRequestException(
+              `Price override with overlapping date range already exists for this Package`,
+            );
+          }
+        }
+      }
     }
 
     if (dto.programmeId) {
@@ -77,6 +117,24 @@ export class PriceOverridesService {
         );
       }
       priceOverride.programme = programme;
+
+      // Check for overlapping date ranges with the same programme
+      const overlappingProgrammes = await this.priceOverrideRepo.find({
+        where: {
+          programme: { id: dto.programmeId },
+        },
+      });
+      if (overlappingProgrammes && overlappingProgrammes.length > 0) {
+        for (const existing of overlappingProgrammes) {
+          const existingStart = new Date(existing.overrideStartDate);
+          const existingEnd = new Date(existing.overrideEndDate);
+          if (startDate <= existingEnd && endDate >= existingStart) {
+            throw new BadRequestException(
+              `Price override with overlapping date range already exists for this Programme`,
+            );
+          }
+        }
+      }
     }
 
     return this.priceOverrideRepo.save(priceOverride);
@@ -136,7 +194,8 @@ export class PriceOverridesService {
     return priceOverrides;
   }
   async findByDate(
-    date: string,
+    startDate: string,
+    endDate: string,
     branchId?: string,
   ): Promise<PriceOverride[] | PaginatedResponse<PriceOverride>> {
     const query = this.priceOverrideRepo
@@ -156,17 +215,12 @@ export class PriceOverridesService {
         }),
       );
     }
-    if (date) {
-      const day = date.split('T')[0];
-
-      const rangeStart = `${day} 00:00:00.000`;
-      const rangeEnd = `${day} 23:59:59.999`;
-
+    if (startDate && endDate) {
       query.andWhere(
-        'priceOverride.overrideStartDate <= :rangeStart AND priceOverride.overrideEndDate >= :rangeEnd',
+        'priceOverride.overrideStartDate <= :endDate AND priceOverride.overrideEndDate >= :startDate',
         {
-          rangeStart,
-          rangeEnd,
+          startDate,
+          endDate,
         },
       );
     }
@@ -225,13 +279,16 @@ export class PriceOverridesService {
   ): Promise<PriceOverride> {
     const priceOverride = await this.findOne(id);
 
+    let startDate = priceOverride.overrideStartDate;
+    let endDate = priceOverride.overrideEndDate;
+
     if (dto.overrideStartDate) {
-      const startDate = new Date(dto.overrideStartDate);
+      startDate = new Date(dto.overrideStartDate);
       priceOverride.overrideStartDate = startDate;
     }
 
     if (dto.overrideEndDate) {
-      const endDate = new Date(dto.overrideEndDate);
+      endDate = new Date(dto.overrideEndDate);
       priceOverride.overrideEndDate = endDate;
     }
 
@@ -239,40 +296,110 @@ export class PriceOverridesService {
       priceOverride.price = dto.price;
     }
 
-    if (dto.subServiceId) {
-      const subService = await this.subServiceRepo.findOne({
-        where: { id: dto.subServiceId },
-      });
-      if (!subService) {
-        throw new NotFoundException(
-          `SubService with ID ${dto.subServiceId} not found`,
-        );
+    // Check overlap for subService (either existing or new)
+    const subServiceIdToCheck =
+      dto?.subServiceId || priceOverride?.subService?.id;
+    if (subServiceIdToCheck) {
+      if (dto.subServiceId) {
+        const subService = await this.subServiceRepo.findOne({
+          where: { id: dto.subServiceId },
+        });
+        if (!subService) {
+          throw new NotFoundException(
+            `SubService with ID ${dto.subServiceId} not found`,
+          );
+        }
+        priceOverride.subService = subService;
       }
-      priceOverride.subService = subService;
+
+      const overlappingSubServices = await this.priceOverrideRepo.find({
+        where: {
+          subService: { id: subServiceIdToCheck },
+        },
+      });
+      if (overlappingSubServices && overlappingSubServices.length > 0) {
+        for (const existing of overlappingSubServices) {
+          if (existing.id !== id) {
+            const existingStart = new Date(existing.overrideStartDate);
+            const existingEnd = new Date(existing.overrideEndDate);
+            if (startDate <= existingEnd && endDate >= existingStart) {
+              throw new BadRequestException(
+                `Price override with overlapping date range already exists for this Service`,
+              );
+            }
+          }
+        }
+      }
     }
 
-    if (dto.packageId) {
-      const pkg = await this.packageRepo.findOne({
-        where: { id: dto.packageId },
-      });
-      if (!pkg) {
-        throw new NotFoundException(
-          `Package with ID ${dto.packageId} not found`,
-        );
+    // Check overlap for package (either existing or new)
+    const packageIdToCheck = dto?.packageId || priceOverride?.package?.id;
+    if (packageIdToCheck) {
+      if (dto.packageId) {
+        const pkg = await this.packageRepo.findOne({
+          where: { id: dto.packageId },
+        });
+        if (!pkg) {
+          throw new NotFoundException(
+            `Package with ID ${dto.packageId} not found`,
+          );
+        }
+        priceOverride.package = pkg;
       }
-      priceOverride.package = pkg;
+
+      const overlappingPackages = await this.priceOverrideRepo.find({
+        where: {
+          package: { id: packageIdToCheck },
+        },
+      });
+      if (overlappingPackages && overlappingPackages.length > 0) {
+        for (const existing of overlappingPackages) {
+          if (existing.id !== id) {
+            const existingStart = new Date(existing.overrideStartDate);
+            const existingEnd = new Date(existing.overrideEndDate);
+            if (startDate <= existingEnd && endDate >= existingStart) {
+              throw new BadRequestException(
+                `Price override with overlapping date range already exists for this Package`,
+              );
+            }
+          }
+        }
+      }
     }
 
-    if (dto.programmeId) {
-      const programme = await this.programmeRepo.findOne({
-        where: { id: dto.programmeId },
-      });
-      if (!programme) {
-        throw new NotFoundException(
-          `Programme with ID ${dto.programmeId} not found`,
-        );
+    // Check overlap for programme (either existing or new)
+    const programmeIdToCheck = dto?.programmeId || priceOverride?.programme?.id;
+    if (programmeIdToCheck) {
+      if (dto.programmeId) {
+        const programme = await this.programmeRepo.findOne({
+          where: { id: dto.programmeId },
+        });
+        if (!programme) {
+          throw new NotFoundException(
+            `Programme with ID ${dto.programmeId} not found`,
+          );
+        }
+        priceOverride.programme = programme;
       }
-      priceOverride.programme = programme;
+
+      const overlappingProgrammes = await this.priceOverrideRepo.find({
+        where: {
+          programme: { id: programmeIdToCheck },
+        },
+      });
+      if (overlappingProgrammes && overlappingProgrammes.length > 0) {
+        for (const existing of overlappingProgrammes) {
+          if (existing.id !== id) {
+            const existingStart = new Date(existing.overrideStartDate);
+            const existingEnd = new Date(existing.overrideEndDate);
+            if (startDate <= existingEnd && endDate >= existingStart) {
+              throw new BadRequestException(
+                `Price override with overlapping date range already exists for this Programme`,
+              );
+            }
+          }
+        }
+      }
     }
 
     return this.priceOverrideRepo.save(priceOverride);
