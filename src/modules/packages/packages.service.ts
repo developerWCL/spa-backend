@@ -246,19 +246,17 @@ export class PackagesService {
   }
 
   async findOne(id: string) {
-    const pkg = await this.packageRepo.findOne({
-      where: { id },
-      relations: [
-        'subServices',
-        'translations',
-        'media',
-        'branch',
-        'branch.operatingHours',
-      ],
-      order: {
-        media: { createdAt: 'ASC' },
-      },
-    });
+    const pkg = await this.packageRepo
+      .createQueryBuilder('pkg')
+      .leftJoinAndSelect('pkg.subServices', 'subServices')
+      .leftJoinAndSelect('subServices.service', 'service')
+      .leftJoinAndSelect('pkg.translations', 'translations')
+      .leftJoinAndSelect('pkg.media', 'media')
+      .leftJoinAndSelect('pkg.branch', 'branch')
+      .leftJoinAndSelect('branch.operatingHours', 'operatingHours')
+      .where('pkg.id = :id', { id })
+      .orderBy('media.createdAt', 'ASC')
+      .getOne();
 
     if (!pkg) {
       throw new NotFoundException(`Package with ID ${id} not found`);
