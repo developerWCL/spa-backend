@@ -547,15 +547,6 @@ export class CartService {
     itemType: CartItemType,
     branchId: string,
   ): Promise<(SubService | Package | Programme)[]> {
-    console.log(
-      'Getting available items for serviceId:',
-      serviceId,
-      'itemType:',
-      itemType,
-      'branchId:',
-      branchId,
-    );
-
     switch (itemType) {
       case CartItemType.SUB_SERVICE: {
         const data = await this.subServiceRepo.find({
