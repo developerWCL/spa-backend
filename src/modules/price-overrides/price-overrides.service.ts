@@ -34,11 +34,10 @@ export class PriceOverridesService {
   async create(dto: CreatePriceOverrideDto): Promise<PriceOverride> {
     const priceOverride = new PriceOverride();
 
-    // Set start date with custom hours or default (00:00:00) - Use UTC timezone
     const startDate = new Date(dto.overrideStartDate);
+
     priceOverride.overrideStartDate = startDate;
 
-    // Set end date with custom hours or default (23:59:59) - Use UTC timezone
     const endDate = new Date(dto.overrideEndDate);
     priceOverride.overrideEndDate = endDate;
 
@@ -120,17 +119,12 @@ export class PriceOverridesService {
       );
     }
     if (filters?.startDate && filters?.endDate) {
-      const startDay = filters.startDate.split('T')[0];
-      const endDay = filters.endDate.split('T')[0];
-
-      const rangeStart = `${startDay} 00:00:00.000`;
-      const rangeEnd = `${endDay} 23:59:59.999`;
-
+      // Use ISO datetime values directly for accurate comparison
       query.andWhere(
-        'priceOverride.overrideStartDate >= :rangeStart AND priceOverride.overrideEndDate <= :rangeEnd',
+        'priceOverride.overrideStartDate <= :endDate AND priceOverride.overrideEndDate >= :startDate',
         {
-          rangeStart,
-          rangeEnd,
+          startDate: filters.startDate,
+          endDate: filters.endDate,
         },
       );
     }
@@ -233,13 +227,11 @@ export class PriceOverridesService {
 
     if (dto.overrideStartDate) {
       const startDate = new Date(dto.overrideStartDate);
-      startDate.setUTCHours(0, 0, 0, 0);
       priceOverride.overrideStartDate = startDate;
     }
 
     if (dto.overrideEndDate) {
       const endDate = new Date(dto.overrideEndDate);
-      endDate.setUTCHours(23, 59, 59, 999);
       priceOverride.overrideEndDate = endDate;
     }
 

@@ -7,10 +7,10 @@ import {
 } from 'class-validator';
 
 export class CreatePriceOverrideDto {
-  @IsDateString()
+  @IsString()
   overrideStartDate: string;
 
-  @IsDateString()
+  @IsString()
   overrideEndDate?: string;
 
   @IsNumber()
