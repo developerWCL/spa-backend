@@ -24,6 +24,7 @@ import { GuestsModule } from './modules/guests/guests.module';
 import { CartModule } from './modules/cart/cart.module';
 import { PaypalModule } from './modules/paypal/paypal.module';
 import { PriceOverridesModule } from './modules/price-overrides/price-overrides.module';
+import { ReportModule } from './modules/report/report.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { PriceOverridesModule } from './modules/price-overrides/price-overrides.
     CartModule,
     PaypalModule,
     PriceOverridesModule,
+    ReportModule,
   ],
   controllers: [AppController],
   providers: [AppService, SubscriptionClientService],
