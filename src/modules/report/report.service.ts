@@ -387,7 +387,6 @@ export class ReportService {
           let serviceType = 'Unknown';
           let serviceName = 'N/A';
           let duration = 0;
-          let price = 0;
 
           if (item.subService) {
             serviceType = 'Service';
@@ -396,17 +395,14 @@ export class ReportService {
               serviceName += ` (${item.subService.service.name})`;
             }
             duration = item.subService.durationMinutes || 0;
-            price = parseFloat(item.subService.price || '0');
           } else if (item.package) {
             serviceType = 'Package';
             serviceName = item.package.name || 'Unknown Package';
             duration = item.duration || 0;
-            price = parseFloat(item.package.price || '0');
           } else if (item.programme) {
             serviceType = 'Programme';
             serviceName = item.programme.name || 'Unknown Programme';
             duration = item.duration || 0;
-            price = parseFloat(item.programme.price || '0');
           }
 
           return {
@@ -417,7 +413,7 @@ export class ReportService {
             duration,
             serviceDate: item.scheduledDate,
             serviceTime,
-            price,
+            price: parseFloat(item.price || '0'),
             bookingStatus: booking.status,
             paymentStatus,
             bookingDate: booking.bookingTime,
@@ -500,7 +496,6 @@ export class ReportService {
         let serviceId = '';
         let serviceName = '';
         let serviceType: 'Service' | 'Package' | 'Programme' = 'Service';
-        let price = 0;
 
         if (item.subService) {
           serviceId = item.subService.id;
@@ -509,17 +504,14 @@ export class ReportService {
             serviceName += ` (${item.subService.service.name})`;
           }
           serviceType = 'Service';
-          price = parseFloat(item.subService.price || '0');
         } else if (item.package) {
           serviceId = item.package.id;
           serviceName = item.package.name || 'Unknown Package';
           serviceType = 'Package';
-          price = parseFloat(item.package.price || '0');
         } else if (item.programme) {
           serviceId = item.programme.id;
           serviceName = item.programme.name || 'Unknown Programme';
           serviceType = 'Programme';
-          price = parseFloat(item.programme.price || '0');
         }
 
         if (!serviceId) return;
@@ -534,7 +526,7 @@ export class ReportService {
         };
 
         existing.bookings += 1;
-        existing.revenue += price;
+        existing.revenue += parseFloat(item.price || '0');
 
         servicesMap.set(key, existing);
       });
@@ -991,7 +983,7 @@ export class ReportService {
                 lastDate: item.scheduledDate || booking.bookingTime,
               });
             }
-            const guestData = guestMap.get(guest.id)!;
+            const guestData = guestMap.get(guest.id);
             guestData.visitCount += 1;
             guestData.totalAmount += Number(item.price) || 0;
             if (item.scheduledDate && item.scheduledDate > guestData.lastDate) {
