@@ -130,6 +130,7 @@ export class ProgrammesService {
       .leftJoinAndSelect('programme.media', 'media')
       .where('programme.branchId = :branchId', { branchId })
       .andWhere('programme.deletedAt IS NULL')
+      .orderBy('programme.createdAt', 'DESC')
       .orderBy('media.createdAt', 'ASC');
 
     // Add search filter
