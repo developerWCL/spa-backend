@@ -48,14 +48,16 @@ export class BookingController {
     @Query('limit') limit?: number,
     @Query('search') search?: string,
     @Query('status') status?: string,
-    @Query('lifeCycle') lifeCycle?: 'all' | 'today' | 'upcoming' | 'past',
+    @Query('startDateTime') startDateTime?: Date,
+    @Query('endDateTime') endDateTime?: Date,
   ) {
     return this.bookingService.findAll(
       branchId,
       { page, limit },
       search,
       status,
-      lifeCycle,
+      startDateTime,
+      endDateTime,
     );
   }
 

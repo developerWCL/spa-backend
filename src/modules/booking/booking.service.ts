@@ -133,7 +133,8 @@ export class BookingService {
     params: PaginationParams = {},
     search?: string,
     status?: string,
-    lifeCycle?: 'all' | 'today' | 'upcoming' | 'past',
+    startDateTime?: Date,
+    endDateTime?: Date,
   ): Promise<PaginatedResponse<Booking>> {
     const { skip, take } = getPaginationQueryTypeORM(params);
 
@@ -157,7 +158,9 @@ export class BookingService {
       .leftJoinAndSelect('items.room', 'itemRoom')
       .leftJoinAndSelect('items.guests', 'guests')
       .where('booking.branchId = :branchId', { branchId })
-      .andWhere('payments.status != :paidStatus', { paidStatus: 'failed' });
+      .andWhere('payments.status IS NULL OR payments.status != :paidStatus', {
+        paidStatus: 'failed',
+      });
 
     if (status && status !== 'all') {
       query = query.andWhere('booking.status = :status', { status });
@@ -175,31 +178,33 @@ export class BookingService {
             })
             .orWhere('LOWER(booking.bookingId) LIKE :search', {
               search: searchTerm,
+            })
+            .orWhere('LOWER(guests.firstName) LIKE :search', {
+              search: searchTerm,
+            })
+            .orWhere('LOWER(guests.lastName) LIKE :search', {
+              search: searchTerm,
             });
         }),
       );
     }
 
-    if (lifeCycle && lifeCycle !== 'all') {
-      if (lifeCycle === 'today') {
-        const day = new Date();
-        day.setHours(0, 0, 0, 0);
-        const end = new Date(day);
-        end.setHours(23, 59, 59, 999);
-        query = query.andWhere(
-          'items.scheduledDate BETWEEN :startDate AND :endDate',
-          {
-            startDate: day,
-            endDate: end,
-          },
-        );
-      } else if (lifeCycle === 'upcoming') {
-        const now = new Date();
-        query = query.andWhere('items.scheduledDate >= :now', { now });
-      } else if (lifeCycle === 'past') {
-        const now = new Date();
-        query = query.andWhere('items.scheduledDate <= :now', { now });
-      }
+    if (startDateTime && endDateTime) {
+      query = query.andWhere(
+        'items.scheduledDate BETWEEN :startDateTime AND :endDateTime',
+        {
+          startDateTime,
+          endDateTime,
+        },
+      );
+    } else if (startDateTime) {
+      query = query.andWhere('items.scheduledDate >= :startDateTime', {
+        startDateTime,
+      });
+    } else if (endDateTime) {
+      query = query.andWhere('items.scheduledDate <= :endDateTime', {
+        endDateTime,
+      });
     }
 
     query = query.orderBy('booking.bookingTime', 'DESC').skip(skip).take(take);
@@ -249,10 +254,8 @@ export class BookingService {
   }
 
   async update(id: string, data: UpdateBookingDto): Promise<Booking> {
-    // Capture old status before update for email trigger comparison
-    const existingBooking = await this.bookingRepository.findOne({ where: { id } });
-    const previousStatus = existingBooking?.status;
-
+    const booking = await this.bookingRepository.findOne({ where: { id } });
+    if (!booking) throw new NotFoundException('Booking not found');
     // Separate items and payments data from booking data
     const { items, payments, ...bookingData } = data;
     // update payments if provided
@@ -313,17 +316,18 @@ export class BookingService {
     const updatedBooking = await this.findOne(id);
 
     // Send status update email if status changed to confirmed or cancelled
-    this.logger.log(`[update] bookingId=${id} previousStatus=${previousStatus} newStatus=${bookingData.status}`);
+
     if (
       bookingData.status &&
-      previousStatus !== bookingData.status &&
+      booking.status.toLowerCase() !== bookingData.status.toLowerCase() &&
       (bookingData.status.toLowerCase() === 'confirmed' ||
         bookingData.status.toLowerCase() === 'cancelled')
     ) {
-      this.logger.log(`[update] Status changed ${previousStatus} → ${bookingData.status}, sending email`);
-      const customerEmail = updatedBooking.customer?.email;
+      const customerEmail =
+        updatedBooking.customer?.email ||
+        updatedBooking.items[0]?.guests?.[0]?.email;
       const customerName = updatedBooking.customer
-        ? `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`
+        ? `${updatedBooking.customer.firstName || updatedBooking.items[0].guests?.[0]?.firstName} ${updatedBooking.customer.lastName || updatedBooking.items[0].guests?.[0]?.lastName}`
         : undefined;
 
       await this.mailService.sendBookingStatusUpdateEmail(
