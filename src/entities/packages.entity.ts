@@ -28,10 +28,10 @@ export class Package {
   @Column({ type: 'numeric', nullable: true })
   price: string;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   startDate: Date;
 
-  @Column({ type: 'date' })
+  @Column({ type: 'timestamp' })
   endDate: Date;
 
   @Column({
