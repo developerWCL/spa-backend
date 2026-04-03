@@ -15,10 +15,6 @@ import { PaypalMode } from 'src/entities/enums/paypal.enum';
 export class CreatePaypalOrderDto {
   @IsNotEmpty()
   @IsString()
-  bookingId: string;
-
-  @IsNotEmpty()
-  @IsString()
   branchId: string;
 
   @IsNotEmpty()
@@ -37,7 +33,7 @@ export class CreatePaypalOrderDto {
   @IsString()
   customerLastName: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEmail()
   customerEmail: string;
 
@@ -52,6 +48,13 @@ export class CreatePaypalOrderDto {
   @IsOptional()
   @IsString()
   currency?: string;
+
+  // Full booking payload — stored temporarily until capture
+  @IsNotEmpty()
+  bookingPayload: Record<string, any>;
+
+  @IsOptional()
+  bookingItems?: Record<string, any>[];
 }
 
 // ── Admin: PayPal account CRUD ──

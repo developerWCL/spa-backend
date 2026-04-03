@@ -11,9 +11,11 @@ import { PaypalService } from './paypal.service';
 import { CreatePaypalOrderDto } from './paypal.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Booking } from 'src/entities/bookings.entity';
 import { Payment } from 'src/entities/payments.entity';
-import { PaymentStatus, BookingStatus } from 'src/entities/enums/booking.enum';
+import { PaypalPendingOrder } from 'src/entities/paypal_pending_order.entity';
+import { PaymentStatus } from 'src/entities/enums/booking.enum';
+import { BookingService } from '../booking/booking.service';
+import { MailService } from 'src/shared/services/mail.service';
 
 @Controller('paypal')
 export class PaypalController {
@@ -21,33 +23,27 @@ export class PaypalController {
 
   constructor(
     private readonly paypalService: PaypalService,
-    @InjectRepository(Booking)
-    private readonly bookingRepo: Repository<Booking>,
+    private readonly bookingService: BookingService,
+    private readonly mailService: MailService,
     @InjectRepository(Payment)
     private readonly paymentRepo: Repository<Payment>,
+    @InjectRepository(PaypalPendingOrder)
+    private readonly pendingOrderRepo: Repository<PaypalPendingOrder>,
   ) {}
 
   @Post('create-order')
   async createOrder(@Body() dto: CreatePaypalOrderDto) {
-    // Validate booking exists and has a pending payment
-    const booking = await this.bookingRepo.findOne({
-      where: { id: dto.bookingId },
-      relations: ['payments', 'branch'],
-    });
-    if (!booking) {
-      throw new BadRequestException('Booking not found');
-    }
-
     const { approvalUrl, orderId } = await this.paypalService.createOrder(dto);
 
-    // Store PayPal order ID on the pending payment record
-    const pendingPayment = booking.payments?.find(
-      (p) => p.status === PaymentStatus.PENDING,
+    // Store booking payload — no booking created in DB yet
+    await this.pendingOrderRepo.save(
+      this.pendingOrderRepo.create({
+        paypalOrderId: orderId,
+        branchId: dto.branchId,
+        bookingPayload: dto.bookingPayload,
+        bookingItems: dto.bookingItems ?? null,
+      }),
     );
-    if (pendingPayment) {
-      pendingPayment.paypalOrderId = orderId;
-      await this.paymentRepo.save(pendingPayment);
-    }
 
     return { approvalUrl, orderId };
   }
@@ -55,34 +51,54 @@ export class PaypalController {
   @Get('capture')
   async captureReturn(
     @Query('token') token: string,
-    @Query('bookingId') bookingId: string,
   ) {
-    if (!token || !bookingId) {
-      throw new BadRequestException('Missing token or bookingId');
+    if (!token) {
+      throw new BadRequestException('Missing token');
     }
 
-    // Look up booking to get branchId
-    const booking = await this.bookingRepo.findOne({
-      where: { id: bookingId },
-      relations: ['payments', 'branch'],
+    // Retrieve pending payload
+    const pending = await this.pendingOrderRepo.findOne({
+      where: { paypalOrderId: token },
     });
-    if (!booking) {
-      throw new BadRequestException('Booking not found');
+    if (!pending) {
+      throw new BadRequestException('PayPal order not found or already processed');
     }
 
-    const branchId = booking.branch?.id;
-    if (!branchId) {
-      throw new BadRequestException('Booking has no branch');
-    }
-
+    // Capture the PayPal payment
     const { captureId } = await this.paypalService.captureOrder(
       token,
-      branchId,
+      pending.branchId,
     );
 
-    // Update payment record
-    const payment = booking.payments?.find(
-      (p) => p.paypalOrderId === token || p.status === PaymentStatus.PENDING,
+    // Now create the booking in DB
+    const booking = await this.bookingService.create(pending.bookingPayload as any);
+
+    // Create booking items
+    if (pending.bookingItems?.length) {
+      for (const item of pending.bookingItems) {
+        await this.bookingService.createBookingItem(booking.id, item as any);
+      }
+    }
+
+    // Send confirmation email once after all items are created
+    const bookingWithDetails = await this.bookingService.findOne(booking.id);
+    const customerEmail = bookingWithDetails.customer?.email;
+    const customerName = bookingWithDetails.customer
+      ? `${bookingWithDetails.customer.firstName} ${bookingWithDetails.customer.lastName}`
+      : undefined;
+    await this.mailService.sendBookingConfirmationEmail(bookingWithDetails, customerEmail, customerName);
+    if (bookingWithDetails.branch?.email) {
+      await this.mailService.sendBookingNotificationToAdmin(bookingWithDetails, bookingWithDetails.branch.email, bookingWithDetails.branch.name);
+    }
+
+    // Update payment with capture info
+    const payments = await this.paymentRepo
+      .createQueryBuilder('payment')
+      .where('payment.bookingId = :bookingId', { bookingId: booking.id })
+      .getMany();
+
+    const payment = payments.find(
+      (p) => p.status === PaymentStatus.PENDING,
     );
     if (payment) {
       payment.status = PaymentStatus.PAID;
@@ -91,14 +107,11 @@ export class PaypalController {
       await this.paymentRepo.save(payment);
     }
 
-    // Update booking status
-    booking.status = BookingStatus.CONFIRMED;
-    await this.bookingRepo.save(booking);
+    // Clean up pending record
+    await this.pendingOrderRepo.delete({ paypalOrderId: token });
 
-    this.logger.log(
-      `Payment captured for booking ${bookingId}, captureId: ${captureId}`,
-    );
+    this.logger.log(`Payment captured, booking created: ${booking.id}, captureId: ${captureId}`);
 
-    return { success: true, captureId, bookingId };
+    return { success: true, captureId, bookingId: booking.id };
   }
 }

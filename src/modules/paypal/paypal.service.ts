@@ -73,22 +73,50 @@ export class PaypalService {
 
     const locale = dto.locale || 'en';
     const basePath = `${bookingEngineUrl}/${locale}/${dto.spaId}/payment-gateway`;
-    const returnUrl = `${basePath}/callback?bookingId=${dto.bookingId}`;
-    const cancelUrl = `${basePath}?bookingId=${dto.bookingId}&method=paypal&cancelled=true`;
+    const returnUrl = `${basePath}/callback`;
+    const cancelUrl = `${bookingEngineUrl}/${locale}/${dto.spaId}?paymentStatus=cancelled`;
 
-    const description = dto.description || `Orientala Spa - Booking #${dto.bookingId}`;
+    const currency = dto.currency || 'THB';
 
+    // Build line items from bookingItems if provided
+    const items = dto.bookingItems?.length
+      ? dto.bookingItems.map((item: any) => ({
+          name: item.itemName || 'Spa Service',
+          sku: item.subService || item.package || item.programme || item.id || undefined,
+          quantity: String(item.quantity || 1),
+          unit_amount: {
+            currency_code: currency,
+            value: parseFloat(String(item.price || 0)).toFixed(2),
+          },
+        }))
+      : undefined;
+
+    const description = dto.description ||
+      (items?.length
+        ? items.map((i) => i.name).join(', ')
+        : 'Orientala Spa Booking');
+
+    // custom_id is used as the correlation reference — looked up via pending order table on capture
     const payload = {
       intent: 'CAPTURE',
       purchase_units: [
         {
-          reference_id: dto.bookingId,
-          custom_id: dto.bookingId,
+          reference_id: dto.branchId,
+          custom_id: dto.branchId,
           description,
           amount: {
-            currency_code: dto.currency || 'THB',
+            currency_code: currency,
             value: dto.amount.toFixed(2),
+            ...(items && {
+              breakdown: {
+                item_total: {
+                  currency_code: currency,
+                  value: dto.amount.toFixed(2),
+                },
+              },
+            }),
           },
+          ...(items && { items }),
         },
       ],
       application_context: {
@@ -123,9 +151,7 @@ export class PaypalService {
         );
       }
 
-      this.logger.log(
-        `PayPal order created: ${data.id} for booking ${dto.bookingId}`,
-      );
+      this.logger.log(`PayPal order created: ${data.id}`);
       return { approvalUrl: approvalLink.href, orderId: data.id };
     } catch (err) {
       this.logger.error(
@@ -139,7 +165,7 @@ export class PaypalService {
   async captureOrder(
     orderId: string,
     branchId: string,
-  ): Promise<{ status: string; captureId: string; bookingId: string }> {
+  ): Promise<{ status: string; captureId: string }> {
     const { token, mode } = await this.getAccessToken(branchId);
     const url = this.baseUrl(mode);
 
@@ -162,7 +188,6 @@ export class PaypalService {
       }
 
       const capture = data.purchase_units[0]?.payments?.captures?.[0];
-      const bookingId = data.purchase_units[0]?.custom_id ?? '';
 
       this.logger.log(
         `PayPal order captured: ${orderId}, capture: ${capture?.id}`,
@@ -170,7 +195,6 @@ export class PaypalService {
       return {
         status: data.status,
         captureId: capture?.id ?? '',
-        bookingId,
       };
     } catch (err) {
       this.logger.error(

@@ -1,8 +1,11 @@
-import { Injectable, InternalServerErrorException } from '@nestjs/common';
+import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
 import { Resend } from 'resend';
+import { bookingPendingTemplate } from '../templates/booking-pending.template';
+import { bookingConfirmedTemplate } from '../templates/booking-confirmed.template';
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
   private resend: Resend;
 
   constructor() {
@@ -150,61 +153,128 @@ export class MailService {
     }
   }
 
+  /** Collect primary recipient + unique CC emails from all guests across all booking items. */
+  private resolveRecipients(
+    booking: any,
+    customerEmail?: string,
+    customerName?: string,
+  ): { recipientEmail: string | null; recipientName: string; cc: string[] } {
+    let recipientEmail: string | null = null;
+    let recipientName: string = customerName || 'Guest';
+
+    if (customerEmail) {
+      recipientEmail = customerEmail;
+    } else {
+      // Use first guest of first item as primary
+      const firstGuest = booking.items?.flatMap((i: any) => i.guests ?? []).find((g: any) => g?.email);
+      if (firstGuest) {
+        recipientEmail = firstGuest.email;
+        recipientName = `${firstGuest.firstName} ${firstGuest.lastName}`;
+      }
+    }
+
+    // Collect all unique guest emails for CC (excluding primary)
+    const allGuestEmails: string[] = (booking.items ?? [])
+      .flatMap((item: any) => item.guests ?? [])
+      .map((g: any) => g?.email)
+      .filter((email: any): email is string => !!email);
+
+    const seen = new Set<string>();
+    if (recipientEmail) seen.add(recipientEmail);
+    const cc = allGuestEmails.filter((email) => {
+      if (seen.has(email)) return false;
+      seen.add(email);
+      return true;
+    });
+
+    return { recipientEmail, recipientName, cc };
+  }
+
   async sendBookingConfirmationEmail(
     booking: any,
     customerEmail?: string,
     customerName?: string,
   ): Promise<void> {
-    // Determine recipient email: if customer exists, send to customer; otherwise send to first guest
-    let recipientEmail: string | null = null;
-    let recipientName: string = customerName || 'Guest';
-
-    if (customerEmail) {
-      // Customer exists - send to customer email
-      recipientEmail = customerEmail;
-    } else if (
-      booking.items &&
-      booking.items.length > 0 &&
-      booking.items[0].guests &&
-      booking.items[0].guests.length > 0
-    ) {
-      // Anonymous booking - send to first guest email
-      const firstGuest = booking.items[0].guests[0];
-      recipientEmail = firstGuest.email;
-      recipientName = `${firstGuest.firstName} ${firstGuest.lastName}`;
-    }
+    const { recipientEmail, recipientName, cc } = this.resolveRecipients(booking, customerEmail, customerName);
 
     if (!recipientEmail) {
-      console.warn('No recipient email found for booking confirmation');
+      this.logger.warn(`[sendBookingConfirmationEmail] No recipient email for booking ${booking.bookingId}`);
       return;
     }
+
+    const services = this.extractServiceNames(booking);
+    const bookingDate = this.extractBookingDate(booking);
+    const guestCount = this.extractGuestCount(booking);
+    const specialRequest = booking.items?.[0]?.notes || undefined;
+    const branch = booking.branch;
+    const spa = branch?.spa;
+    const spaName = spa?.name;
+    const logoUrl = spa?.metadata?.logo_url;
+    const primaryColor = spa?.metadata?.primary_color;
+
+    this.logger.log(`[sendBookingConfirmationEmail] Sending to ${recipientEmail}${cc.length ? ` cc=${cc.join(',')}` : ''} for booking ${booking.bookingId}`);
 
     try {
       await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
         to: recipientEmail,
-        subject: `Booking Confirmation - ${booking.bookingId}`,
-        html: `
-          <h2>Booking Confirmation</h2>
-          <p>Dear ${recipientName},</p>
-          <p>Your booking has been successfully created.</p>
-          <br/>
-          <h3>Booking Details</h3>
-          <ul>
-            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
-            <li><strong>Status:</strong> ${booking.status || 'Pending'}</li>
-            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
-          </ul>
-          <br/>
-          <p>Thank you for booking with Orientala Spa. We look forward to serving you!</p>
-          <br/>
-          <p>Best regards,<br/>Orientala Spa Team</p>
-        `,
+        ...(cc.length > 0 && { cc }),
+        subject: `Booking Received – ${booking.bookingId}`,
+        html: bookingPendingTemplate({
+          recipientName,
+          bookingId: booking.bookingId,
+          bookingDate,
+          services,
+          totalAmount: booking.totalAmount || '0',
+          currency: 'THB',
+          guestCount,
+          specialRequest,
+          branchName: branch?.name,
+          branchPhone: branch?.phone,
+          branchEmail: branch?.email,
+          spaName,
+          logoUrl,
+          primaryColor,
+        }),
       });
     } catch (error) {
       console.error('Error sending booking confirmation email:', error);
-      // Don't throw error to prevent booking creation from failing
     }
+  }
+
+  private extractServiceNames(booking: any): { name: string; price: string }[] {
+    if (!booking.items?.length) return [{ name: 'Spa Service', price: '0' }];
+    return booking.items.map((item: any) => ({
+      name:
+        item.subService?.translations?.[0]?.name ||
+        item.subService?.service?.translations?.[0]?.name ||
+        item.package?.translations?.[0]?.name ||
+        item.programme?.translations?.[0]?.name ||
+        'Spa Service',
+      price: parseFloat(item.price || '0').toLocaleString('en-US'),
+    }));
+  }
+
+  private extractBookingDate(booking: any): string {
+    const date = booking.items?.[0]?.scheduledDate || booking.bookingTime;
+    if (!date) return 'TBD';
+    return new Date(date).toLocaleDateString('en-US', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
+  }
+
+  private extractGuestCount(booking: any): number {
+    // Sum quantity across all booking items
+    if (booking.items?.length) {
+      return booking.items.reduce(
+        (sum: number, item: any) => sum + (item.quantity || 1),
+        0,
+      );
+    }
+    return booking.itemsCount || 1;
   }
 
   async sendBookingNotificationToAdmin(
@@ -281,86 +351,64 @@ export class MailService {
     customerEmail?: string,
     customerName?: string,
   ): Promise<void> {
-    // Determine recipient email: if customer exists, send to customer; otherwise send to first guest
-    let recipientEmail: string | null = null;
-    let recipientName: string = customerName || 'Guest';
-
-    if (customerEmail) {
-      // Customer exists - send to customer email
-      recipientEmail = customerEmail;
-    } else if (
-      booking.items &&
-      booking.items.length > 0 &&
-      booking.items[0].guests &&
-      booking.items[0].guests.length > 0
-    ) {
-      // Anonymous booking - send to first guest email
-      const firstGuest = booking.items[0].guests[0];
-      recipientEmail = firstGuest.email;
-      recipientName = `${firstGuest.firstName} ${firstGuest.lastName}`;
-    }
+    const { recipientEmail, recipientName, cc } = this.resolveRecipients(booking, customerEmail, customerName);
 
     if (!recipientEmail) {
-      console.warn('No recipient email found for booking status update');
+      this.logger.warn(`[sendBookingStatusUpdateEmail] No recipient email for booking ${booking.bookingId}, status=${newStatus}`);
       return;
     }
+    this.logger.log(`[sendBookingStatusUpdateEmail] Sending status=${newStatus} to ${recipientEmail}${cc.length ? ` cc=${cc.join(',')}` : ''} for booking ${booking.bookingId}`);
+
+    const services = this.extractServiceNames(booking);
+    const bookingDate = this.extractBookingDate(booking);
+    const guestCount = this.extractGuestCount(booking);
+    const specialRequest = booking.items?.[0]?.notes || undefined;
+    const branch = booking.branch;
+    const spa = branch?.spa;
+    const spaName = spa?.name;
+    const logoUrl = spa?.metadata?.logo_url;
+    const primaryColor = spa?.metadata?.primary_color;
 
     try {
-      let emailSubject = '';
-      let emailMessage = '';
-      let emailTemplate = '';
-
       if (newStatus.toLowerCase() === 'confirmed') {
-        emailSubject = `Booking Confirmed - ${booking.bookingId}`;
-        emailMessage = 'Your booking has been confirmed.';
-        emailTemplate = `
-          <h2>Booking Confirmed</h2>
-          <p>Dear ${recipientName},</p>
-          <p>${emailMessage}</p>
-          <br/>
-          <h3>Booking Details</h3>
-          <ul>
-            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
-            <li><strong>Status:</strong> ${newStatus}</li>
-            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
-          </ul>
-          <br/>
-          <p>We look forward to welcoming you at Orientala Spa!</p>
-          <br/>
-          <p>Best regards,<br/>Orientala Spa Team</p>
-        `;
-      } else if (newStatus.toLowerCase() === 'cancelled') {
-        emailSubject = `Booking Cancelled - ${booking.bookingId}`;
-        emailMessage = 'Your booking has been cancelled.';
-        emailTemplate = `
-          <h2>Booking Cancelled</h2>
-          <p>Dear ${recipientName},</p>
-          <p>${emailMessage}</p>
-          <br/>
-          <h3>Booking Details</h3>
-          <ul>
-            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
-            <li><strong>Status:</strong> ${newStatus}</li>
-            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
-          </ul>
-          <br/>
-          <p>If you have any questions or would like to make a new booking, please contact us.</p>
-          <br/>
-          <p>Best regards,<br/>Orientala Spa Team</p>
-        `;
-      }
-
-      if (emailTemplate) {
         await this.resend.emails.send({
           from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
           to: recipientEmail,
-          subject: emailSubject,
-          html: emailTemplate,
+          ...(cc.length > 0 && { cc }),
+          subject: `Booking Confirmed – ${booking.bookingId}`,
+          html: bookingConfirmedTemplate({
+            recipientName,
+            bookingId: booking.bookingId,
+            bookingDate,
+            services,
+            totalAmount: booking.totalAmount || '0',
+            currency: 'THB',
+            guestCount,
+            specialRequest,
+            branchName: branch?.name,
+            branchPhone: branch?.phone,
+            branchEmail: branch?.email,
+            spaName,
+            logoUrl,
+            primaryColor,
+          }),
+        });
+      } else if (newStatus.toLowerCase() === 'cancelled') {
+        await this.resend.emails.send({
+          from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+          to: recipientEmail,
+          ...(cc.length > 0 && { cc }),
+          subject: `Booking Cancelled – ${booking.bookingId}`,
+          html: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#374151;padding:32px;">
+            <p>Dear <strong>${recipientName}</strong>,</p>
+            <p>Your booking <strong>${booking.bookingId}</strong> has been cancelled.</p>
+            <p>If you have any questions, please contact us.</p>
+            ${branch?.name ? `<p style="margin-top:24px;color:#6b7280;font-size:13px;">${branch.name}${branch.phone ? ' · ' + branch.phone : ''}</p>` : ''}
+          </body></html>`,
         });
       }
     } catch (error) {
       console.error('Error sending booking status update email:', error);
-      // Don't throw error to prevent booking update from failing
     }
   }
 }

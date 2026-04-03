@@ -8,6 +8,7 @@ import {
   Delete,
   UseGuards,
   Query,
+  Logger,
 } from '@nestjs/common';
 import { BookingService } from './booking.service';
 import {
@@ -24,6 +25,8 @@ import { ApiHeader, ApiOperation } from '@nestjs/swagger';
 @Controller('bookings')
 @ApiBearerAuth()
 export class BookingController {
+  private readonly logger = new Logger(BookingController.name);
+
   constructor(private readonly bookingService: BookingService) {}
 
   @Post()
@@ -72,6 +75,21 @@ export class BookingController {
   @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
   remove(@Param('id') id: string) {
     return this.bookingService.remove(id);
+  }
+
+  @Post(':bookingId/send-confirmation')
+  @ApiOperation({ summary: 'Send booking confirmation email to guest' })
+  @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
+  async sendConfirmationEmail(@Param('bookingId') bookingId: string) {
+    this.logger.log(`[send-confirmation] Called for bookingId=${bookingId}`);
+    try {
+      await this.bookingService.sendConfirmationEmail(bookingId);
+      this.logger.log(`[send-confirmation] Email sent for bookingId=${bookingId}`);
+    } catch (error) {
+      this.logger.error(`[send-confirmation] Failed for bookingId=${bookingId}`, error);
+      throw error;
+    }
+    return { success: true };
   }
 
   // Booking items endpoints
