@@ -80,15 +80,20 @@ export class PaypalService {
 
     // Build line items from bookingItems if provided
     const items = dto.bookingItems?.length
-      ? dto.bookingItems.map((item: any) => ({
-          name: item.itemName || 'Spa Service',
-          sku: item.subService || item.package || item.programme || item.id || undefined,
-          quantity: String(item.quantity || 1),
-          unit_amount: {
-            currency_code: currency,
-            value: parseFloat(String(item.price || 0)).toFixed(2),
-          },
-        }))
+      ? dto.bookingItems.map((item: any) => {
+          const qty = item.quantity || 1;
+          const totalPrice = parseFloat(String(item.price || 0));
+          const unitPrice = totalPrice / qty;
+          return {
+            name: item.itemName || 'Spa Service',
+            sku: item.subService || item.package || item.programme || item.id || undefined,
+            quantity: String(qty),
+            unit_amount: {
+              currency_code: currency,
+              value: unitPrice.toFixed(2),
+            },
+          };
+        })
       : undefined;
 
     const description = dto.description ||

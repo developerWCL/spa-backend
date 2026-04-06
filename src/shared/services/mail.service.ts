@@ -197,6 +197,16 @@ export class MailService {
   ): Promise<void> {
     const { recipientEmail, recipientName, cc } = this.resolveRecipients(booking, customerEmail, customerName);
 
+    this.logger.debug(`[sendBookingConfirmationEmail] items snapshot: ${JSON.stringify(
+      booking.items?.map((i: any) => ({
+        subSvcId: i.subService?.id,
+        svcId: i.subService?.service?.id,
+        svcTranslations: i.subService?.service?.translations,
+        subSvcTranslations: i.subService?.translations,
+        guests: i.guests?.map((g: any) => g.email),
+      }))
+    )}`);
+
     if (!recipientEmail) {
       this.logger.warn(`[sendBookingConfirmationEmail] No recipient email for booking ${booking.bookingId}`);
       return;
@@ -225,7 +235,7 @@ export class MailService {
           bookingId: booking.bookingId,
           bookingDate,
           services,
-          totalAmount: booking.totalAmount || '0',
+          totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString('en-US'),
           currency: 'THB',
           guestCount,
           specialRequest,
@@ -244,26 +254,35 @@ export class MailService {
 
   private extractServiceNames(booking: any): { name: string; price: string }[] {
     if (!booking.items?.length) return [{ name: 'Spa Service', price: '0' }];
-    return booking.items.map((item: any) => ({
-      name:
-        item.subService?.translations?.[0]?.name ||
-        item.subService?.service?.translations?.[0]?.name ||
-        item.package?.translations?.[0]?.name ||
-        item.programme?.translations?.[0]?.name ||
-        'Spa Service',
-      price: parseFloat(item.price || '0').toLocaleString('en-US'),
-    }));
+    return booking.items.map((item: any) => {
+      const svcName = item.subService?.service?.translations?.find((t: any) => t.locale === 'en')?.name
+        || item.subService?.service?.translations?.[0]?.name
+        || item.package?.translations?.find((t: any) => t.locale === 'en')?.name
+        || item.package?.translations?.[0]?.name
+        || item.programme?.translations?.find((t: any) => t.locale === 'en')?.name
+        || item.programme?.translations?.[0]?.name
+        || 'Spa Service';
+      this.logger.debug(`[extractServiceNames] item subService=${item.subService?.id} svc.translations=${JSON.stringify(item.subService?.service?.translations)} resolved="${svcName}"`);
+      return {
+        name: svcName,
+        price: parseFloat(item.price || '0').toLocaleString('en-US'),
+      };
+    });
   }
 
   private extractBookingDate(booking: any): string {
-    const date = booking.items?.[0]?.scheduledDate || booking.bookingTime;
+    const item = booking.items?.[0];
+    const date = item?.scheduledDate || booking.bookingTime;
     if (!date) return 'TBD';
-    return new Date(date).toLocaleDateString('en-US', {
+    const d = new Date(date);
+    const datePart = d.toLocaleDateString('en-US', {
       weekday: 'long',
       year: 'numeric',
       month: 'long',
       day: 'numeric',
     });
+    const time = item?.scheduledTime;
+    return time ? `${datePart} at ${time}` : datePart;
   }
 
   private extractGuestCount(booking: any): number {
@@ -381,7 +400,7 @@ export class MailService {
             bookingId: booking.bookingId,
             bookingDate,
             services,
-            totalAmount: booking.totalAmount || '0',
+            totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString('en-US'),
             currency: 'THB',
             guestCount,
             specialRequest,
