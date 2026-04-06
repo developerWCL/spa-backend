@@ -1,4 +1,8 @@
-import { Injectable, InternalServerErrorException, Logger } from '@nestjs/common';
+import {
+  Injectable,
+  InternalServerErrorException,
+  Logger,
+} from '@nestjs/common';
 import { Resend } from 'resend';
 import { bookingPendingTemplate } from '../templates/booking-pending.template';
 import { bookingConfirmedTemplate } from '../templates/booking-confirmed.template';
@@ -166,7 +170,9 @@ export class MailService {
       recipientEmail = customerEmail;
     } else {
       // Use first guest of first item as primary
-      const firstGuest = booking.items?.flatMap((i: any) => i.guests ?? []).find((g: any) => g?.email);
+      const firstGuest = booking.items
+        ?.flatMap((i: any) => i.guests ?? [])
+        .find((g: any) => g?.email);
       if (firstGuest) {
         recipientEmail = firstGuest.email;
         recipientName = `${firstGuest.firstName} ${firstGuest.lastName}`;
@@ -195,20 +201,28 @@ export class MailService {
     customerEmail?: string,
     customerName?: string,
   ): Promise<void> {
-    const { recipientEmail, recipientName, cc } = this.resolveRecipients(booking, customerEmail, customerName);
+    const { recipientEmail, recipientName, cc } = this.resolveRecipients(
+      booking,
+      customerEmail,
+      customerName,
+    );
 
-    this.logger.debug(`[sendBookingConfirmationEmail] items snapshot: ${JSON.stringify(
-      booking.items?.map((i: any) => ({
-        subSvcId: i.subService?.id,
-        svcId: i.subService?.service?.id,
-        svcTranslations: i.subService?.service?.translations,
-        subSvcTranslations: i.subService?.translations,
-        guests: i.guests?.map((g: any) => g.email),
-      }))
-    )}`);
+    this.logger.debug(
+      `[sendBookingConfirmationEmail] items snapshot: ${JSON.stringify(
+        booking.items?.map((i: any) => ({
+          subSvcId: i.subService?.id,
+          svcId: i.subService?.service?.id,
+          svcTranslations: i.subService?.service?.translations,
+          subSvcTranslations: i.subService?.translations,
+          guests: i.guests?.map((g: any) => g.email),
+        })),
+      )}`,
+    );
 
     if (!recipientEmail) {
-      this.logger.warn(`[sendBookingConfirmationEmail] No recipient email for booking ${booking.bookingId}`);
+      this.logger.warn(
+        `[sendBookingConfirmationEmail] No recipient email for booking ${booking.bookingId}`,
+      );
       return;
     }
 
@@ -222,7 +236,9 @@ export class MailService {
     const logoUrl = spa?.metadata?.logo_url;
     const primaryColor = spa?.metadata?.primary_color;
 
-    this.logger.log(`[sendBookingConfirmationEmail] Sending to ${recipientEmail}${cc.length ? ` cc=${cc.join(',')}` : ''} for booking ${booking.bookingId}`);
+    this.logger.log(
+      `[sendBookingConfirmationEmail] Sending to ${recipientEmail}${cc.length ? ` cc=${cc.join(',')}` : ''} for booking ${booking.bookingId}`,
+    );
 
     try {
       await this.resend.emails.send({
@@ -235,7 +251,9 @@ export class MailService {
           bookingId: booking.bookingId,
           bookingDate,
           services,
-          totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString('en-US'),
+          totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString(
+            'en-US',
+          ),
           currency: 'THB',
           guestCount,
           specialRequest,
@@ -255,14 +273,20 @@ export class MailService {
   private extractServiceNames(booking: any): { name: string; price: string }[] {
     if (!booking.items?.length) return [{ name: 'Spa Service', price: '0' }];
     return booking.items.map((item: any) => {
-      const svcName = item.subService?.service?.translations?.find((t: any) => t.locale === 'en')?.name
-        || item.subService?.service?.translations?.[0]?.name
-        || item.package?.translations?.find((t: any) => t.locale === 'en')?.name
-        || item.package?.translations?.[0]?.name
-        || item.programme?.translations?.find((t: any) => t.locale === 'en')?.name
-        || item.programme?.translations?.[0]?.name
-        || 'Spa Service';
-      this.logger.debug(`[extractServiceNames] item subService=${item.subService?.id} svc.translations=${JSON.stringify(item.subService?.service?.translations)} resolved="${svcName}"`);
+      const svcName =
+        item.subService?.service?.translations?.find(
+          (t: any) => t.locale === 'en',
+        )?.name ||
+        item.subService?.service?.translations?.[0]?.name ||
+        item.package?.translations?.find((t: any) => t.locale === 'en')?.name ||
+        item.package?.translations?.[0]?.name ||
+        item.programme?.translations?.find((t: any) => t.locale === 'en')
+          ?.name ||
+        item.programme?.translations?.[0]?.name ||
+        'Spa Service';
+      this.logger.debug(
+        `[extractServiceNames] item subService=${item.subService?.id} svc.translations=${JSON.stringify(item.subService?.service?.translations)} resolved="${svcName}"`,
+      );
       return {
         name: svcName,
         price: parseFloat(item.price || '0').toLocaleString('en-US'),
@@ -370,13 +394,21 @@ export class MailService {
     customerEmail?: string,
     customerName?: string,
   ): Promise<void> {
-    const { recipientEmail, recipientName, cc } = this.resolveRecipients(booking, customerEmail, customerName);
+    const { recipientEmail, recipientName, cc } = this.resolveRecipients(
+      booking,
+      customerEmail,
+      customerName,
+    );
 
     if (!recipientEmail) {
-      this.logger.warn(`[sendBookingStatusUpdateEmail] No recipient email for booking ${booking.bookingId}, status=${newStatus}`);
+      this.logger.warn(
+        `[sendBookingStatusUpdateEmail] No recipient email for booking ${booking.bookingId}, status=${newStatus}`,
+      );
       return;
     }
-    this.logger.log(`[sendBookingStatusUpdateEmail] Sending status=${newStatus} to ${recipientEmail}${cc.length ? ` cc=${cc.join(',')}` : ''} for booking ${booking.bookingId}`);
+    this.logger.log(
+      `[sendBookingStatusUpdateEmail] Sending status=${newStatus} to ${recipientEmail}${cc.length ? ` cc=${cc.join(',')}` : ''} for booking ${booking.bookingId}`,
+    );
 
     const services = this.extractServiceNames(booking);
     const bookingDate = this.extractBookingDate(booking);
@@ -400,7 +432,9 @@ export class MailService {
             bookingId: booking.bookingId,
             bookingDate,
             services,
-            totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString('en-US'),
+            totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString(
+              'en-US',
+            ),
             currency: 'THB',
             guestCount,
             specialRequest,

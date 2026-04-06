@@ -28,6 +28,7 @@ import {
   PaginationParams,
   PaginatedResponse,
 } from '../../shared/pagination.types';
+import { isUUID } from 'class-validator';
 
 @Injectable()
 export class BookingService {
@@ -274,7 +275,7 @@ export class BookingService {
     // update payments if provided
     if (payments && Array.isArray(payments)) {
       for (const payment of payments) {
-        if (payment.id) {
+        if (payment.id && isUUID(payment.id)) {
           // Update existing payment
           await this.paymentRepository.update(payment.id, {
             amount: payment.amount,
@@ -364,7 +365,11 @@ export class BookingService {
     const customerName = booking.customer
       ? `${booking.customer.firstName} ${booking.customer.lastName}`
       : undefined;
-    await this.mailService.sendBookingConfirmationEmail(booking, customerEmail, customerName);
+    await this.mailService.sendBookingConfirmationEmail(
+      booking,
+      customerEmail,
+      customerName,
+    );
   }
 
   async createBookingItem(
@@ -373,6 +378,7 @@ export class BookingService {
   ): Promise<BookingItem> {
     const booking = await this.bookingRepository.findOne({
       where: { id: bookingId },
+      relations: ['customer', 'branch', 'branch.spa'],
     });
     if (!booking) throw new NotFoundException('Booking not found');
 
@@ -426,7 +432,9 @@ export class BookingService {
     // Handle guest creation/linking
     const linkedGuests: Guest[] = [];
 
-    this.logger.log(`[createBookingItem] guestData=${JSON.stringify(itemData.guestData)}, guests=${JSON.stringify(itemData.guests)}`);
+    this.logger.log(
+      `[createBookingItem] guestData=${JSON.stringify(itemData.guestData)}, guests=${JSON.stringify(itemData.guests)}`,
+    );
 
     if (itemData.guestData && itemData.guestData.length > 0) {
       // Create or find guests from guestData
@@ -436,7 +444,9 @@ export class BookingService {
           const existingGuest = await this.guestRepository.findOne({
             where: { id: guestDataItem.id },
           });
-          this.logger.log(`[createBookingItem] findOne by id=${guestDataItem.id} → ${existingGuest?.email ?? 'NOT FOUND'}`);
+          this.logger.log(
+            `[createBookingItem] findOne by id=${guestDataItem.id} → ${existingGuest?.email ?? 'NOT FOUND'}`,
+          );
           if (existingGuest) {
             linkedGuests.push(existingGuest);
           }
@@ -446,9 +456,23 @@ export class BookingService {
           guestDataItem?.lastName
         ) {
           // Try to find or create guest by email
+          const whereCondition: any = {
+            email: guestDataItem.email,
+            spa: { id: itemData.spaId },
+          };
+
+          // Only add customer filter if booking has a customer
+          if (booking.customer?.id) {
+            whereCondition.customer = { id: booking.customer.id };
+          } else {
+            // If no customer, find guests with null customer
+            whereCondition.customer = null;
+          }
+
           let guest = await this.guestRepository.findOne({
-            where: { email: guestDataItem.email },
+            where: whereCondition,
           });
+          console.log('guest', guest);
 
           if (!guest) {
             // Determine gender enum value
@@ -470,6 +494,7 @@ export class BookingService {
               gender: genderValue,
               specialRequest: guestDataItem.specialRequest || undefined,
               spaId: itemData.spaId,
+              customerId: booking.customer?.id,
             });
           } else {
             // update guest info
@@ -528,7 +553,9 @@ export class BookingService {
       resolvedBed = { id: itemData.bedId };
     }
 
-    this.logger.log(`[createBookingItem] linkedGuests count=${linkedGuests.length}, emails=${linkedGuests.map(g => g.email).join(',')}`);
+    this.logger.log(
+      `[createBookingItem] linkedGuests count=${linkedGuests.length}, emails=${linkedGuests.map((g) => g.email).join(',')}`,
+    );
 
     const bookingItem = this.bookingItemRepository.create({
       booking,
