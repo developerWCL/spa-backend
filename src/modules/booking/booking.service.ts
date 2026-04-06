@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { Booking } from '../../entities/bookings.entity';
@@ -31,6 +31,8 @@ import {
 
 @Injectable()
 export class BookingService {
+  private readonly logger = new Logger(BookingService.name);
+
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
@@ -234,17 +236,22 @@ export class BookingService {
         'promotion',
         'items',
         'items.subService',
+        'items.subService.translations',
         'items.subService.service',
+        'items.subService.service.translations',
         'items.package',
+        'items.package.translations',
         'items.package.subServices',
         'items.package.subServices.service',
         'items.programme',
+        'items.programme.translations',
         'items.programme.steps',
         'items.bed',
         'items.bed.room',
         'items.staff',
         'items.room',
         'items.guests',
+        'branch.spa',
       ],
     });
     if (!booking) throw new NotFoundException('Booking not found');
@@ -351,6 +358,15 @@ export class BookingService {
     await this.bookingRepository.softDelete(id);
   }
 
+  async sendConfirmationEmail(bookingId: string): Promise<void> {
+    const booking = await this.findOne(bookingId);
+    const customerEmail = booking.customer?.email;
+    const customerName = booking.customer
+      ? `${booking.customer.firstName} ${booking.customer.lastName}`
+      : undefined;
+    await this.mailService.sendBookingConfirmationEmail(booking, customerEmail, customerName);
+  }
+
   async createBookingItem(
     bookingId: string,
     itemData: CreateBookingItemDto,
@@ -410,6 +426,8 @@ export class BookingService {
     // Handle guest creation/linking
     const linkedGuests: Guest[] = [];
 
+    this.logger.log(`[createBookingItem] guestData=${JSON.stringify(itemData.guestData)}, guests=${JSON.stringify(itemData.guests)}`);
+
     if (itemData.guestData && itemData.guestData.length > 0) {
       // Create or find guests from guestData
       for (const guestDataItem of itemData.guestData) {
@@ -418,6 +436,7 @@ export class BookingService {
           const existingGuest = await this.guestRepository.findOne({
             where: { id: guestDataItem.id },
           });
+          this.logger.log(`[createBookingItem] findOne by id=${guestDataItem.id} → ${existingGuest?.email ?? 'NOT FOUND'}`);
           if (existingGuest) {
             linkedGuests.push(existingGuest);
           }
@@ -482,6 +501,8 @@ export class BookingService {
           continue;
         }
 
+        if (!guestId) continue;
+
         const guest = await this.guestRepository.findOne({
           where: { id: guestId },
         });
@@ -507,6 +528,8 @@ export class BookingService {
       resolvedBed = { id: itemData.bedId };
     }
 
+    this.logger.log(`[createBookingItem] linkedGuests count=${linkedGuests.length}, emails=${linkedGuests.map(g => g.email).join(',')}`);
+
     const bookingItem = this.bookingItemRepository.create({
       booking,
       itemType: itemData.itemType,
@@ -525,33 +548,7 @@ export class BookingService {
       staff,
       guests: linkedGuests.length > 0 ? linkedGuests : undefined,
     });
-    const savedItem = await this.bookingItemRepository.save(bookingItem);
-    // Load booking with customer and items/guests for email sending
-    const bookingWithDetails = await this.findOne(booking.id);
-
-    // Send booking confirmation email
-    // If customer exists, send to customer email; otherwise send to first guest email
-    const customerEmail = bookingWithDetails.customer?.email;
-    const customerName = bookingWithDetails.customer
-      ? `${bookingWithDetails.customer.firstName} ${bookingWithDetails.customer.lastName}`
-      : undefined;
-
-    await this.mailService.sendBookingConfirmationEmail(
-      bookingWithDetails,
-      customerEmail,
-      customerName,
-    );
-
-    // Send booking notification email to branch admin
-    if (bookingWithDetails.branch?.email) {
-      await this.mailService.sendBookingNotificationToAdmin(
-        bookingWithDetails,
-        bookingWithDetails.branch.email,
-        bookingWithDetails.branch.name,
-      );
-    }
-
-    return savedItem;
+    return await this.bookingItemRepository.save(bookingItem);
   }
 
   async updateBookingItem(
