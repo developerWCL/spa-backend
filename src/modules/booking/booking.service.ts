@@ -140,6 +140,7 @@ export class BookingService {
 
     let query = this.bookingRepository
       .createQueryBuilder('booking')
+      // Use leftJoinAndSelect carefully with pagination
       .leftJoinAndSelect('booking.customer', 'customer')
       .leftJoinAndSelect('booking.branch', 'branch')
       .leftJoinAndSelect('booking.promotion', 'promotion')
@@ -157,10 +158,19 @@ export class BookingService {
       .leftJoinAndSelect('items.staff', 'staff')
       .leftJoinAndSelect('items.room', 'itemRoom')
       .leftJoinAndSelect('items.guests', 'guests')
-      .where('booking.branchId = :branchId', { branchId })
-      .andWhere('payments.status IS NULL OR payments.status != :paidStatus', {
-        paidStatus: 'failed',
-      });
+      .where('booking.branchId = :branchId', { branchId });
+
+    // Filter out failed payments
+    query = query.andWhere(
+      new Brackets((qb) => {
+        qb.where('payments.status IS NULL').orWhere(
+          'payments.status != :paidStatus',
+          {
+            paidStatus: 'failed',
+          },
+        );
+      }),
+    );
 
     if (status && status !== 'all') {
       query = query.andWhere('booking.status = :status', { status });
@@ -170,25 +180,23 @@ export class BookingService {
       const searchTerm = `%${search.toLowerCase()}%`;
       query = query.andWhere(
         new Brackets((qb) => {
-          qb.where('LOWER(customer.firstName) LIKE :search', {
-            search: searchTerm,
+          // Use ILIKE for exact or partial ID match
+          qb.where('booking.bookingId ILIKE :rawSearch', {
+            rawSearch: `%${search}%`,
           })
-            .orWhere('LOWER(customer.lastName) LIKE :search', {
-              search: searchTerm,
+            .orWhere('LOWER(customer.lastName) LIKE :searchTerm', {
+              searchTerm,
             })
-            .orWhere('LOWER(booking.bookingId) LIKE :search', {
-              search: searchTerm,
+            .orWhere('LOWER(customer.firstName) LIKE :searchTerm', {
+              searchTerm,
             })
-            .orWhere('LOWER(guests.firstName) LIKE :search', {
-              search: searchTerm,
-            })
-            .orWhere('LOWER(guests.lastName) LIKE :search', {
-              search: searchTerm,
-            });
+            .orWhere('LOWER(guests.firstName) LIKE :searchTerm', { searchTerm })
+            .orWhere('LOWER(guests.lastName) LIKE :searchTerm', { searchTerm });
         }),
       );
     }
 
+    // Date Filtering
     if (startDateTime && endDateTime) {
       query = query.andWhere(
         'items.scheduledDate BETWEEN :startDateTime AND :endDateTime',
@@ -207,9 +215,14 @@ export class BookingService {
       });
     }
 
-    query = query.orderBy('booking.bookingTime', 'DESC').skip(skip).take(take);
-
-    const [data, total] = await query.getManyAndCount();
+    // CRITICAL FIX FOR PAGINATION WITH JOINS:
+    // Use setMaxResults instead of take if you experience weird duplicates,
+    // but usually take/skip are correct if getManyAndCount is used.
+    const [data, total] = await query
+      .orderBy('booking.bookingTime', 'DESC')
+      .skip(skip)
+      .take(take)
+      .getManyAndCount();
 
     return paginate(params, total, data);
   }
