@@ -4,22 +4,22 @@ import { seedStaff } from './seed-staff';
 import { seedSpa } from './seed-spa';
 import { seedBranches } from './seed-branches';
 import { seedBranchOperatingHours } from './seed-branch-operating-hours';
-import { seedBranchSpecialClosures } from './seed-branch-special-closures';
-import { seedRooms } from './seed-rooms';
-import { seedBeds } from './seed-beds';
+// import { seedBranchSpecialClosures } from './seed-branch-special-closures';
+// import { seedRooms } from './seed-rooms';
+// import { seedBeds } from './seed-beds';
 import { seedServiceCategories } from './seed-service-categories';
 import { seedServiceCategoryTranslations } from './seed-category-translations';
 import { seedServices } from './seed-services';
 import { seedSubServices } from './seed-sub-services';
 import { seedPackages } from './seed-packages';
-import { seedProgrammes } from './seed-programmes';
-import { seedProgrammeSteps } from './seed-programme-steps';
-import { seedPromotions } from './seed-promotions';
-import { seedCustomers } from './seed-customers';
-import { seedGuests } from './seed-guests';
-import { seedCarts } from './seed-carts';
-import { seedCartItems } from './seed-cart-items';
-import { seedStaffDayoff } from './seed-staff-dayoff';
+// import { seedProgrammes } from './seed-programmes';
+// import { seedProgrammeSteps } from './seed-programme-steps';
+// import { seedPromotions } from './seed-promotions';
+// import { seedCustomers } from './seed-customers';
+// import { seedGuests } from './seed-guests';
+// import { seedCarts } from './seed-carts';
+// import { seedCartItems } from './seed-cart-items';
+// import { seedStaffDayoff } from './seed-staff-dayoff';
 // import { seedBookings } from './seed-bookings';
 // import { seedPayments } from './seed-payments';
 import { dataSource } from '../../config/typeorm';
@@ -51,21 +51,21 @@ async function run() {
     console.log('Seeding Branch Operating Hours...');
     await seedBranchOperatingHours();
 
-    console.log('Seeding Branch Special Closures...');
-    await seedBranchSpecialClosures();
+    // console.log('Seeding Branch Special Closures...');
+    // await seedBranchSpecialClosures();
 
-    console.log('Seeding Rooms...');
-    await seedRooms();
+    // console.log('Seeding Rooms...');
+    // await seedRooms();
 
-    console.log('Seeding Beds...');
-    await seedBeds();
+    // console.log('Seeding Beds...');
+    // await seedBeds();
 
     console.log('\n=== Phase 3: Staffing ===');
     console.log('Seeding Staff...');
     await seedStaff();
 
-    console.log('Seeding Staff Day-off...');
-    await seedStaffDayoff();
+    // console.log('Seeding Staff Day-off...');
+    // await seedStaffDayoff();
 
     console.log('\n=== Phase 4: Services & Products ===');
     console.log('Seeding Service Categories...');
@@ -84,29 +84,29 @@ async function run() {
     console.log('Seeding Packages...');
     await seedPackages();
 
-    console.log('Seeding Programmes...');
-    await seedProgrammes();
+    // console.log('Seeding Programmes...');
+    // await seedProgrammes();
 
-    console.log('Seeding Programme Steps...');
-    await seedProgrammeSteps();
+    // console.log('Seeding Programme Steps...');
+    // await seedProgrammeSteps();
 
-    console.log('\n=== Phase 6: Marketing & Sales ===');
-    console.log('Seeding Promotions...');
-    await seedPromotions();
+    // console.log('\n=== Phase 6: Marketing & Sales ===');
+    // console.log('Seeding Promotions...');
+    // await seedPromotions();
 
-    console.log('\n=== Phase 7: Customer Management ===');
-    console.log('Seeding Customers...');
-    await seedCustomers();
+    // console.log('\n=== Phase 7: Customer Management ===');
+    // console.log('Seeding Customers...');
+    // await seedCustomers();
 
-    console.log('Seeding Guests...');
-    await seedGuests();
+    // console.log('Seeding Guests...');
+    // await seedGuests();
 
-    console.log('\n=== Phase 8: Transactions ===');
-    console.log('Seeding Carts...');
-    await seedCarts();
+    // console.log('\n=== Phase 8: Transactions ===');
+    // console.log('Seeding Carts...');
+    // await seedCarts();
 
-    console.log('Seeding Cart Items...');
-    await seedCartItems();
+    // console.log('Seeding Cart Items...');
+    // await seedCartItems();
 
     // console.log('Seeding Bookings...');
     // await seedBookings();

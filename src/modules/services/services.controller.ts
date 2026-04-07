@@ -86,6 +86,7 @@ export class ServicesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('status') status?: EntityStatus,
+    @Query('onlyPackage') onlyPackage?: boolean,
   ) {
     const paginationParams: PaginationParams =
       page || limit
@@ -96,7 +97,7 @@ export class ServicesController {
         : undefined;
     return this.servicesService.findAll(
       branchId,
-      { search, categoryId, status },
+      { search, categoryId, status, onlyPackage },
       paginationParams,
     );
   }

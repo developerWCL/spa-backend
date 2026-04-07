@@ -95,16 +95,11 @@ export async function seedStaff() {
   }
 
   // Get default branch or create one
-  let branch = await branchRepo.findOne({ where: {} });
-  if (!branch) {
-    // Create a default branch if none exists
-    branch = branchRepo.create({
-      name: 'Main Branch',
-      // Add other required fields if needed
-    });
-    branch = await branchRepo.save(branch);
-    console.log('Created default branch');
-  }
+  const branch = await branchRepo.findOne({
+    where: {
+      name: 'Deevana Patong Resort & Spa',
+    },
+  });
 
   // Create default admin staff
   const adminEmail = 'admin@spa.local';
@@ -117,7 +112,7 @@ export async function seedStaff() {
       firstName: 'Admin',
       lastName: 'User',
       email: adminEmail,
-      passwordHash,
+      passwordHash: passwordHash,
       branches: [branch],
       roles: [adminRole],
       isActive: true,

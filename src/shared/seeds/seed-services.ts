@@ -11,7 +11,11 @@ export async function seedServices() {
   const branchRepo = dataSource.getRepository(Branch);
   const translationRepo = dataSource.getRepository(ServiceTranslation);
 
-  const branch = await branchRepo.findOne({ where: {} });
+  const branch = await branchRepo.findOne({
+    where: {
+      name: 'Deevana Patong Resort & Spa',
+    },
+  });
 
   if (!branch) {
     console.log('No branch found. Please run seed-branches first.');
@@ -22,116 +26,171 @@ export async function seedServices() {
     where: { branch: { id: branch.id } },
   });
 
+  const treatmentCategory =
+    serviceCategories.find((c) => c.name === 'TREATMENT') ||
+    serviceCategories[0];
   const massageCategory =
-    serviceCategories.find((c) => c.name === 'Massage') || serviceCategories[0];
-  const facialCategory =
-    serviceCategories.find((c) => c.name === 'Facial Treatment') ||
-    serviceCategories[1];
-  const bodyCategory =
-    serviceCategories.find((c) => c.name === 'Body Treatment') ||
+    serviceCategories.find((c) => c.name === 'MASSAGE') || serviceCategories[1];
+  const onlyPackageCategory =
+    serviceCategories.find((c) => c.name === 'ONLY_PACKAGE') ||
     serviceCategories[2];
-  const footCategory =
-    serviceCategories.find((c) => c.name === 'Foot Care') ||
-    serviceCategories[3];
-
   const services = [
-    // Massage Services
+    // TREATMENT Services
     {
-      name: 'Thai Massage',
-      description: 'Traditional Thai massage therapy',
+      name: 'HERBAL STEAM',
+      description: '',
+      basePrice: '600',
+      durationMinutes: 30,
+      category: treatmentCategory,
+    },
+    {
+      name: 'BUBBLE BATH / MILK BATH',
+      description:
+        'The benefits of soaking in a 40 degree mineral milk bath contribute to sleep and relaxation. It also improves blood circulation in your body which helps reduce and relieve muscular pains.',
+      basePrice: '800',
+      durationMinutes: 30,
+      category: treatmentCategory,
+    },
+    {
+      name: 'HERBAL COMPRESS',
+      description: '',
       basePrice: '800',
       durationMinutes: 60,
-      category: massageCategory,
+      category: treatmentCategory,
     },
     {
-      name: 'Swedish Massage',
-      description: 'Relaxing Swedish massage therapy',
-      basePrice: '900',
+      name: 'AFTER SUN MASSAGE',
+      description: '',
+      basePrice: '1200',
       durationMinutes: 60,
-      category: massageCategory,
+      category: treatmentCategory,
     },
     {
-      name: 'Deep Tissue Massage',
-      description: 'Deep tissue massage for muscle relief',
-      basePrice: '1000',
-      durationMinutes: 60,
-      category: massageCategory,
-    },
-    // {
-    //   name: 'Hot Stone Massage',
-    //   description: 'Massage with heated stones',
-    //   basePrice: '1200',
-    //   durationMinutes: 60,
-    //   category: massageCategory,
-    // },
-
-    // Facial Services
-    {
-      name: 'Hydrating Facial',
-      description: 'Deep hydrating facial treatment',
-      basePrice: '700',
-      durationMinutes: 45,
-      category: facialCategory,
-    },
-    {
-      name: 'Anti-Aging Facial',
-      description: 'Advanced anti-aging facial treatment',
-      basePrice: '1000',
-      durationMinutes: 60,
-      category: facialCategory,
-    },
-    {
-      name: 'Brightening Facial',
-      description: 'Brightening and whitening facial',
-      basePrice: '850',
-      durationMinutes: 50,
-      category: facialCategory,
-    },
-
-    // Body Services
-    {
-      name: 'Body Scrub',
-      description: 'Exfoliating body scrub treatment',
-      basePrice: '750',
-      durationMinutes: 45,
-      category: bodyCategory,
-    },
-    {
-      name: 'Body Wrap',
-      description: 'Nourishing body wrap treatment',
-      basePrice: '900',
-      durationMinutes: 50,
-      category: bodyCategory,
-    },
-    {
-      name: 'Full Body Treatment',
-      description: 'Complete body spa treatment',
+      name: 'BODY SCRUB',
+      description:
+        'Skin scrub helps tighten pores and moisturize the skin. It removes old skin cells and stimulates new skin cells naturally. It reduces wrinkles and stimulates the blood circulation. The skin becomes brighter. With the fragrances of your choice such as rose, coconut, gold and pearl scrub cream.',
       basePrice: '1500',
-      durationMinutes: 90,
-      category: bodyCategory,
+      durationMinutes: 60,
+      category: treatmentCategory,
     },
 
-    // Foot Care Services
+    // MASSAGE Services
     {
-      name: 'Thai Foot Massage',
-      description: 'Traditional Thai foot massage',
+      name: 'THAI MASSAGE',
+      description:
+        'Thai massage results in health and relaxation. It incorporates pressure on lines and muscles throughout your body with the techniques of massage, pressure kneading and stretching to stimulate blood circulation, eliminate toxins, relieve tension and reduce muscle and joint pains. Oil is not applied, and customers are required to wear a massage outfit. This massage is suitable for those who like hard massage on the body lines.',
       basePrice: '600',
-      durationMinutes: 45,
-      category: footCategory,
+      durationMinutes: 60,
+      category: massageCategory,
     },
     {
-      name: 'Foot Reflexology',
-      description: 'Therapeutic foot reflexology',
-      basePrice: '700',
-      durationMinutes: 50,
-      category: footCategory,
+      name: 'FOOT RELAXING MASSAGE',
+      description:
+        'Foot reflexology massage helps stimulate the functions of the organs, balance the body and relieve calf and foot pains.',
+      basePrice: '600',
+      durationMinutes: 60,
+      category: massageCategory,
     },
     {
-      name: 'Pedicure Package',
-      description: 'Complete pedicure and foot care',
-      basePrice: '650',
-      durationMinutes: 50,
-      category: footCategory,
+      name: 'ASIAN BLEND MASSAGE',
+      description: '',
+      basePrice: '850',
+      durationMinutes: 60,
+      category: massageCategory,
+    },
+    {
+      name: 'BACK & SHOULDER MASSAGE',
+      description: '',
+      basePrice: '1000',
+      durationMinutes: 60,
+      category: massageCategory,
+    },
+    {
+      name: 'INDIAN HEAD MASSAGE',
+      description: '',
+      basePrice: '1000',
+      durationMinutes: 60,
+      category: massageCategory,
+    },
+    {
+      name: 'AROMA OIL MASSAGE',
+      description: '',
+      basePrice: '1200',
+      durationMinutes: 60,
+      category: massageCategory,
+    },
+    {
+      name: 'WARM OIL MASSAGE',
+      description:
+        'Aromatherapy massage is a combination of oil massage and various massage techniques to reduce and relieve aches and to relieve stress due to work and daily routines. It increases blood and lymph circulation. This massage is special as it incorporates warm aroma oils of your choice. The essential oils help you feel relaxed, both body and mind.',
+      basePrice: '1500',
+      durationMinutes: 60,
+      category: massageCategory,
+    },
+    {
+      name: 'THAI MASSAGE',
+      description:
+        'Thai massage results in health and relaxation. It incorporates pressure on lines and muscles throughout your body with the techniques of massage, pressure kneading and stretching to stimulate blood circulation, eliminate toxins, relieve tension and reduce muscle and joint pains. Oil is not applied, and customers are required to wear a massage outfit. This massage is suitable for those who like hard massage on the body lines.',
+      basePrice: '1000',
+      durationMinutes: 120,
+      category: massageCategory,
+    },
+    {
+      name: 'THAI & FOOT MASSAGE',
+      description: '',
+      basePrice: '1000',
+      durationMinutes: 120,
+      category: massageCategory,
+    },
+    {
+      name: 'THAI MASSAGE & HERBAL COMPRESS',
+      description: '',
+      basePrice: '1200',
+      durationMinutes: 120,
+      category: massageCategory,
+    },
+    {
+      name: 'THAI MASSAGE & AROMA OIL MASSAGE',
+      description: 'Thai Massage and Aroma Oil Massage 2 hours for 1 person',
+      basePrice: '1500',
+      durationMinutes: 120,
+      category: massageCategory,
+    },
+    {
+      name: 'AROMA OIL & FOOT MASSAGE',
+      description: '',
+      basePrice: '1500',
+      durationMinutes: 120,
+      category: massageCategory,
+    },
+    {
+      name: 'AROMA OIL & HERBAL COMPRESS',
+      description: '',
+      basePrice: '1500',
+      durationMinutes: 120,
+      category: massageCategory,
+    },
+    {
+      name: 'AROMA OIL MASSAGE',
+      description: '',
+      basePrice: '2000',
+      durationMinutes: 120,
+      category: massageCategory,
+    },
+    {
+      name: 'BODY SCRUB & AROMA OIL MASSAGE',
+      description: 'Body Scrub and Aroma Oil Massage 2 hours for 1 person',
+      basePrice: '2200',
+      durationMinutes: 120,
+      category: massageCategory,
+    },
+    {
+      name: 'PACKAGE ONLY',
+      description:
+        'This is a placeholder service for packages that include sub-services which may not exist as standalone services. It is not meant to be booked directly.',
+      basePrice: '0',
+      durationMinutes: 0,
+      category: onlyPackageCategory,
     },
   ];
 

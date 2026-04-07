@@ -15,25 +15,34 @@ export async function seedBranches() {
 
   const branches = [
     {
-      name: 'Main Branch',
-      location: '123 Wellness Street, Bangkok, Thailand',
-      phone: '+66-2-123-4567',
-      email: 'main@orientala-spa.com',
-      website: 'https://main.orientala-spa.com',
+      name: 'Patong Phuket',
+      location: 'Patong, Phuket, Thailand',
+      phone: '+66 (0) 7629 0435-6, +66 (0) 7629 0387',
+      email: 'rsvn@orientalaspa.com',
     },
     {
-      name: 'Sukhumvit Branch',
-      location: '456 Sukhumvit Road, Bangkok, Thailand',
-      phone: '+66-2-234-5678',
-      email: 'sukhumvit@orientala-spa.com',
-      website: 'https://sukhumvit.orientala-spa.com',
+      name: 'Deevana Patong Resort & Spa',
+      location: 'Patong, Phuket, Thailand',
+      phone: '+66 (0) 76317 179 Ext. Spa, +66 (0) 76 290 387 Ext. 21',
+      email: 'rsvn@orientalaspa.com',
     },
     {
-      name: 'Phuket Branch',
-      location: '789 Phuket Street, Phuket, Thailand',
-      phone: '+66-76-345-6789',
-      email: 'phuket@orientala-spa.com',
-      website: 'https://phuket.orientala-spa.com',
+      name: 'Ramada by Wyndham Phuket Deevana Patong',
+      location: 'Patong, Phuket, Thailand',
+      phone: '+66 (0) 76207 500 Ext. Spa, +66 (0) 76 290 387 Ext. 21',
+      email: 'rsvn@orientalaspa.com',
+    },
+    {
+      name: 'Deevana Plaza Phuket Patong',
+      location: 'Patong, Phuket, Thailand',
+      phone: '+66 (0) 7630 2187, +66 (0) 76 290 387 Ext. 21',
+      email: 'rsvn@orientalaspa.com',
+    },
+    {
+      name: 'Deevana Plaza Krabi Aonang',
+      location: 'Aonang, Krabi, Thailand',
+      phone: '+66 (0) 75 639 999 Ext. 6',
+      email: 'spa@deevanaplazakrabi.com',
     },
   ];
 

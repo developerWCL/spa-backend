@@ -11,186 +11,49 @@ export async function seedSubServices() {
 
   const services = await serviceRepo.find();
 
-  const subServiceConfigs = [
-    {
-      serviceName: 'Thai Massage',
-      subServices: [
-        {
-          name: 'Full Body Thai Massage',
-          description: 'Complete body massage',
-          duration: 60,
-          price: '800',
-        },
-        {
-          name: 'Upper Body Thai Massage',
-          description: 'Upper body focus',
-          duration: 30,
-          price: '500',
-        },
-      ],
-    },
-    {
-      serviceName: 'Swedish Massage',
-      subServices: [
-        {
-          name: 'Classic Swedish Massage',
-          description: 'Traditional Swedish technique',
-          duration: 60,
-          price: '900',
-        },
-      ],
-    },
-    {
-      serviceName: 'Deep Tissue Massage',
-      subServices: [
-        {
-          name: 'Full Body Deep Tissue',
-          description: 'Full body deep tissue work',
-          duration: 60,
-          price: '1000',
-        },
-        {
-          name: 'Targeted Deep Tissue',
-          description: 'Problem area focus',
-          duration: 45,
-          price: '800',
-        },
-      ],
-    },
-    {
-      serviceName: 'Hydrating Facial',
-      subServices: [
-        {
-          name: 'Intensive Hydrating Facial',
-          description: 'Deep moisture treatment',
-          duration: 45,
-          price: '700',
-        },
-      ],
-    },
-    {
-      serviceName: 'Anti-Aging Facial',
-      subServices: [
-        {
-          name: 'Premium Anti-Aging',
-          description: 'Advanced anti-aging care',
-          duration: 60,
-          price: '1000',
-        },
-      ],
-    },
-    {
-      serviceName: 'Brightening Facial',
-      subServices: [
-        {
-          name: 'Radiance Brightening Facial',
-          description: 'Brightening and whitening treatment',
-          duration: 50,
-          price: '850',
-        },
-      ],
-    },
-    {
-      serviceName: 'Body Scrub',
-      subServices: [
-        {
-          name: 'Full Body Scrub',
-          description: 'Complete exfoliation treatment',
-          duration: 45,
-          price: '750',
-        },
-      ],
-    },
-    {
-      serviceName: 'Body Wrap',
-      subServices: [
-        {
-          name: 'Nourishing Body Wrap',
-          description: 'Hydrating and detoxifying wrap',
-          duration: 50,
-          price: '900',
-        },
-      ],
-    },
-    {
-      serviceName: 'Full Body Treatment',
-      subServices: [
-        {
-          name: 'Ultimate Full Body Treatment',
-          description: 'Comprehensive spa experience',
-          duration: 90,
-          price: '1500',
-        },
-      ],
-    },
-    {
-      serviceName: 'Thai Foot Massage',
-      subServices: [
-        {
-          name: 'Traditional Thai Foot Massage',
-          description: 'Ancient Thai technique for foot relaxation',
-          duration: 45,
-          price: '600',
-        },
-      ],
-    },
-    {
-      serviceName: 'Foot Reflexology',
-      subServices: [
-        {
-          name: 'Foot Reflexology',
-          description: 'Targeted pressure points for foot health',
-          duration: 45,
-          price: '650',
-        },
-      ],
-    },
-    {
-      serviceName: 'Pedicure Package',
-      subServices: [
-        {
-          name: 'Complete Pedicure Package',
-          description: 'Nail care and foot treatment',
-          duration: 50,
-          price: '650',
-        },
-      ],
-    },
-  ];
+  if (services.length === 0) {
+    console.log('No services found. Please run seed-services first.');
+    return;
+  }
 
-  for (const config of subServiceConfigs) {
-    const service = services.find((s) => s.name === config.serviceName);
-
-    if (!service) {
-      console.log(`Service '${config.serviceName}' not found. Skipping...`);
-      continue;
+  // create sub-services for each service
+  for (const service of services) {
+    if (service.name === 'PACKAGE ONLY') {
+      continue; // Skip creating sub-services for "PACKAGE ONLY" service
     }
+    const subServiceName = `${service.durationMinutes} MINUTES`;
 
-    for (const subServiceData of config.subServices) {
-      const existingSubService = await subServiceRepo.findOne({
-        where: { name: subServiceData.name },
+    let subService = await subServiceRepo.findOne({
+      where: { name: subServiceName, service: { id: service.id } },
+    });
+
+    if (!subService) {
+      subService = subServiceRepo.create({
+        name: subServiceName,
+        status: EntityStatus.ACTIVE,
+        durationMinutes: service.durationMinutes,
+        price: service.basePrice,
+        onlyPackage: false,
+        service, // associate with the parent service
       });
+      subService = await subServiceRepo.save(subService);
 
-      if (!existingSubService) {
-        const subService = subServiceRepo.create({
-          name: subServiceData.name,
-          durationMinutes: subServiceData.duration,
-          price: subServiceData.price,
-          service,
-          status: EntityStatus.ACTIVE,
-        });
-        await subServiceRepo.save(subService);
-        const translation = translationRepo.create({
-          name: subServiceData.name,
-          description: subServiceData.description,
-          languageCode: 'en',
-          subService,
-        });
-        await translationRepo.save(translation);
-        console.log(`Sub-service '${subServiceData.name}' seeded successfully`);
-      } else {
-        console.log(`Sub-service '${subServiceData.name}' already exists`);
-      }
+      // Create translation for the sub-service
+      const translation = translationRepo.create({
+        name: subServiceName,
+        description: '',
+        languageCode: 'en',
+        subService,
+      });
+      await translationRepo.save(translation);
+
+      console.log(
+        `Created sub-service '${subServiceName}' for service '${service.name}'`,
+      );
+    } else {
+      console.log(
+        `Sub-service '${subServiceName}' already exists for service '${service.name}'`,
+      );
     }
   }
 }

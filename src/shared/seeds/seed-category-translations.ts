@@ -16,21 +16,25 @@ export async function seedServiceCategoryTranslations() {
 
   // Define translations for each category
   const translationsMap: Record<string, Record<string, string>> = {
-    Massage: {
+    TREATMENT: {
+      en: 'Treatment',
+      th: 'บำรุงรักษา',
+    },
+    MASSAGE: {
       en: 'Massage',
       th: 'นวด',
     },
-    'Facial Treatment': {
-      en: 'Facial Treatment',
-      th: 'ปรับปรุงผิวหน้า',
+    'SIGNATURE PACKAGES': {
+      en: 'Signature Packages',
+      th: 'แพคเกจสุดพิเศษ',
     },
-    'Body Treatment': {
-      en: 'Body Treatment',
-      th: 'บำรุงรักษาร่างกาย',
+    'FACIAL MASSAGE': {
+      en: 'Facial Massage',
+      th: 'นวดหน้า',
     },
-    'Foot Care': {
-      en: 'Foot Care',
-      th: 'ดูแลเท้า',
+    'PACKAGE ONLY': {
+      en: 'Package Only',
+      th: 'เฉพาะแพคเกจ',
     },
   };
 

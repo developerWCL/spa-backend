@@ -143,7 +143,12 @@ export class ServicesService {
 
   async findAll(
     branchId: string,
-    filters?: { search?: string; categoryId?: string; status?: EntityStatus },
+    filters?: {
+      search?: string;
+      categoryId?: string;
+      status?: EntityStatus;
+      onlyPackage?: boolean;
+    },
     paginationParams?: PaginationParams,
   ) {
     // Build query with filters
@@ -179,6 +184,14 @@ export class ServicesService {
       query = query.andWhere('service.status = :status', {
         status: filters.status,
       });
+    }
+    if (filters?.onlyPackage !== undefined) {
+      const onlyPackage = Boolean(filters.onlyPackage);
+      if (onlyPackage) {
+        query = query.andWhere('service.name != :name', {
+          name: 'PACKAGE ONLY',
+        });
+      }
     }
 
     // Handle pagination

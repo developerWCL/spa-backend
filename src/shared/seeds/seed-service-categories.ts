@@ -7,7 +7,11 @@ export async function seedServiceCategories() {
   const branchRepo = dataSource.getRepository(Branch);
 
   // Get the first branch (default branch)
-  const branch = await branchRepo.findOne({ where: {} });
+  const branch = await branchRepo.findOne({
+    where: {
+      name: 'Deevana Patong Resort & Spa',
+    },
+  });
 
   if (!branch) {
     console.log('No branch found. Skipping service categories seed.');
@@ -16,23 +20,23 @@ export async function seedServiceCategories() {
 
   const categories = [
     {
-      name: 'Massage',
-      description: 'Relaxing and therapeutic massage treatments',
+      name: 'TREATMENT',
+      description: 'Spa treatment services',
       displayOrder: 1,
     },
     {
-      name: 'Facial Treatment',
-      description: 'Professional facial care and beauty treatments',
+      name: 'MASSAGE',
+      description: 'Massage therapy treatments',
       displayOrder: 2,
     },
     {
-      name: 'Body Treatment',
-      description: 'Full body care and spa treatments',
+      name: 'SIGNATURE PACKAGES',
+      description: 'Special signature spa packages',
       displayOrder: 3,
     },
     {
-      name: 'Foot Care',
-      description: 'Foot massage and pedicure services',
+      name: 'FACIAL MASSAGE',
+      description: 'Facial massage and treatments',
       displayOrder: 4,
     },
   ];
