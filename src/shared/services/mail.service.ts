@@ -304,6 +304,7 @@ export class MailService {
       year: 'numeric',
       month: 'long',
       day: 'numeric',
+      timeZone: 'Asia/Bangkok', // Ensure date is formatted in spa's local timezone
     });
     const time = item?.scheduledTime;
     return time ? `${datePart} at ${time}` : datePart;
