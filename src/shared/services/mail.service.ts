@@ -251,9 +251,15 @@ export class MailService {
           bookingId: booking.bookingId,
           bookingDate,
           services,
+          subtotalAmount: booking.amount
+            ? parseFloat(booking.amount).toLocaleString('en-US')
+            : undefined,
           totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString(
             'en-US',
           ),
+          discountAmount: booking.discountAmount
+            ? parseFloat(booking.discountAmount).toLocaleString('en-US')
+            : undefined,
           currency: 'THB',
           guestCount,
           specialRequest,
@@ -273,17 +279,14 @@ export class MailService {
   private extractServiceNames(booking: any): { name: string; price: string }[] {
     if (!booking.items?.length) return [{ name: 'Spa Service', price: '0' }];
     return booking.items.map((item: any) => {
-      const svcName =
-        item.subService?.service?.translations?.find(
-          (t: any) => t.locale === 'en',
-        )?.name ||
-        item.subService?.service?.translations?.[0]?.name ||
-        item.package?.translations?.find((t: any) => t.locale === 'en')?.name ||
-        item.package?.translations?.[0]?.name ||
-        item.programme?.translations?.find((t: any) => t.locale === 'en')
-          ?.name ||
-        item.programme?.translations?.[0]?.name ||
-        'Spa Service';
+      const svcName = item.subService
+        ? `${item?.subService?.service?.name} - ${item.subService.name}` ||
+          'Spa Service'
+        : item.package
+          ? item.package.name || 'Spa Service'
+          : item.programme
+            ? item.programme.name || 'Spa Service'
+            : 'Spa Service';
       this.logger.debug(
         `[extractServiceNames] item subService=${item.subService?.id} svc.translations=${JSON.stringify(item.subService?.service?.translations)} resolved="${svcName}"`,
       );
@@ -433,9 +436,15 @@ export class MailService {
             bookingId: booking.bookingId,
             bookingDate,
             services,
+            subtotalAmount: booking.amount
+              ? parseFloat(booking.amount).toLocaleString('en-US')
+              : undefined,
             totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString(
               'en-US',
             ),
+            discountAmount: booking.discountAmount
+              ? parseFloat(booking.discountAmount).toLocaleString('en-US')
+              : undefined,
             currency: 'THB',
             guestCount,
             specialRequest,

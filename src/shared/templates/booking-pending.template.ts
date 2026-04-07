@@ -7,7 +7,9 @@ export function bookingPendingTemplate(data: {
   bookingId: string;
   bookingDate: string;
   services: { name: string; price: string }[];
+  subtotalAmount?: string;
   totalAmount: string;
+  discountAmount?: string;
   currency: string;
   guestCount: number;
   specialRequest?: string;
@@ -106,6 +108,18 @@ export function bookingPendingTemplate(data: {
 
               <!-- Total -->
               <table width="100%" cellpadding="0" cellspacing="0" style="border-top:2px solid ${PRIMARY};margin-bottom:32px;">
+                ${data.subtotalAmount ? `
+                <tr>
+                  <td style="padding:8px 0;color:#111827;font-size:14px;">Subtotal</td>
+                  <td style="padding:8px 0;text-align:right;color:#374151;font-size:14px;white-space:nowrap;">${data.subtotalAmount} ${data.currency}</td>
+                </tr>
+                ` : ''}
+                ${data.discountAmount && parseFloat(data.discountAmount) > 0 ? `
+                <tr>
+                  <td style="padding:8px 0;color:#10b981;font-size:14px;font-weight:600;">Discount</td>
+                  <td style="padding:8px 0;text-align:right;color:#10b981;font-size:14px;font-weight:600;">-${data.discountAmount} ${data.currency}</td>
+                </tr>
+                ` : ''}  
                 <tr>
                   <td style="padding:16px 0 0;color:#111827;font-size:15px;font-weight:700;">Total</td>
                   <td style="padding:16px 0 0;text-align:right;color:${PRIMARY};font-size:18px;font-weight:700;">${data.totalAmount} ${data.currency}</td>
