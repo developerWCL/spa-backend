@@ -71,7 +71,7 @@ export class CustomerService {
 
   async list(
     paginationParams: PaginationParams,
-    spaIds?: string[],
+    spaId?: string,
     filters?: { search?: string },
   ) {
     const { skip, take } = getPaginationQueryTypeORM(paginationParams);
@@ -80,9 +80,9 @@ export class CustomerService {
       .createQueryBuilder('customer')
       .leftJoinAndSelect('customer.spa', 'spa');
 
-    // Filter by spa if spaIds provided
-    if (spaIds && spaIds.length > 0) {
-      query.where('spa.id IN (:...spaIds)', { spaIds });
+    // Filter by spa if spaId provided
+    if (spaId) {
+      query.where('spa.id = :spaId', { spaId });
     }
 
     // Search filter for firstName, lastName, or email
