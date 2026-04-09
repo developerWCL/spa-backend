@@ -24,6 +24,7 @@ import {
   CreateNewSubServiceDto,
 } from './packages.types';
 import { PriceOverride } from 'src/entities/price_overides.entity';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class PackagesService {
@@ -43,7 +44,10 @@ export class PackagesService {
     @InjectRepository(Media)
     private mediaRepo: Repository<Media>,
     private dataSource: DataSource,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('PackagesService');
+  }
 
   private async createNewSubServices(
     newSubServices: CreateNewSubServiceDto[],
@@ -94,6 +98,10 @@ export class PackagesService {
   }
 
   async create(dto: CreatePackageDto) {
+    this.logger.log('Creating package', {
+      name: dto.name,
+      branchId: dto.branchId,
+    });
     return this.dataSource.transaction(async (manager: EntityManager) => {
       // Validate branch exists
       const branch = await manager.findOne(Branch, {

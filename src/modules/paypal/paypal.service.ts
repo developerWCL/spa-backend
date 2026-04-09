@@ -7,6 +7,7 @@ import {
 import axios from 'axios';
 import { PaypalAccountService } from './paypal-account.service';
 import { CreatePaypalOrderDto } from './paypal.dto';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 interface PaypalOrderResponse {
   id: string;
@@ -16,11 +17,12 @@ interface PaypalOrderResponse {
 
 @Injectable()
 export class PaypalService {
-  private readonly logger = new Logger(PaypalService.name);
-
   constructor(
     private readonly accountService: PaypalAccountService,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('PaypalService');
+  }
 
   private baseUrl(mode: string): string {
     return mode === 'live'
@@ -28,7 +30,9 @@ export class PaypalService {
       : 'https://api-m.sandbox.paypal.com';
   }
 
-  private async getAccessToken(branchId: string): Promise<{ token: string; mode: string }> {
+  private async getAccessToken(
+    branchId: string,
+  ): Promise<{ token: string; mode: string }> {
     const creds = await this.accountService.getAccountForBranch(branchId);
 
     this.logger.debug(
@@ -86,7 +90,12 @@ export class PaypalService {
           const unitPrice = totalPrice / qty;
           return {
             name: item.itemName || 'Spa Service',
-            sku: item.subService || item.package || item.programme || item.id || undefined,
+            sku:
+              item.subService ||
+              item.package ||
+              item.programme ||
+              item.id ||
+              undefined,
             quantity: String(qty),
             unit_amount: {
               currency_code: currency,
@@ -96,7 +105,8 @@ export class PaypalService {
         })
       : undefined;
 
-    const description = dto.description ||
+    const description =
+      dto.description ||
       (items?.length
         ? items.map((i) => i.name).join(', ')
         : 'Orientala Spa Booking');
@@ -133,7 +143,9 @@ export class PaypalService {
       },
     };
 
-    this.logger.debug(`PayPal create-order payload: ${JSON.stringify(payload, null, 2)}`);
+    this.logger.debug(
+      `PayPal create-order payload: ${JSON.stringify(payload, null, 2)}`,
+    );
 
     try {
       const { data } = await axios.post<PaypalOrderResponse>(
@@ -147,7 +159,9 @@ export class PaypalService {
         },
       );
 
-      this.logger.debug(`PayPal create-order response: ${JSON.stringify(data, null, 2)}`);
+      this.logger.debug(
+        `PayPal create-order response: ${JSON.stringify(data, null, 2)}`,
+      );
 
       const approvalLink = data.links.find((l) => l.rel === 'approve');
       if (!approvalLink) {
@@ -187,9 +201,7 @@ export class PaypalService {
       );
 
       if (data.status !== 'COMPLETED') {
-        throw new BadRequestException(
-          `PayPal capture status: ${data.status}`,
-        );
+        throw new BadRequestException(`PayPal capture status: ${data.status}`);
       }
 
       const capture = data.purchase_units[0]?.payments?.captures?.[0];

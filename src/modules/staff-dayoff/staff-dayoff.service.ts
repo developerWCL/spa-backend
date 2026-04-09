@@ -14,17 +14,26 @@ import {
   CreateStaffDayoffDto,
   UpdateStaffDayoffDto,
 } from './staff-dayoff.types';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class StaffDayoffService {
   constructor(
     @InjectRepository(StaffDayoff)
     private readonly staffDayoffRepo: Repository<StaffDayoff>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('StaffDayoffService');
+  }
 
   async create(dto: CreateStaffDayoffDto): Promise<StaffDayoff> {
+    this.logger.log('Creating staff dayoff', { staffId: dto.staffId });
     const staffDayoff = this.staffDayoffRepo.create(dto);
-    return this.staffDayoffRepo.save(staffDayoff);
+    const saved = await this.staffDayoffRepo.save(staffDayoff);
+    this.logger.log('Staff dayoff created successfully', {
+      dayoffId: saved.id,
+    });
+    return saved;
   }
 
   async findAll(
@@ -80,7 +89,10 @@ export class StaffDayoffService {
     }
 
     const staffDayoff = await query.getOne();
-    if (!staffDayoff) throw new NotFoundException('Staff dayoff not found');
+    if (!staffDayoff) {
+      this.logger.error('Staff dayoff not found', null, { dayoffId: id });
+      throw new NotFoundException('Staff dayoff not found');
+    }
     return staffDayoff;
   }
 

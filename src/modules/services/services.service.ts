@@ -19,6 +19,7 @@ import { Package } from 'src/entities/packages.entity';
 import { Programme } from 'src/entities/programmes.entity';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 import { PriceOverride } from 'src/entities/price_overides.entity';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class ServicesService {
@@ -44,14 +45,22 @@ export class ServicesService {
     @InjectRepository(Programme)
     private programmeRepo: Repository<Programme>,
     private dataSource: DataSource,
-  ) {}
+    private logger: AppLoggerService,
+  ) {
+    this.logger.setContext('ServicesService');
+  }
 
   async create(dto: CreateServiceDto) {
+    this.logger.log('Creating service', {
+      name: dto.name,
+      branchId: dto.branchId,
+    });
     return this.dataSource.transaction(async (manager: EntityManager) => {
       const branch = await manager.findOne(Branch, {
         where: { id: dto.branchId },
       });
       if (!branch) {
+        this.logger.error('Branch not found', null, { branchId: dto.branchId });
         throw new NotFoundException(`Branch with ID ${dto.branchId} not found`);
       }
 
@@ -79,6 +88,10 @@ export class ServicesService {
       service.maxBookingsPerDay = dto.maxBookingsPerDay;
 
       const savedService = await manager.save(service);
+      this.logger.log('Service created successfully', {
+        serviceId: savedService.id,
+        name: savedService.name,
+      });
 
       // Handle media associations
       if (dto.mediaIds && dto.mediaIds.length > 0) {
@@ -230,6 +243,7 @@ export class ServicesService {
     });
 
     if (!service) {
+      this.logger.warn('Service not found', { serviceId: id });
       throw new NotFoundException('Service not found');
     }
 
@@ -237,6 +251,7 @@ export class ServicesService {
   }
 
   async update(id: string, dto: UpdateServiceDto) {
+    this.logger.log('Updating service', { serviceId: id });
     return this.dataSource.transaction(async (manager: EntityManager) => {
       const service = await manager.findOne(Service, {
         where: { id },
@@ -249,6 +264,9 @@ export class ServicesService {
       });
 
       if (!service) {
+        this.logger.error('Service not found for update', null, {
+          serviceId: id,
+        });
         throw new NotFoundException('Service not found');
       }
 
@@ -411,24 +429,30 @@ export class ServicesService {
         }
       }
 
+      this.logger.log('Service updated successfully', { serviceId: id });
       return this.findOne(id);
     });
   }
 
   async remove(id: string) {
+    this.logger.log('Deleting service', { serviceId: id });
     await this.findOne(id); // Verify service exists
     await this.serviceRepo.softDelete(id);
+    this.logger.log('Service deleted successfully', { serviceId: id });
     return { success: true, message: 'Service deleted successfully' };
   }
 
   async removeSubService(subServiceId: string) {
+    this.logger.log('Deleting sub-service', { subServiceId });
     const subService = await this.subServiceRepo.findOne({
       where: { id: subServiceId },
     });
     if (!subService) {
+      this.logger.warn('Sub-service not found', { subServiceId });
       throw new NotFoundException('Sub-service not found');
     }
     await this.subServiceRepo.softDelete(subServiceId);
+    this.logger.log('Sub-service deleted successfully', { subServiceId });
     return { success: true, message: 'Sub-service deleted successfully' };
   }
 

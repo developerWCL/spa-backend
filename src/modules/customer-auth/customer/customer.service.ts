@@ -15,6 +15,7 @@ import {
 import { PaginationParams } from 'src/shared/pagination.types';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class CustomerService {
@@ -23,13 +24,21 @@ export class CustomerService {
     private readonly repo: Repository<Customer>,
     @InjectRepository(Spa)
     private readonly spaRepo: Repository<Spa>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('CustomerService');
+  }
 
   async create(data: Partial<Customer>, entityManager?: EntityManager) {
+    this.logger.log('Creating customer', { email: data.email });
     const repo = entityManager
       ? entityManager.getRepository(Customer)
       : this.repo;
-    return repo.save(repo.create(data));
+    const savedCustomer = await repo.save(repo.create(data));
+    this.logger.log('Customer created successfully', {
+      customerId: savedCustomer.id,
+    });
+    return savedCustomer;
   }
 
   async findByEmail(email: string) {
@@ -62,7 +71,10 @@ export class CustomerService {
   }
 
   async delete(id: string) {
-    return this.repo.softDelete(id);
+    this.logger.log('Deleting customer', { customerId: id });
+    const result = await this.repo.softDelete(id);
+    this.logger.log('Customer deleted successfully', { customerId: id });
+    return result;
   }
 
   async findAll() {

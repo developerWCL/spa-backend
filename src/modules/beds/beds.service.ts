@@ -12,20 +12,30 @@ import { paginate } from 'src/shared/pagination.util';
 import { PaginatedResponse } from 'src/shared/pagination.types';
 import { RoomStatus } from 'src/entities/enums/entity-room.enum';
 import { Room } from 'src/entities/rooms.entity';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class BedsService {
   constructor(
     @InjectRepository(Bed)
     private readonly bedRepo: Repository<Bed>,
-  ) {}
+    private logger: AppLoggerService,
+  ) {
+    this.logger.setContext('BedsService');
+  }
 
   async create(dto: CreateBedDto): Promise<Bed> {
+    this.logger.log('Creating bed', {
+      bedName: dto.name,
+      roomId: dto.roomId,
+      branchId: dto.branchId,
+    });
     // Check if room exists
     const room = await this.bedRepo.manager.findOne('Room', {
       where: { id: dto.roomId },
     });
     if (!room) {
+      this.logger.error('Room not found', null, { roomId: dto.roomId });
       throw new NotFoundException('Room not found');
     }
 
@@ -34,6 +44,7 @@ export class BedsService {
       where: { id: dto.branchId },
     });
     if (!branch) {
+      this.logger.error('Branch not found', null, { branchId: dto.branchId });
       throw new NotFoundException('Branch not found');
     }
 
@@ -42,7 +53,12 @@ export class BedsService {
       room,
       branch,
     });
-    return this.bedRepo.save(bed);
+    const savedBed = await this.bedRepo.save(bed);
+    this.logger.log('Bed created successfully', {
+      bedId: savedBed.id,
+      bedName: savedBed.name,
+    });
+    return savedBed;
   }
 
   async findAll(
@@ -137,6 +153,7 @@ export class BedsService {
       relations: ['room', 'room.branch'],
     });
     if (!bed) {
+      this.logger.warn('Bed not found', { bedId: id });
       throw new NotFoundException('Bed not found');
     }
     return bed;
@@ -155,8 +172,10 @@ export class BedsService {
   }
 
   async update(id: string, dto: UpdateBedDto): Promise<Bed> {
+    this.logger.log('Updating bed', { bedId: id });
     const bed = await this.findOne(id);
     if (!bed) {
+      this.logger.error('Bed not found for update', null, { bedId: id });
       throw new NotFoundException('Bed not found');
     }
 
@@ -166,6 +185,9 @@ export class BedsService {
         where: { id: dto.roomId },
       });
       if (!room) {
+        this.logger.error('Room not found for bed update', null, {
+          roomId: dto.roomId,
+        });
         throw new NotFoundException('Room not found');
       }
       bed.room = room as Room;
@@ -175,11 +197,15 @@ export class BedsService {
     }
 
     Object.assign(bed, dto);
-    return this.bedRepo.save(bed);
+    const updatedBed = await this.bedRepo.save(bed);
+    this.logger.log('Bed updated successfully', { bedId: id });
+    return updatedBed;
   }
 
   async remove(id: string): Promise<void> {
+    this.logger.log('Deleting bed', { bedId: id });
     const bed = await this.findOne(id);
     await this.bedRepo.softDelete(bed.id);
+    this.logger.log('Bed deleted successfully', { bedId: id });
   }
 }

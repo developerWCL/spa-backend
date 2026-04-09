@@ -8,6 +8,7 @@ import { CreateGuestDto, UpdateGuestDto } from './guests.types';
 import { paginate } from 'src/shared/pagination.util';
 import { PaginatedResponse } from 'src/shared/pagination.types';
 import { EntityGuestGender } from 'src/entities/enums/entity-guest.enum';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class GuestsService {
@@ -18,9 +19,16 @@ export class GuestsService {
     private readonly customerRepo: Repository<Customer>,
     @InjectRepository(Spa)
     private readonly spaRepo: Repository<Spa>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('GuestsService');
+  }
 
   async create(dto: CreateGuestDto): Promise<Guest> {
+    this.logger.log('Creating guest', {
+      firstName: dto.firstName,
+      lastName: dto.lastName,
+    });
     // Check if spa exists
     let spa: Spa | null = null;
     if (dto.spaId) {
@@ -28,6 +36,7 @@ export class GuestsService {
         where: { id: dto.spaId },
       });
       if (!spa) {
+        this.logger.error('Spa not found', null, { spaId: dto.spaId });
         throw new NotFoundException('Spa not found');
       }
     }
@@ -39,6 +48,9 @@ export class GuestsService {
         where: { id: dto.customerId },
       });
       if (!customer) {
+        this.logger.error('Customer not found', null, {
+          customerId: dto.customerId,
+        });
         throw new NotFoundException('Customer not found');
       }
     }
@@ -55,7 +67,9 @@ export class GuestsService {
       specialRequest: dto.specialRequest || null,
     });
 
-    return this.guestRepo.save(guest);
+    const savedGuest = await this.guestRepo.save(guest);
+    this.logger.log('Guest created successfully', { guestId: savedGuest.id });
+    return savedGuest;
   }
 
   async findAll(
@@ -125,16 +139,19 @@ export class GuestsService {
       relations: ['spa', 'customer', 'bookings'],
     });
     if (!guest) {
+      this.logger.error('Guest not found', null, { guestId: id });
       throw new NotFoundException('Guest not found');
     }
     return guest;
   }
 
   async update(id: string, dto: UpdateGuestDto): Promise<Guest> {
+    this.logger.log('Updating guest', { guestId: id });
     const guest = await this.guestRepo.findOne({
       where: { id },
     });
     if (!guest) {
+      this.logger.error('Guest not found', null, { guestId: id });
       throw new NotFoundException('Guest not found');
     }
 

@@ -12,6 +12,7 @@ import { CreateRoomDto, UpdateRoomDto } from './rooms.types';
 import { paginate } from 'src/shared/pagination.util';
 import { PaginatedResponse } from 'src/shared/pagination.types';
 import { RoomStatus } from 'src/entities/enums/entity-room.enum';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class RoomsService {
@@ -20,9 +21,13 @@ export class RoomsService {
     private readonly roomRepo: Repository<Room>,
     @InjectRepository(Branch)
     private readonly branchRepo: Repository<Branch>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('RoomsService');
+  }
 
   async create(dto: CreateRoomDto): Promise<Room> {
+    this.logger.log('Creating room', { name: dto.name, branchId: dto.branchId });
     const { branchId, ...roomData } = dto;
 
     // Verify branch exists
@@ -31,6 +36,7 @@ export class RoomsService {
     });
 
     if (!branch) {
+      this.logger.error('Branch not found', null, { branchId });
       throw new BadRequestException('Branch not found');
     }
 
@@ -38,7 +44,9 @@ export class RoomsService {
       ...roomData,
       branch,
     });
-    return this.roomRepo.save(room);
+    const savedRoom = await this.roomRepo.save(room);
+    this.logger.log('Room created successfully', { roomId: savedRoom.id });
+    return savedRoom;
   }
 
   async findAll(
@@ -128,6 +136,7 @@ export class RoomsService {
       relations: ['branch', 'beds'],
     });
     if (!room) {
+      this.logger.error('Room not found', null, { roomId: id });
       throw new NotFoundException('Room not found');
     }
     return room;
@@ -142,12 +151,19 @@ export class RoomsService {
   }
 
   async update(id: string, dto: UpdateRoomDto): Promise<Room> {
+    this.logger.log('Updating room', { roomId: id });
     const room = await this.findOne(id);
     Object.assign(room, dto);
-    return this.roomRepo.save(room);
+    await this.roomRepo.save(room);
+    this.logger.log('Room updated successfully', { roomId: id });
+    return room;
   }
 
   async remove(id: string): Promise<void> {
+    this.logger.log('Deleting room', { roomId: id });
+    await this.roomRepo.softDelete(id);
+    this.logger.log('Room deleted successfully', { roomId: id });
+  }
     const room = await this.findOne(id);
     await this.roomRepo.softDelete(room.id);
   }

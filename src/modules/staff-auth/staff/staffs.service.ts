@@ -16,6 +16,7 @@ import {
 import { PaginationParams } from '../../../shared/pagination.types';
 import { CreateStaffDto } from '../dto/create-staff.dto';
 import { UpdateStaffDto } from '../dto/update-staff.dto';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class StaffsService {
@@ -26,7 +27,10 @@ export class StaffsService {
     private readonly roleRepo: Repository<Role>,
     @InjectRepository(Branch)
     private readonly branchRepo: Repository<Branch>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('StaffsService');
+  }
 
   async list(
     paginationParams: PaginationParams,
@@ -83,7 +87,10 @@ export class StaffsService {
       where: { id },
       relations: ['branches', 'branches.spa', 'roles'],
     });
-    if (!s) throw new NotFoundException('Staff not found');
+    if (!s) {
+      this.logger.error('Staff not found', null, { staffId: id });
+      throw new NotFoundException('Staff not found');
+    }
     return s;
   }
 
@@ -92,6 +99,7 @@ export class StaffsService {
     requestingStaffBranchIds?: string[],
     requestingStaffSpaIds?: string[],
   ) {
+    this.logger.log('Creating staff', { email: dto.email });
     // Collect all branch IDs from request
     const allBranchIds = [
       ...(dto.branchIds && Array.isArray(dto.branchIds) ? dto.branchIds : []),

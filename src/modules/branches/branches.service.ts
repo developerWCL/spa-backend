@@ -9,6 +9,7 @@ import { Branch } from 'src/entities/branch.entity';
 import { Media } from 'src/entities/media.entity';
 import { BranchOperatingHours } from 'src/entities/branch_operating_hours.entity';
 import { CreateBranchDto, UpdateBranchDto } from './branches.types';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class BranchesService {
@@ -19,13 +20,20 @@ export class BranchesService {
     private readonly mediaRepo: Repository<Media>,
     @InjectRepository(BranchOperatingHours)
     private readonly operatingHoursRepo: Repository<BranchOperatingHours>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('BranchesService');
+  }
 
   async create(dto: CreateBranchDto): Promise<Branch> {
+    this.logger.log('Creating branch', { name: dto.name });
     const { mediaIds, operatingHours, ...branchData } = dto;
 
     const branch = this.branchRepo.create(branchData);
     const savedBranch = await this.branchRepo.save(branch);
+    this.logger.log('Branch created successfully', {
+      branchId: savedBranch.id,
+    });
 
     // Link media to branch
     if (mediaIds && mediaIds.length > 0) {
@@ -69,7 +77,10 @@ export class BranchesService {
       where: { id },
       relations: ['spa', 'media', 'operatingHours'],
     });
-    if (!branch) throw new NotFoundException('Branch not found');
+    if (!branch) {
+      this.logger.error('Branch not found', null, { branchId: id });
+      throw new NotFoundException('Branch not found');
+    }
     return branch;
   }
 
@@ -109,6 +120,7 @@ export class BranchesService {
   }
 
   async update(id: string, dto: UpdateBranchDto): Promise<Branch> {
+    this.logger.log('Updating branch', { branchId: id });
     const { mediaIds, operatingHours, ...branchData } = dto;
 
     const branch = await this.findOne(id);
@@ -143,13 +155,17 @@ export class BranchesService {
       }
     }
 
-    return this.branchRepo.findOne({
+    const updated = await this.branchRepo.findOne({
       where: { id },
       relations: ['spa', 'media', 'operatingHours'],
     });
+    this.logger.log('Branch updated successfully', { branchId: id });
+    return updated;
   }
 
   async remove(id: string): Promise<void> {
+    this.logger.log('Deleting branch', { branchId: id });
     await this.branchRepo.softDelete(id);
+    this.logger.log('Branch deleted successfully', { branchId: id });
   }
 }

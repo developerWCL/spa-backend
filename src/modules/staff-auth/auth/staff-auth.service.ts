@@ -10,6 +10,7 @@ import { Staff } from '../../../entities/staffs.entity';
 import { sign, verify } from 'jsonwebtoken';
 import { MailService } from '../../../shared/services/mail.service';
 import * as crypto from 'crypto';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class StaffAuthService {
@@ -17,7 +18,10 @@ export class StaffAuthService {
     @InjectRepository(Staff)
     private readonly staffRepo: Repository<Staff>,
     private readonly mailService: MailService,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('StaffAuthService');
+  }
 
   async validateCredentials(email: string, password: string) {
     const staff = await this.staffRepo.findOne({
@@ -37,8 +41,12 @@ export class StaffAuthService {
   }
 
   async login(email: string, password: string) {
+    this.logger.log('Staff login attempt', { email });
     const staff = await this.validateCredentials(email, password);
-    if (!staff) throw new UnauthorizedException('Invalid credentials');
+    if (!staff) {
+      this.logger.error('Invalid staff credentials', null, { email });
+      throw new UnauthorizedException('Invalid credentials');
+    }
 
     const secret = process.env.STAFF_JWT_SECRET || 'staff-dev-secret';
     const refreshSecret =

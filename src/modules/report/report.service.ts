@@ -12,6 +12,7 @@ import {
   CustomerRetentionDto,
   GuestReportItemDto,
 } from './report.dto';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class ReportService {
@@ -22,7 +23,10 @@ export class ReportService {
     private readonly paymentRepository: Repository<Payment>,
     @InjectRepository(Customer)
     private readonly customerRepository: Repository<Customer>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('ReportService');
+  }
 
   /**
    * Calculate date range based on dateRange parameter
@@ -59,6 +63,7 @@ export class ReportService {
    * Get summary report data for dashboard
    */
   async getSummary(query: DateRangeQueryDto): Promise<ReportSummaryDto> {
+    this.logger.log('Generating report summary', { branchId: query.branchId });
     const { branchId } = query;
     let startDate = query.startDate;
     let endDate = query.endDate || new Date();

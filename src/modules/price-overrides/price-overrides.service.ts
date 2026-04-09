@@ -21,6 +21,7 @@ import {
   CreatePriceOverrideDto,
   UpdatePriceOverrideDto,
 } from './price-overrides.types';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class PriceOverridesService {
@@ -33,9 +34,15 @@ export class PriceOverridesService {
     private readonly packageRepo: Repository<Package>,
     @InjectRepository(Programme)
     private readonly programmeRepo: Repository<Programme>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('PriceOverridesService');
+  }
 
   async create(dto: CreatePriceOverrideDto): Promise<PriceOverride> {
+    this.logger.log('Creating price override', {
+      startDate: dto.overrideStartDate,
+    });
     const priceOverride = new PriceOverride();
 
     const startDate = new Date(dto.overrideStartDate);
@@ -52,6 +59,9 @@ export class PriceOverridesService {
         where: { id: dto.subServiceId },
       });
       if (!subService) {
+        this.logger.error('SubService not found', null, {
+          subServiceId: dto.subServiceId,
+        });
         throw new NotFoundException(
           `SubService with ID ${dto.subServiceId} not found`,
         );

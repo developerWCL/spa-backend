@@ -13,6 +13,7 @@ import { Customer } from 'src/entities/customers.entity';
 import { MailService } from 'src/shared/services/mail.service';
 import { Spa } from 'src/entities/spa.entity';
 import { GoogleOAuthService, GoogleUserInfo } from './google-oauth.service';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class AuthService {
@@ -28,7 +29,10 @@ export class AuthService {
     @InjectRepository(Spa)
     private readonly spaRepository: Repository<Spa>,
     private readonly googleOAuthService: GoogleOAuthService,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('AuthService');
+  }
 
   async register(
     email: string,
@@ -38,8 +42,12 @@ export class AuthService {
     phone: string,
     spaId: string,
   ) {
+    this.logger.log('Customer registration started', { email, spaId });
     const existing = await this.customerService.findByEmail(email);
-    if (existing) throw new BadRequestException('Email already exists');
+    if (existing) {
+      this.logger.error('Email already exists', null, { email });
+      throw new BadRequestException('Email already exists');
+    }
     // const hashed = await bcrypt.hash(password, 10);
     // console.log('password', password);
     // console.log('hashed', hashed);
@@ -78,7 +86,7 @@ export class AuthService {
       await this.mailService.sendOtpEmail(email.toLowerCase(), otpCode);
     } catch (error) {
       // Log error but don't fail the reset
-      console.error('Failed to send OTP email:', error);
+      this.logger.error('Failed to send OTP email', error, { email });
     }
     return { message: 'OTP sent to email' };
   }

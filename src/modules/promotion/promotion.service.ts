@@ -8,6 +8,7 @@ import { CreatePromotionDto, UpdatePromotionDto } from './promotion.dto';
 import { PaginatedResponse } from 'src/shared/pagination.types';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 import { paginate } from 'src/shared/pagination.util';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class PromotionService {
@@ -18,9 +19,13 @@ export class PromotionService {
     private readonly branchRepository: Repository<Branch>,
     @InjectRepository(Media)
     private readonly mediaRepository: Repository<Media>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('PromotionService');
+  }
 
   async create(dto: CreatePromotionDto): Promise<Promotion> {
+    this.logger.log('Creating promotion', { name: dto.name, code: dto.code });
     const { mediaIds, ...dtoWithoutMediaIds } = dto;
     const promotion = this.promotionRepository.create({
       ...dtoWithoutMediaIds,

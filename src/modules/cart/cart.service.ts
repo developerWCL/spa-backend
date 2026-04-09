@@ -22,6 +22,7 @@ import {
 import { CartStatus, CartItemType } from 'src/entities/enums/cart.enum';
 import { EntityGuestGender } from 'src/entities/enums/entity-guest.enum';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class CartService {
@@ -40,14 +41,19 @@ export class CartService {
     private programmeRepo: Repository<Programme>,
     @InjectRepository(Guest)
     private guestRepo: Repository<Guest>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('CartService');
+  }
 
   async createCart(customerId: string, dto: CreateCartDto): Promise<Cart> {
+    this.logger.log('Creating cart', { customerId });
     const customer = await this.customerRepo.findOne({
       where: { id: customerId },
     });
 
     if (!customer) {
+      this.logger.error('Customer not found', null, { customerId });
       throw new NotFoundException(`Customer with ID ${customerId} not found`);
     }
 
@@ -66,6 +72,7 @@ export class CartService {
       }
     }
 
+    this.logger.log('Cart created successfully', { cartId: savedCart.id });
     return this.getCart(savedCart.id);
   }
 
@@ -113,6 +120,7 @@ export class CartService {
     });
 
     if (!cart) {
+      this.logger.error('Cart not found', null, { cartId });
       throw new NotFoundException(`Cart with ID ${cartId} not found`);
     }
     console.log('cart', cart);

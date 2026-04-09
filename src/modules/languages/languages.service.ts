@@ -2,13 +2,17 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Language } from 'src/entities/language.entity';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class LanguagesService {
   constructor(
     @InjectRepository(Language)
     private languageRepo: Repository<Language>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('LanguagesService');
+  }
 
   async findAll(onlyActive: boolean = true) {
     const query = this.languageRepo.createQueryBuilder('language');
@@ -33,6 +37,7 @@ export class LanguagesService {
       .getOne();
 
     if (!language) {
+      this.logger.error('Language not found', null, { languageId: id });
       throw new NotFoundException(`Language with ID ${id} not found`);
     }
 
@@ -47,6 +52,9 @@ export class LanguagesService {
       .getOne();
 
     if (!language) {
+      this.logger.error('Language not found by code', null, {
+        languageCode: code,
+      });
       throw new NotFoundException(`Language with code ${code} not found`);
     }
 
@@ -62,6 +70,7 @@ export class LanguagesService {
       .getOne();
 
     if (!language) {
+      this.logger.error('No primary language found', null);
       throw new NotFoundException('No primary language found');
     }
 

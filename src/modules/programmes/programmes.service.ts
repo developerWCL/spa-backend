@@ -16,6 +16,7 @@ import {
 import { PaginationParams } from 'src/shared/pagination.types';
 import { CreateProgrammeDto, UpdateProgrammeDto } from './programmes.types';
 import { PriceOverride } from 'src/entities/price_overides.entity';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class ProgrammesService {
@@ -33,9 +34,16 @@ export class ProgrammesService {
     @InjectRepository(Media)
     private mediaRepo: Repository<Media>,
     private dataSource: DataSource,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('ProgrammesService');
+  }
 
   async create(dto: CreateProgrammeDto) {
+    this.logger.log('Creating programme', {
+      name: dto.name,
+      branchId: dto.branchId,
+    });
     const savedProgrammeId = await this.dataSource.transaction(
       async (manager: EntityManager) => {
         const branch = await manager.findOne(Branch, {

@@ -12,6 +12,7 @@ import {
   CreateRoomBedClosureDto,
   UpdateRoomBedClosureDto,
 } from './room-bed-closure.types';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class RoomBedClosureService {
@@ -22,9 +23,17 @@ export class RoomBedClosureService {
     private readonly roomRepo: Repository<Room>,
     @InjectRepository(Bed)
     private readonly bedRepo: Repository<Bed>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('RoomBedClosureService');
+  }
 
   async create(dto: CreateRoomBedClosureDto): Promise<RoomBedClosure> {
+    this.logger.log('Creating room/bed closure', {
+      roomId: dto.roomId,
+      bedId: dto.bedId,
+      closureDate: dto.closureDate,
+    });
     // At least one of roomId or bedId must be provided
     if (!dto.roomId && !dto.bedId) {
       throw new BadRequestException('Either roomId or bedId must be provided');
@@ -76,6 +85,7 @@ export class RoomBedClosureService {
         where: { id: dto.bedId },
       });
       if (!bed) {
+        this.logger.error('Bed not found', null, { bedId: dto.bedId });
         throw new NotFoundException(`Bed with ID ${dto.bedId} not found`);
       }
     }
@@ -87,7 +97,11 @@ export class RoomBedClosureService {
       bed,
     });
 
-    return this.closureRepo.save(closure);
+    const savedClosure = await this.closureRepo.save(closure);
+    this.logger.log('Room/bed closure created successfully', {
+      closureId: savedClosure.id,
+    });
+    return savedClosure;
   }
 
   async findAll(

@@ -25,10 +25,12 @@ import { CartModule } from './modules/cart/cart.module';
 import { PaypalModule } from './modules/paypal/paypal.module';
 import { PriceOverridesModule } from './modules/price-overrides/price-overrides.module';
 import { ReportModule } from './modules/report/report.module';
+import { LoggingModule } from './core/logging/logging.module';
 
 @Module({
   imports: [
     TypeOrmModule.forRoot(typeOrmConfig),
+    LoggingModule,
     SpaModule,
     StaffAuthModule,
     BranchesModule,

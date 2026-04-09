@@ -1,7 +1,8 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { Booking } from '../../entities/bookings.entity';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 import { BookingItem } from '../../entities/booking_items.entity';
 import { Promotion } from '../../entities/promotions.entity';
 import { Payment } from '../../entities/payments.entity';
@@ -32,8 +33,6 @@ import { isUUID } from 'class-validator';
 
 @Injectable()
 export class BookingService {
-  private readonly logger = new Logger(BookingService.name);
-
   constructor(
     @InjectRepository(Booking)
     private readonly bookingRepository: Repository<Booking>,
@@ -57,9 +56,13 @@ export class BookingService {
     private readonly staffRepository: Repository<Staff>,
     private readonly guestsService: GuestsService,
     private readonly mailService: MailService,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('BookingService');
+  }
 
   async create(data: CreateBookingDto): Promise<Booking> {
+    this.logger.log('Creating booking', { branchId: data.branch });
     // Generate a unique booking ID: Branch code + running number
     let branchCode = 'BKG'; // Default fallback
 
@@ -126,6 +129,9 @@ export class BookingService {
       await this.promotionRepository.increment({ id: promotionId }, 'used', 1);
     }
 
+    this.logger.log('Booking created successfully', {
+      bookingId: savedBooking.id,
+    });
     return savedBooking;
   }
 

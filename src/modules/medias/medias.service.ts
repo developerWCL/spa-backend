@@ -6,6 +6,7 @@ import { S3Service } from '../3rd-party/s3/s3.service';
 import { v4 as uuid } from 'uuid';
 import { Media } from 'src/entities/media.entity';
 import { Service } from 'src/entities/services.entity';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class MediasService {
@@ -15,11 +16,15 @@ export class MediasService {
     private readonly mediaRepository: Repository<Media>,
     @InjectRepository(Service)
     private readonly serviceRepository: Repository<Service>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('MediasService');
+  }
 
   async generateUploadUrls(
     images: Array<{ filename: string; mimeType: string; size: number }>,
   ) {
+    this.logger.log('Generating upload URLs', { imageCount: images.length });
     const uploadUrls: Array<{ url: string; mediaId: string }> = [];
 
     for (const image of images) {

@@ -5,6 +5,7 @@ import { Role } from '../../../entities/role.entity';
 import { Permission } from '../../../entities/permission.entity';
 import { CreateRoleDto } from '../dto/create-role.dto';
 import { CreatePermissionDto } from '../dto/create-permission.dto';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class RolesService {
@@ -13,7 +14,10 @@ export class RolesService {
     private readonly roleRepo: Repository<Role>,
     @InjectRepository(Permission)
     private readonly permRepo: Repository<Permission>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('RolesService');
+  }
 
   async listRoles() {
     return this.roleRepo.find({ relations: ['permissions'] });
@@ -31,6 +35,7 @@ export class RolesService {
   }
 
   async createRole(dto: CreateRoleDto) {
+    this.logger.log('Creating role', { roleName: dto.name });
     const perms = [] as Permission[];
     if (dto.permissionNames && dto.permissionNames.length) {
       for (const name of dto.permissionNames) {
@@ -44,7 +49,9 @@ export class RolesService {
     }
 
     const role = this.roleRepo.create({ name: dto.name, permissions: perms });
-    return this.roleRepo.save(role);
+    const savedRole = await this.roleRepo.save(role);
+    this.logger.log('Role created successfully', { roleId: savedRole.id });
+    return savedRole;
   }
 
   async getRole(id: string) {
@@ -52,7 +59,10 @@ export class RolesService {
       where: { id },
       relations: ['permissions'],
     });
-    if (!r) throw new NotFoundException('Role not found');
+    if (!r) {
+      this.logger.error('Role not found', null, { roleId: id });
+      throw new NotFoundException('Role not found');
+    }
     return r;
   }
 }

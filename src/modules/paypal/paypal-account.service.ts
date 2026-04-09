@@ -9,10 +9,8 @@ import { PaypalAccount } from 'src/entities/paypal_account.entity';
 import { Branch } from 'src/entities/branch.entity';
 import { Spa } from 'src/entities/spa.entity';
 import { encryptApiKey, decryptApiKey } from 'src/shared/crypto.util';
-import {
-  CreatePaypalAccountDto,
-  UpdatePaypalAccountDto,
-} from './paypal.dto';
+import { CreatePaypalAccountDto, UpdatePaypalAccountDto } from './paypal.dto';
+import { AppLoggerService } from 'src/core/logging/app-logger.service';
 
 @Injectable()
 export class PaypalAccountService {
@@ -23,11 +21,21 @@ export class PaypalAccountService {
     private readonly branchRepo: Repository<Branch>,
     @InjectRepository(Spa)
     private readonly spaRepo: Repository<Spa>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('PaypalAccountService');
+  }
 
   async create(dto: CreatePaypalAccountDto): Promise<PaypalAccount> {
+    this.logger.log('Creating PayPal account', {
+      spaId: dto.spaId,
+      label: dto.label,
+    });
     const spa = await this.spaRepo.findOneBy({ id: dto.spaId });
-    if (!spa) throw new NotFoundException('Spa not found');
+    if (!spa) {
+      this.logger.error('Spa not found', null, { spaId: dto.spaId });
+      throw new NotFoundException('Spa not found');
+    }
 
     const account = this.repo.create({
       spa,
@@ -44,6 +52,9 @@ export class PaypalAccountService {
       await this.assignBranches(saved.id, dto.branchIds);
     }
 
+    this.logger.log('PayPal account created successfully', {
+      accountId: saved.id,
+    });
     return this.findOne(saved.id);
   }
 
@@ -62,16 +73,23 @@ export class PaypalAccountService {
       where: { id },
       relations: ['branches', 'spa'],
     });
-    if (!account) throw new NotFoundException('PayPal account not found');
+    if (!account) {
+      this.logger.error('PayPal account not found', null, { accountId: id });
+      throw new NotFoundException('PayPal account not found');
+    }
     return this.maskAccount(account);
   }
 
   async update(id: string, dto: UpdatePaypalAccountDto): Promise<any> {
+    this.logger.log('Updating PayPal account', { accountId: id });
     const account = await this.repo.findOne({
       where: { id },
       relations: ['branches', 'spa'],
     });
-    if (!account) throw new NotFoundException('PayPal account not found');
+    if (!account) {
+      this.logger.error('PayPal account not found', null, { accountId: id });
+      throw new NotFoundException('PayPal account not found');
+    }
 
     if (dto.label !== undefined) account.label = dto.label;
     if (dto.webhookId !== undefined) account.webhookId = dto.webhookId;
@@ -86,13 +104,19 @@ export class PaypalAccountService {
     }
 
     await this.repo.save(account);
+    this.logger.log('PayPal account updated successfully', { accountId: id });
     return this.findOne(id);
   }
 
   async remove(id: string): Promise<void> {
+    this.logger.log('Deleting PayPal account', { accountId: id });
     const account = await this.repo.findOneBy({ id });
-    if (!account) throw new NotFoundException('PayPal account not found');
+    if (!account) {
+      this.logger.error('PayPal account not found', null, { accountId: id });
+      throw new NotFoundException('PayPal account not found');
+    }
     await this.repo.softDelete(id);
+    this.logger.log('PayPal account deleted successfully', { accountId: id });
   }
 
   async assignBranches(accountId: string, branchIds: string[]): Promise<any> {
@@ -116,9 +140,7 @@ export class PaypalAccountService {
    * Get decrypted credentials for a branch.
    * Used internally by PaypalService — never exposed to API responses.
    */
-  async getAccountForBranch(
-    branchId: string,
-  ): Promise<{
+  async getAccountForBranch(branchId: string): Promise<{
     clientId: string;
     clientSecret: string;
     webhookId: string | null;
@@ -148,7 +170,9 @@ export class PaypalAccountService {
   /**
    * Try to obtain a PayPal access token to verify credentials work.
    */
-  async testConnection(id: string): Promise<{ success: boolean; error?: string }> {
+  async testConnection(
+    id: string,
+  ): Promise<{ success: boolean; error?: string }> {
     const account = await this.repo.findOneBy({ id });
     if (!account) throw new NotFoundException('PayPal account not found');
 
@@ -165,12 +189,16 @@ export class PaypalAccountService {
       const credentials = Buffer.from(`${clientId}:${clientSecret}`).toString(
         'base64',
       );
-      await axios.post(`${baseUrl}/v1/oauth2/token`, 'grant_type=client_credentials', {
-        headers: {
-          Authorization: `Basic ${credentials}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
+      await axios.post(
+        `${baseUrl}/v1/oauth2/token`,
+        'grant_type=client_credentials',
+        {
+          headers: {
+            Authorization: `Basic ${credentials}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
         },
-      });
+      );
       return { success: true };
     } catch (err) {
       return {
