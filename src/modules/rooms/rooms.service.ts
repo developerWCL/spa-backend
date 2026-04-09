@@ -27,7 +27,10 @@ export class RoomsService {
   }
 
   async create(dto: CreateRoomDto): Promise<Room> {
-    this.logger.log('Creating room', { name: dto.name, branchId: dto.branchId });
+    this.logger.log('Creating room', {
+      name: dto.name,
+      branchId: dto.branchId,
+    });
     const { branchId, ...roomData } = dto;
 
     // Verify branch exists
@@ -161,10 +164,12 @@ export class RoomsService {
 
   async remove(id: string): Promise<void> {
     this.logger.log('Deleting room', { roomId: id });
-    await this.roomRepo.softDelete(id);
-    this.logger.log('Room deleted successfully', { roomId: id });
-  }
     const room = await this.findOne(id);
+    if (!room) {
+      this.logger.error('Room not found', null, { roomId: id });
+      throw new NotFoundException('Room not found');
+    }
     await this.roomRepo.softDelete(room.id);
+    this.logger.log('Room deleted successfully', { roomId: id });
   }
 }
