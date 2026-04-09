@@ -219,6 +219,12 @@ export class ServicesService {
       .take(take)
       .getManyAndCount();
 
+    this.logger.log('Fetched services with pagination', {
+      branchId,
+      filters,
+      pagination: paginationParams,
+      totalCount,
+    });
     return paginate(paginationParams, totalCount, results);
   }
 
