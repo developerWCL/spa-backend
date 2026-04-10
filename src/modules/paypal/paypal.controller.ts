@@ -113,15 +113,16 @@ export class PaypalController {
    * Send booking confirmation and admin notification emails asynchronously
    * This prevents email service delays from blocking the API response
    */
-  private async sendEmailsAsync(bookingId: string): Promise<void> {
-    try {
+  private sendEmailsAsync(bookingId: string): void {
+    const EMAIL_TIMEOUT_MS = 25_000;
+
+    const work = async () => {
       const bookingWithDetails = await this.bookingService.findOne(bookingId);
       const customerEmail = bookingWithDetails.customer?.email;
       const customerName = bookingWithDetails.customer
         ? `${bookingWithDetails.customer.firstName} ${bookingWithDetails.customer.lastName}`
         : undefined;
 
-      // Send both emails in parallel instead of sequentially
       const emailPromises = [
         this.mailService.sendBookingConfirmationEmail(
           bookingWithDetails,
@@ -142,11 +143,16 @@ export class PaypalController {
 
       await Promise.all(emailPromises);
       this.logger.log(`Emails sent for booking ${bookingId}`);
-    } catch (error) {
+    };
+
+    const timeout = new Promise<never>((_, reject) =>
+      setTimeout(() => reject(new Error('Email send timed out')), EMAIL_TIMEOUT_MS),
+    );
+
+    Promise.race([work(), timeout]).catch((error) => {
       this.logger.error(
         `Failed to send emails for booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
       );
-      // Don't throw - email failure shouldn't affect booking creation
-    }
+    });
   }
 }
