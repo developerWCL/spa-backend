@@ -283,8 +283,24 @@ export class BookingService {
       for (const payment of payments) {
         if (payment.id && isUUID(payment.id)) {
           // Update existing payment
+          // Fetch existing payment to check current status
+          const existingPayment = await this.paymentRepository.findOne({
+            where: { id: payment.id },
+          });
+
+          let updateAmount = payment.amount;
+          // If payment is being changed from paid to refund, set amount to 0
+          if (
+            (existingPayment?.status?.toLowerCase() !== 'refunded' &&
+              payment.status?.toLowerCase() === 'refunded') ||
+            (existingPayment?.status?.toLowerCase() !== 'failed' &&
+              payment.status?.toLowerCase() === 'failed')
+          ) {
+            updateAmount = '0';
+          }
+
           await this.paymentRepository.update(payment.id, {
-            amount: payment.amount,
+            amount: updateAmount,
             status: payment.status,
             paymentType: payment.paymentType,
           });
