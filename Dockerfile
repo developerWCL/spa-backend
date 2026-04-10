@@ -45,6 +45,9 @@ RUN if [ -f pnpm-lock.yaml ]; then \
 # Create application directories
 RUN mkdir -p uploads logs
 
+# Declare log directory as a volume so logs persist outside the container
+VOLUME ["/app/logs"]
+
 # Copy built application from builder (includes compiled migrations)
 COPY --from=builder /app/dist ./dist
 
