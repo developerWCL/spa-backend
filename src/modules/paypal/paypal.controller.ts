@@ -49,9 +49,7 @@ export class PaypalController {
   }
 
   @Get('capture')
-  async captureReturn(
-    @Query('token') token: string,
-  ) {
+  async captureReturn(@Query('token') token: string) {
     if (!token) {
       throw new BadRequestException('Missing token');
     }
@@ -61,7 +59,9 @@ export class PaypalController {
       where: { paypalOrderId: token },
     });
     if (!pending) {
-      throw new BadRequestException('PayPal order not found or already processed');
+      throw new BadRequestException(
+        'PayPal order not found or already processed',
+      );
     }
 
     // Capture the PayPal payment
@@ -71,7 +71,9 @@ export class PaypalController {
     );
 
     // Now create the booking in DB
-    const booking = await this.bookingService.create(pending.bookingPayload as any);
+    const booking = await this.bookingService.create(
+      pending.bookingPayload as any,
+    );
 
     // Create booking items
     if (pending.bookingItems?.length) {
@@ -80,26 +82,13 @@ export class PaypalController {
       }
     }
 
-    // Send confirmation email once after all items are created
-    const bookingWithDetails = await this.bookingService.findOne(booking.id);
-    const customerEmail = bookingWithDetails.customer?.email;
-    const customerName = bookingWithDetails.customer
-      ? `${bookingWithDetails.customer.firstName} ${bookingWithDetails.customer.lastName}`
-      : undefined;
-    await this.mailService.sendBookingConfirmationEmail(bookingWithDetails, customerEmail, customerName);
-    if (bookingWithDetails.branch?.email) {
-      await this.mailService.sendBookingNotificationToAdmin(bookingWithDetails, bookingWithDetails.branch.email, bookingWithDetails.branch.name);
-    }
-
-    // Update payment with capture info
+    // Update payment with capture info (do this before emails to avoid blocking)
     const payments = await this.paymentRepo
       .createQueryBuilder('payment')
       .where('payment.bookingId = :bookingId', { bookingId: booking.id })
       .getMany();
 
-    const payment = payments.find(
-      (p) => p.status === PaymentStatus.PENDING,
-    );
+    const payment = payments.find((p) => p.status === PaymentStatus.PENDING);
     if (payment) {
       payment.status = PaymentStatus.PAID;
       payment.paypalOrderId = token;
@@ -110,8 +99,54 @@ export class PaypalController {
     // Clean up pending record
     await this.pendingOrderRepo.delete({ paypalOrderId: token });
 
-    this.logger.log(`Payment captured, booking created: ${booking.id}, captureId: ${captureId}`);
+    this.logger.log(
+      `Payment captured, booking created: ${booking.id}, captureId: ${captureId}`,
+    );
+
+    // Send emails asynchronously (non-blocking) to avoid timeout
+    this.sendEmailsAsync(booking.id);
 
     return { success: true, captureId, bookingId: booking.id };
+  }
+
+  /**
+   * Send booking confirmation and admin notification emails asynchronously
+   * This prevents email service delays from blocking the API response
+   */
+  private async sendEmailsAsync(bookingId: string): Promise<void> {
+    try {
+      const bookingWithDetails = await this.bookingService.findOne(bookingId);
+      const customerEmail = bookingWithDetails.customer?.email;
+      const customerName = bookingWithDetails.customer
+        ? `${bookingWithDetails.customer.firstName} ${bookingWithDetails.customer.lastName}`
+        : undefined;
+
+      // Send both emails in parallel instead of sequentially
+      const emailPromises = [
+        this.mailService.sendBookingConfirmationEmail(
+          bookingWithDetails,
+          customerEmail,
+          customerName,
+        ),
+      ];
+
+      if (bookingWithDetails.branch?.email) {
+        emailPromises.push(
+          this.mailService.sendBookingNotificationToAdmin(
+            bookingWithDetails,
+            bookingWithDetails.branch.email,
+            bookingWithDetails.branch.name,
+          ),
+        );
+      }
+
+      await Promise.all(emailPromises);
+      this.logger.log(`Emails sent for booking ${bookingId}`);
+    } catch (error) {
+      this.logger.error(
+        `Failed to send emails for booking ${bookingId}: ${error instanceof Error ? error.message : 'Unknown error'}`,
+      );
+      // Don't throw - email failure shouldn't affect booking creation
+    }
   }
 }
