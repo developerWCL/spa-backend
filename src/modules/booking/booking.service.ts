@@ -486,7 +486,7 @@ export class BookingService {
             if (guestDataItem.gender) {
               const genderStr = String(guestDataItem.gender).toUpperCase();
               if (genderStr === 'FEMALE' || genderStr === 'MALE') {
-                genderValue = genderStr as EntityGuestGender;
+                genderValue = genderStr.toLowerCase() as EntityGuestGender;
               }
             }
 
