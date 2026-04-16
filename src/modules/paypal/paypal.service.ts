@@ -90,12 +90,7 @@ export class PaypalService {
           const unitPrice = totalPrice / qty;
           return {
             name: item.itemName || 'Spa Service',
-            sku:
-              item.subService ||
-              item.package ||
-              item.programme ||
-              item.id ||
-              undefined,
+            sku: item.itemName || 'Spa Service',
             quantity: String(qty),
             unit_amount: {
               currency_code: currency,
@@ -118,6 +113,7 @@ export class PaypalService {
         {
           reference_id: dto.branchId,
           custom_id: dto.branchId,
+          ...(dto.invoiceId && { invoice_id: dto.invoiceId }),
           description,
           amount: {
             currency_code: currency,
