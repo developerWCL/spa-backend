@@ -33,4 +33,16 @@ export class UpdateStaffDto {
   @ArrayUnique()
   @IsString({ each: true })
   roleIds?: string[];
+
+  @IsOptional()
+  @IsString()
+  phone?: string;
+
+  @IsOptional()
+  @IsString()
+  specialties?: string;
+
+  @IsOptional()
+  @IsString()
+  workingHours?: string;
 }

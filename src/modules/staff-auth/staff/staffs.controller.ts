@@ -72,6 +72,7 @@ export class StaffsController {
     @Query() paginationParams: PaginationParams,
     @Query('search') search?: string,
     @Query('isActive') isActive?: string,
+    @Query('date') date?: string,
     @Headers('branchId') branchId?: string,
   ) {
     // Parse isActive from query string
@@ -85,6 +86,7 @@ export class StaffsController {
       return this.svc.list(paginationParams, [branchId], currentUser.spaIds, {
         search,
         isActive: isActiveFilter,
+        date,
       });
     }
     // Otherwise, list all staffs for user's branches
@@ -92,7 +94,7 @@ export class StaffsController {
       paginationParams,
       currentUser.branchIds,
       currentUser.spaIds,
-      { search, isActive: isActiveFilter },
+      { search, isActive: isActiveFilter, date },
     );
   }
 
