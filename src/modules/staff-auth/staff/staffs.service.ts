@@ -68,7 +68,6 @@ export class StaffsService {
         { search: searchTerm },
       );
     }
-    console.log('filters?.date', filters?.date);
 
     // Filter out staff with day off on the specified date
     if (filters?.date) {
@@ -179,7 +178,6 @@ export class StaffsService {
     if (dto.password) {
       staff.passwordHash = await hashPassword(dto.password);
     }
-    console.log('dto', dto);
 
     if (dto.roleIds && dto.roleIds.length) {
       const roles = await this.roleRepo.findBy({ id: In(dto.roleIds) } as any);

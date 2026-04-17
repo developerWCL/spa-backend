@@ -151,7 +151,6 @@ export class ReportService {
       customersGrowth: growthMetrics.customersGrowth,
       avgValueGrowth: growthMetrics.avgValueGrowth,
     };
-    console.log(data);
 
     return data;
   }

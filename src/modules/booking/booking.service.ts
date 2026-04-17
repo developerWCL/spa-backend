@@ -494,7 +494,6 @@ export class BookingService {
           let guest = await this.guestRepository.findOne({
             where: whereCondition,
           });
-          console.log('guest', guest);
 
           if (!guest) {
             // Determine gender enum value

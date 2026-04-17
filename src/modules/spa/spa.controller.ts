@@ -33,8 +33,6 @@ export class SpaController {
   @Get('me')
   //@UseGuards(ApiKeyGuard)
   me(@Headers() headers: Record<string, string>) {
-    console.log('Headers received:', headers);
-
     const spaId = headers['spa-id'];
     if (!spaId || Array.isArray(spaId)) {
       throw new BadRequestException('Missing or invalid spa-id header');

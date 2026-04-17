@@ -30,7 +30,6 @@ export class CartController {
   @UseGuards(CustomerJwtAuthGuard)
   @ApiOperation({ summary: 'Create a new cart for customer' })
   async createCart(@Req() request: any, @Body() dto: CreateCartDto) {
-    console.log('Create cart - Request customer:', request.customer);
     const customerId = request.customer?.sub || request.customer?.id;
     if (!customerId) {
       throw new Error('Customer ID not found in request');
@@ -42,7 +41,6 @@ export class CartController {
   @UseGuards(CustomerJwtAuthGuard)
   @ApiOperation({ summary: 'Get active cart for logged-in customer' })
   async getCustomerCart(@Req() request: any) {
-    console.log('Get customer cart - Request customer:', request.customer);
     const customerId = request.customer?.sub || request.customer?.id;
     if (!customerId) {
       throw new Error('Customer ID not found in request');
