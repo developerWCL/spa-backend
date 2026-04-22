@@ -309,7 +309,7 @@ export class MailService {
       day: 'numeric',
       timeZone: 'Asia/Bangkok', // Ensure date is formatted in spa's local timezone
     });
-    const time = item?.scheduledTime;
+    const time = item?.scheduledTime.substring(0, 5); // Extract HH:mm
     return time ? `${datePart} at ${time}` : datePart;
   }
 

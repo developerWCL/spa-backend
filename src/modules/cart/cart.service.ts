@@ -123,7 +123,6 @@ export class CartService {
       this.logger.error('Cart not found', null, { cartId });
       throw new NotFoundException(`Cart with ID ${cartId} not found`);
     }
-    console.log('cart', cart);
 
     return cart;
   }
@@ -470,8 +469,6 @@ export class CartService {
     guestData: GuestDto,
     customer: Customer,
   ): Promise<Guest> {
-    console.log('guestData', guestData);
-
     // If guest ID is provided, update the existing guest
     if (guestData.id) {
       const guest = await this.guestRepo.findOne({

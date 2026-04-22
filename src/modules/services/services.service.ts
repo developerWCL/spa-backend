@@ -650,8 +650,6 @@ export class ServicesService {
         query = query.andWhere('1=0');
       }
     }
-    console.log('startDate', startDate);
-    console.log('endDate', endDate);
 
     // Apply date filters if provided
     if (startDate) {
@@ -676,7 +674,6 @@ export class ServicesService {
         .addOrderBy('items.scheduledTime', 'ASC');
 
       const allBookings = await query.getRawMany();
-      console.log('All booking', allBookings);
 
       // Consolidate overlapping bookings
       const consolidatedSlots: Array<{

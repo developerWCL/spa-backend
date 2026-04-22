@@ -189,24 +189,13 @@ export class AuthService {
     const customer = await this.customerService.findByEmail(
       email.toLowerCase(),
     );
-    console.log('customer', customer);
-    const plain = 'Test@1234';
-    const hash = '$2b$10$u58heCimYBVOiNQv0814uexfzz/FKjnKPzeFdf2V3/hQeWTPTIjgK';
 
-    bcrypt.compare(plain, hash).then((res) => {
-      console.log('Is it valid?', res); // Should be true
-    });
     if (!customer || !customer.isVerified)
       throw new UnauthorizedException('Not verified');
     const valid = await bcrypt.compare(password, customer.password);
-    console.log('password', password);
-    console.log('customer.password', customer.password);
-
-    console.log('valid', valid);
 
     if (!valid) throw new UnauthorizedException('Invalid credentials');
     const payload = { sub: customer.id, email: customer.email };
-    console.log('customer', customer.spa.id);
 
     return {
       accessToken: this.jwtService.sign(payload),

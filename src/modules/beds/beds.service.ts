@@ -73,7 +73,6 @@ export class BedsService {
     if (!userBranchIds.includes(branchId)) {
       throw new ForbiddenException('Access denied to this branch');
     }
-    console.log('date', date);
 
     // Validate date format if provided
     if (date) {
@@ -141,7 +140,6 @@ export class BedsService {
     }
 
     const [beds, total] = await query.take(limit).skip(skip).getManyAndCount();
-    console.log(beds);
 
     // Return beds with full room and branch data
     return paginate({ page, limit }, total, beds);

@@ -33,6 +33,7 @@ export class StaffAuthService {
     const ok = staff.passwordHash
       ? await bcrypt.compare(password, staff.passwordHash)
       : false;
+
     if (!ok) return null;
     // omit passwordHash when returning
     // eslint-disable-next-line @typescript-eslint/no-unused-vars

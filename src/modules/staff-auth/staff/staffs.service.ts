@@ -8,6 +8,7 @@ import { Repository, In } from 'typeorm';
 import { Staff } from '../../../entities/staffs.entity';
 import { Role } from '../../../entities/role.entity';
 import { Branch } from '../../../entities/branch.entity';
+import { StaffDayoff } from '../../../entities/staff-dayoff.entity';
 import { hashPassword } from '../../../shared/password.util';
 import {
   paginate,
@@ -27,6 +28,8 @@ export class StaffsService {
     private readonly roleRepo: Repository<Role>,
     @InjectRepository(Branch)
     private readonly branchRepo: Repository<Branch>,
+    @InjectRepository(StaffDayoff)
+    private readonly staffDayoffRepo: Repository<StaffDayoff>,
     private readonly logger: AppLoggerService,
   ) {
     this.logger.setContext('StaffsService');
@@ -36,7 +39,7 @@ export class StaffsService {
     paginationParams: PaginationParams,
     branchIds?: string[],
     spaIds?: string[],
-    filters?: { search?: string; isActive?: boolean },
+    filters?: { search?: string; isActive?: boolean; date?: string },
   ) {
     const { skip, take } = getPaginationQueryTypeORM(paginationParams);
 
@@ -64,6 +67,20 @@ export class StaffsService {
         '(staff.firstName ILIKE :search OR staff.lastName ILIKE :search OR staff.email ILIKE :search)',
         { search: searchTerm },
       );
+    }
+
+    // Filter out staff with day off on the specified date
+    if (filters?.date) {
+      const dayOffs = await this.staffDayoffRepo.find({
+        where: { date: new Date(filters.date) },
+        select: ['staffId'],
+      });
+      const staffIdsWithDayOff = dayOffs.map((dayOff) => dayOff.staffId);
+      if (staffIdsWithDayOff.length > 0) {
+        query.andWhere('staff.id NOT IN (:...dayOffStaffIds)', {
+          dayOffStaffIds: staffIdsWithDayOff,
+        });
+      }
     }
 
     // Status filter
@@ -154,11 +171,13 @@ export class StaffsService {
     staff.email = dto.email;
     staff.branches = branches;
     staff.isActive = true;
+    staff.phone = dto.phone;
+    staff.specialties = dto.specialties;
+    staff.workingHours = dto.workingHours;
 
     if (dto.password) {
       staff.passwordHash = await hashPassword(dto.password);
     }
-    console.log('dto', dto);
 
     if (dto.roleIds && dto.roleIds.length) {
       const roles = await this.roleRepo.findBy({ id: In(dto.roleIds) } as any);
@@ -169,8 +188,6 @@ export class StaffsService {
   }
 
   async update(id: string, dto: UpdateStaffDto) {
-    console.log('dto', dto);
-
     const staff = await this.staffRepo.findOne({
       where: { id },
       relations: ['roles'],
@@ -180,7 +197,11 @@ export class StaffsService {
     if (dto.firstName) staff.firstName = dto.firstName;
     if (dto.lastName) staff.lastName = dto.lastName;
     if (dto.email) staff.email = dto.email;
-    if (dto.password) staff.passwordHash = await hashPassword(dto.password);
+    if (dto.password && dto.password != staff.passwordHash)
+      staff.passwordHash = await hashPassword(dto.password);
+    if (dto.phone) staff.phone = dto.phone;
+    if (dto.specialties) staff.specialties = dto.specialties;
+    if (dto.workingHours) staff.workingHours = dto.workingHours;
 
     if (dto.roleIds) {
       const roles = dto.roleIds.length

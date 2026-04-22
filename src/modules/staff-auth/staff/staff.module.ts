@@ -3,6 +3,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Staff } from '../../../entities/staffs.entity';
 import { Role } from '../../../entities/role.entity';
 import { Branch } from '../../../entities/branch.entity';
+import { StaffDayoff } from '../../../entities/staff-dayoff.entity';
 import { StaffsService } from './staffs.service';
 import { StaffsController } from './staffs.controller';
 import { PermissionsGuard } from '../../../guards/permissions.guard';
@@ -12,7 +13,10 @@ import { SubscriptionClientService } from 'src/shared/subscription-client.servic
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Staff, Role, Branch]), RolesSubmodule],
+  imports: [
+    TypeOrmModule.forFeature([Staff, Role, Branch, StaffDayoff]),
+    RolesSubmodule,
+  ],
   providers: [
     StaffsService,
     PermissionsGuard,

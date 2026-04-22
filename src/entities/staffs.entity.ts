@@ -34,6 +34,15 @@ export class Staff {
   @Column({ nullable: true })
   email: string;
 
+  @Column({ nullable: true })
+  phone: string;
+
+  @Column({ name: 'specialties', nullable: true })
+  specialties: string;
+
+  @Column({ name: 'working_hours', nullable: true })
+  workingHours: string;
+
   @Column({ name: 'password_hash', nullable: true })
   passwordHash?: string;
 

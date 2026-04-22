@@ -151,7 +151,6 @@ export class ReportService {
       customersGrowth: growthMetrics.customersGrowth,
       avgValueGrowth: growthMetrics.avgValueGrowth,
     };
-    console.log(data);
 
     return data;
   }
@@ -395,9 +394,9 @@ export class ReportService {
 
           if (item.subService) {
             serviceType = 'Service';
-            serviceName = item.subService.name || 'Unknown Service';
+            serviceName = item.subService.service.name || 'Unknown Service';
             if (item.subService) {
-              serviceName += ` (${item.subService.service.name})`;
+              serviceName += ` (${item.subService.name || 'Unknown SubService'})`;
             }
             duration = item.subService.durationMinutes || 0;
           } else if (item.package) {
