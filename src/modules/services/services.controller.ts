@@ -21,6 +21,10 @@ import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
 
 @Controller('services')
 @ApiBearerAuth()
@@ -36,8 +40,15 @@ export class ServicesController {
     description: 'The spa/branch ID',
     required: false,
   })
-  create(@Body() dto: CreateServiceDto) {
-    return this.servicesService.create(dto);
+  create(
+    @Body() dto: CreateServiceDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.servicesService.create(
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get()
@@ -129,21 +140,44 @@ export class ServicesController {
   @ApiOperation({
     summary: 'Update service with translations and sub-services',
   })
-  update(@Param('id') id: string, @Body() dto: UpdateServiceDto) {
-    return this.servicesService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateServiceDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.servicesService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
   @UseGuards(StaffJwtAuthGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'Delete service' })
-  remove(@Param('id') id: string) {
-    return this.servicesService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.servicesService.remove(
+      id,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @UseGuards(StaffJwtAuthGuard)
   @Delete('sub-services/:subServiceId')
   @ApiOperation({ summary: 'Delete sub-service' })
-  removeSubService(@Param('subServiceId') subServiceId: string) {
-    return this.servicesService.removeSubService(subServiceId);
+  removeSubService(
+    @Param('subServiceId') subServiceId: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.servicesService.removeSubService(
+      subServiceId,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get(':id/bookings/count')

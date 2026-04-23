@@ -17,6 +17,7 @@ import { PaginationParams } from 'src/shared/pagination.types';
 import { CreateProgrammeDto, UpdateProgrammeDto } from './programmes.types';
 import { PriceOverride } from 'src/entities/price_overides.entity';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class ProgrammesService {
@@ -35,11 +36,12 @@ export class ProgrammesService {
     private mediaRepo: Repository<Media>,
     private dataSource: DataSource,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('ProgrammesService');
   }
 
-  async create(dto: CreateProgrammeDto) {
+  async create(dto: CreateProgrammeDto, actorId?: string, actorName?: string) {
     this.logger.log('Creating programme', {
       name: dto.name,
       branchId: dto.branchId,
@@ -120,8 +122,32 @@ export class ProgrammesService {
       },
     );
 
+    const createdProgramme = await this.findById(savedProgrammeId);
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'programme',
+      subFeature: null,
+      actionType: 'create',
+      actorId,
+      actorName,
+      entityType: 'programme',
+      entityId: createdProgramme.id,
+      newData: {
+        name: createdProgramme.name,
+        description: createdProgramme.description,
+        price: createdProgramme.price,
+        maxConcurrentBookings: createdProgramme.maxConcurrentBookings,
+        maxBookingsPerDay: createdProgramme.maxBookingsPerDay,
+        stepsCount: createdProgramme.steps?.length || 0,
+      },
+      description: `Created programme: ${createdProgramme.name}`,
+      status: 'success',
+      branchId: dto.branchId,
+    });
+
     // Call findById after transaction completes
-    return this.findById(savedProgrammeId);
+    return createdProgramme;
   }
 
   async findAll(
@@ -191,15 +217,31 @@ export class ProgrammesService {
     return programme;
   }
 
-  async update(id: string, dto: UpdateProgrammeDto) {
+  async update(
+    id: string,
+    dto: UpdateProgrammeDto,
+    actorId?: string,
+    actorName?: string,
+  ) {
     return this.dataSource.transaction(async (manager: EntityManager) => {
       const programme = await manager.findOne(Programme, {
         where: { id },
+        relations: ['branch'],
       });
 
       if (!programme) {
         throw new NotFoundException(`Programme with ID ${id} not found`);
       }
+
+      // Store old data for audit trail
+      const oldProgramme = {
+        name: programme.name,
+        description: programme.description,
+        price: programme.price,
+        maxConcurrentBookings: programme.maxConcurrentBookings,
+        maxBookingsPerDay: programme.maxBookingsPerDay,
+        status: programme.status,
+      };
 
       // Update basic fields
       if (dto.name !== undefined) programme.name = dto.name;
@@ -333,24 +375,72 @@ export class ProgrammesService {
         }
       }
 
-      return this.findById(id);
+      const updatedProgramme = await this.findById(id);
+
+      // Log the action
+      await this.actionLogService.logAction({
+        feature: 'programme',
+        subFeature: null,
+        actionType: 'update',
+        actorId,
+        actorName,
+        entityType: 'programme',
+        entityId: id,
+        oldData: oldProgramme,
+        newData: {
+          name: updatedProgramme.name,
+          description: updatedProgramme.description,
+          price: updatedProgramme.price,
+          maxConcurrentBookings: updatedProgramme.maxConcurrentBookings,
+          maxBookingsPerDay: updatedProgramme.maxBookingsPerDay,
+          status: updatedProgramme.status,
+        },
+        description: `Updated programme: ${updatedProgramme.name}`,
+        status: 'success',
+        branchId: programme.branch?.id || null,
+      });
+
+      return updatedProgramme;
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, actorId?: string, actorName?: string) {
     const programme = await this.programmeRepo.findOne({
       where: { id },
+      relations: ['branch'],
     });
 
     if (!programme) {
       throw new NotFoundException(`Programme with ID ${id} not found`);
     }
 
+    // Log the action before deletion
+    await this.actionLogService.logAction({
+      feature: 'programme',
+      subFeature: null,
+      actionType: 'delete',
+      actorId,
+      actorName,
+      entityType: 'programme',
+      entityId: id,
+      oldData: {
+        name: programme.name,
+        description: programme.description,
+        price: programme.price,
+        maxConcurrentBookings: programme.maxConcurrentBookings,
+        maxBookingsPerDay: programme.maxBookingsPerDay,
+        status: programme.status,
+      },
+      description: `Deleted programme: ${programme.name}`,
+      status: 'success',
+      branchId: programme.branch?.id || null,
+    });
+
     await this.programmeRepo.softRemove(programme);
     return { message: 'Programme deleted successfully' };
   }
 
-  async restore(id: string) {
+  async restore(id: string, actorId?: string, actorName?: string) {
     const programme = await this.programmeRepo.findOne({
       where: { id },
       withDeleted: true,
@@ -361,6 +451,21 @@ export class ProgrammesService {
     }
 
     await this.programmeRepo.recover(programme);
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'programme',
+      subFeature: null,
+      actionType: 'update',
+      actorId,
+      actorName,
+      entityType: 'programme',
+      entityId: id,
+      description: `Restored programme: ${programme.name}`,
+      status: 'success',
+      branchId: programme.branch?.id || null,
+    });
+
     return this.findById(id);
   }
 }

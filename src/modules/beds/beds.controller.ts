@@ -30,8 +30,11 @@ export class BedsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new bed' })
-  create(@Body() dto: CreateBedDto) {
-    return this.bedsService.create(dto);
+  create(
+    @Body() dto: CreateBedDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.bedsService.create(dto, currentUser?.sub, currentUser?.email);
   }
 
   @Get()
@@ -66,13 +69,25 @@ export class BedsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update bed by ID' })
-  update(@Param('id') id: string, @Body() dto: UpdateBedDto) {
-    return this.bedsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateBedDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.bedsService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete bed by ID' })
-  remove(@Param('id') id: string) {
-    return this.bedsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.bedsService.remove(id, currentUser?.sub, currentUser?.email);
   }
 }

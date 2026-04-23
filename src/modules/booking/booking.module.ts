@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { BookingService } from './booking.service';
 import { BookingController } from './booking.controller';
@@ -15,6 +15,7 @@ import { GuestsModule } from '../guests/guests.module';
 import { SubscriptionClientService } from 'src/shared/subscription-client.service';
 import { MailService } from 'src/shared/services/mail.service';
 import { Payment } from 'src/entities/payments.entity';
+import { OptionalJwtMiddleware } from 'src/middleware/optional-jwt.middleware';
 
 @Module({
   imports: [
@@ -37,4 +38,8 @@ import { Payment } from 'src/entities/payments.entity';
   controllers: [BookingController],
   exports: [BookingService],
 })
-export class BookingModule {}
+export class BookingModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(OptionalJwtMiddleware).forRoutes('bookings');
+  }
+}

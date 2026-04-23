@@ -13,6 +13,7 @@ import { StaffAuthModule } from '../staff-auth/staff-auth.module';
 import { Booking } from 'src/entities/bookings.entity';
 import { Package } from 'src/entities/packages.entity';
 import { Programme } from 'src/entities/programmes.entity';
+import { LoggingModule } from 'src/core/logging/logging.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { Programme } from 'src/entities/programmes.entity';
       Programme,
     ]),
     StaffAuthModule,
+    LoggingModule,
   ],
   controllers: [ServicesController],
   providers: [ServicesService],

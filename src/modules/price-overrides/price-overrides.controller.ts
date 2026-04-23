@@ -24,6 +24,10 @@ import {
 } from '@nestjs/swagger';
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
 
 @Controller('price-overrides')
 // @UseGuards(StaffJwtAuthGuard)
@@ -37,8 +41,15 @@ export class PriceOverridesController {
     summary:
       'Create a new price override for a sub-service, package, or programme',
   })
-  create(@Body() dto: CreatePriceOverrideDto) {
-    return this.priceOverridesService.create(dto);
+  create(
+    @Body() dto: CreatePriceOverrideDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.priceOverridesService.create(
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get()
@@ -182,8 +193,17 @@ export class PriceOverridesController {
     type: 'string',
     description: 'Price override ID',
   })
-  update(@Param('id') id: string, @Body() dto: UpdatePriceOverrideDto) {
-    return this.priceOverridesService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePriceOverrideDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.priceOverridesService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @UseGuards(StaffJwtAuthGuard)
@@ -194,7 +214,14 @@ export class PriceOverridesController {
     type: 'string',
     description: 'Price override ID',
   })
-  remove(@Param('id') id: string) {
-    return this.priceOverridesService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.priceOverridesService.remove(
+      id,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 }

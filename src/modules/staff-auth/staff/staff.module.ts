@@ -11,11 +11,13 @@ import { StaffJwtAuthGuard } from '../../../guards/staff-jwt.guard';
 import { RolesSubmodule } from '../roles/roles.module';
 import { SubscriptionClientService } from 'src/shared/subscription-client.service';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
+import { LoggingModule } from 'src/core/logging/logging.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Staff, Role, Branch, StaffDayoff]),
     RolesSubmodule,
+    LoggingModule,
   ],
   providers: [
     StaffsService,

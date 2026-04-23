@@ -9,6 +9,7 @@ import { paginate } from 'src/shared/pagination.util';
 import { PaginatedResponse } from 'src/shared/pagination.types';
 import { EntityGuestGender } from 'src/entities/enums/entity-guest.enum';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class GuestsService {
@@ -20,11 +21,16 @@ export class GuestsService {
     @InjectRepository(Spa)
     private readonly spaRepo: Repository<Spa>,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('GuestsService');
   }
 
-  async create(dto: CreateGuestDto): Promise<Guest> {
+  async create(
+    dto: CreateGuestDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Guest> {
     this.logger.log('Creating guest', {
       firstName: dto.firstName,
       lastName: dto.lastName,
@@ -34,6 +40,7 @@ export class GuestsService {
     if (dto.spaId) {
       spa = await this.spaRepo.findOne({
         where: { id: dto.spaId },
+        relations: ['branches'],
       });
       if (!spa) {
         this.logger.error('Spa not found', null, { spaId: dto.spaId });
@@ -69,6 +76,31 @@ export class GuestsService {
 
     const savedGuest = await this.guestRepo.save(guest);
     this.logger.log('Guest created successfully', { guestId: savedGuest.id });
+
+    // Log the action
+    if (actorId) {
+      await this.actionLogService.logAction({
+        feature: 'guest',
+        subFeature: null,
+        actionType: 'create',
+        actorId,
+        actorName,
+        entityType: 'guest',
+        entityId: savedGuest.id,
+        newData: {
+          firstName: savedGuest.firstName,
+          lastName: savedGuest.lastName,
+          email: savedGuest.email,
+          phone: savedGuest.phone,
+          nationality: savedGuest.nationality,
+          gender: savedGuest.gender,
+          specialRequest: savedGuest.specialRequest,
+        },
+        description: `Created guest: ${savedGuest.firstName} ${savedGuest.lastName}`,
+        status: 'success',
+        branchId: spa?.branches?.[0]?.id || null,
+      });
+    }
     return savedGuest;
   }
 
@@ -145,15 +177,24 @@ export class GuestsService {
     return guest;
   }
 
-  async update(id: string, dto: UpdateGuestDto): Promise<Guest> {
+  async update(
+    id: string,
+    dto: UpdateGuestDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Guest> {
     this.logger.log('Updating guest', { guestId: id });
     const guest = await this.guestRepo.findOne({
       where: { id },
+      relations: ['spa', 'customer', 'spa.branches'],
     });
     if (!guest) {
       this.logger.error('Guest not found', null, { guestId: id });
       throw new NotFoundException('Guest not found');
     }
+
+    // Store old data for audit trail
+    const oldGuest = { ...guest };
 
     // Check if customer exists (if updating customer)
     if (dto.customerId) {
@@ -176,15 +217,56 @@ export class GuestsService {
     if (dto.specialRequest !== undefined)
       guest.specialRequest = dto.specialRequest;
 
-    return this.guestRepo.save(guest);
+    const updatedGuest = await this.guestRepo.save(guest);
+
+    if (actorId) {
+      // Log the action
+      await this.actionLogService.logAction({
+        feature: 'guest',
+        subFeature: null,
+        actionType: 'update',
+        actorId,
+        actorName,
+        entityType: 'guest',
+        entityId: id,
+        oldData: oldGuest,
+        newData: updatedGuest,
+        description: `Updated guest: ${updatedGuest.firstName} ${updatedGuest.lastName}`,
+        status: 'success',
+        branchId: guest.spa?.branches?.[0]?.id || null,
+      });
+    }
+
+    return updatedGuest;
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(
+    id: string,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<{ message: string }> {
     const guest = await this.guestRepo.findOne({
       where: { id },
+      relations: ['spa', 'spa.branches'],
     });
     if (!guest) {
       throw new NotFoundException('Guest not found');
+    }
+    if (actorId) {
+      // Log the action before deletion
+      await this.actionLogService.logAction({
+        feature: 'guest',
+        subFeature: null,
+        actionType: 'delete',
+        actorId,
+        actorName,
+        entityType: 'guest',
+        entityId: id,
+        oldData: guest,
+        description: `Deleted guest: ${guest.firstName} ${guest.lastName}`,
+        status: 'success',
+        branchId: guest.spa?.branches?.[0]?.id || null,
+      });
     }
 
     await this.guestRepo.softDelete(id);

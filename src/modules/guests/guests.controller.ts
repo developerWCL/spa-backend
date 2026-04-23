@@ -8,9 +8,14 @@ import {
   Delete,
   Query,
   Headers,
+  UseGuards,
 } from '@nestjs/common';
 import { GuestsService } from './guests.service';
 import { CreateGuestDto, UpdateGuestDto } from './guests.types';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
 
 import {
   ApiOperation,
@@ -18,16 +23,24 @@ import {
   ApiQuery,
   ApiHeader,
 } from '@nestjs/swagger';
+import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 
 @Controller('guests')
 @ApiBearerAuth()
+@UseGuards(
+  StaffJwtAuthGuard,
+  //ApiKeyGuard
+)
 export class GuestsController {
   constructor(private readonly guestsService: GuestsService) {}
 
   @Post()
   @ApiOperation({ summary: 'Create a new guest' })
-  create(@Body() dto: CreateGuestDto) {
-    return this.guestsService.create(dto);
+  create(
+    @Body() dto: CreateGuestDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.guestsService.create(dto, currentUser?.sub, currentUser?.email);
   }
 
   @Get()
@@ -83,13 +96,25 @@ export class GuestsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update guest by ID' })
-  update(@Param('id') id: string, @Body() dto: UpdateGuestDto) {
-    return this.guestsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateGuestDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.guestsService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete guest by ID' })
-  remove(@Param('id') id: string) {
-    return this.guestsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.guestsService.remove(id, currentUser?.sub, currentUser?.email);
   }
 }

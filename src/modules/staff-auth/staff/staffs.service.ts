@@ -18,6 +18,8 @@ import { PaginationParams } from '../../../shared/pagination.types';
 import { CreateStaffDto } from '../dto/create-staff.dto';
 import { UpdateStaffDto } from '../dto/update-staff.dto';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
+import { Roles } from 'src/decorator/roles.decorator';
 
 @Injectable()
 export class StaffsService {
@@ -31,6 +33,7 @@ export class StaffsService {
     @InjectRepository(StaffDayoff)
     private readonly staffDayoffRepo: Repository<StaffDayoff>,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('StaffsService');
   }
@@ -115,6 +118,8 @@ export class StaffsService {
     dto: CreateStaffDto,
     requestingStaffBranchIds?: string[],
     requestingStaffSpaIds?: string[],
+    actorId?: string,
+    actorName?: string,
   ) {
     this.logger.log('Creating staff', { email: dto.email });
     // Collect all branch IDs from request
@@ -184,15 +189,50 @@ export class StaffsService {
       staff.roles = roles;
     }
 
-    return this.staffRepo.save(staff);
+    const savedStaff = await this.staffRepo.save(staff);
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'staff',
+      subFeature: null,
+      actionType: 'create',
+      actorId,
+      actorName,
+      entityType: 'staff',
+      entityId: savedStaff.id,
+      newData: {
+        firstName: savedStaff.firstName,
+        lastName: savedStaff.lastName,
+        email: savedStaff.email,
+        phone: savedStaff.phone,
+        specialties: savedStaff.specialties,
+        workingHours: savedStaff.workingHours,
+        isActive: savedStaff.isActive,
+        branchIds: branches.map((b) => b.id),
+        roles: savedStaff.roles?.map((r) => r.name) || [],
+      },
+      description: `Created staff: ${savedStaff.email} (${savedStaff.firstName} ${savedStaff.lastName})`,
+      status: 'success',
+      branchId: branches[0]?.id || null,
+    });
+
+    return savedStaff;
   }
 
-  async update(id: string, dto: UpdateStaffDto) {
+  async update(
+    id: string,
+    dto: UpdateStaffDto,
+    actorId?: string,
+    actorName?: string,
+  ) {
     const staff = await this.staffRepo.findOne({
       where: { id },
       relations: ['roles'],
     });
     if (!staff) throw new NotFoundException('Staff not found');
+
+    // Store old data for audit trail
+    const oldStaff = { ...staff };
 
     if (dto.firstName) staff.firstName = dto.firstName;
     if (dto.lastName) staff.lastName = dto.lastName;
@@ -213,17 +253,79 @@ export class StaffsService {
     // find branch and staff email must be unique
     const existingStaff = await this.staffRepo.findOne({
       where: { email: dto.email },
+      relations: ['branches'],
     });
     if (existingStaff && existingStaff.id !== id) {
       throw new ForbiddenException('Email already in use');
     }
 
-    return this.staffRepo.save(staff);
+    const updatedStaff = await this.staffRepo.save(staff);
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'staff',
+      subFeature: null,
+      actionType: 'update',
+      actorId,
+      actorName,
+      entityType: 'staff',
+      entityId: id,
+      oldData: {
+        firstName: oldStaff.firstName,
+        lastName: oldStaff.lastName,
+        email: oldStaff.email,
+        phone: oldStaff.phone,
+        specialties: oldStaff.specialties,
+        workingHours: oldStaff.workingHours,
+        roles: oldStaff.roles?.map((r) => r.name) || [],
+      },
+      newData: {
+        firstName: updatedStaff.firstName,
+        lastName: updatedStaff.lastName,
+        email: updatedStaff.email,
+        phone: updatedStaff.phone,
+        specialties: updatedStaff.specialties,
+        workingHours: updatedStaff.workingHours,
+        roles: updatedStaff.roles?.map((r) => r.name) || [],
+      },
+      description: `Updated staff: ${updatedStaff.email}`,
+      status: 'success',
+      branchId: existingStaff?.branches?.[0]?.id || null,
+    });
+
+    return updatedStaff;
   }
 
-  async remove(id: string) {
-    const staff = await this.staffRepo.findOne({ where: { id } });
+  async remove(id: string, actorId?: string, actorName?: string) {
+    const staff = await this.staffRepo.findOne({
+      where: { id },
+      relations: ['branches'],
+    });
     if (!staff) throw new NotFoundException('Staff not found');
+
+    // Log the action before deletion
+    await this.actionLogService.logAction({
+      feature: 'staff',
+      subFeature: null,
+      actionType: 'delete',
+      actorId,
+      actorName,
+      entityType: 'staff',
+      entityId: id,
+      oldData: {
+        firstName: staff.firstName,
+        lastName: staff.lastName,
+        email: staff.email,
+        phone: staff.phone,
+        specialties: staff.specialties,
+        workingHours: staff.workingHours,
+        isActive: staff.isActive,
+      },
+      description: `Deleted staff: ${staff.email} (${staff.firstName} ${staff.lastName})`,
+      status: 'success',
+      branchId: staff.branches?.[0]?.id || null,
+    });
+
     await this.staffRepo.softDelete(id);
     return { deleted: true };
   }

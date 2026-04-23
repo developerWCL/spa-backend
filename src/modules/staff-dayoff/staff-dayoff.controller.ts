@@ -26,6 +26,10 @@ import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { PermissionsGuard } from 'src/guards/permissions.guard';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
 
 @Controller('staff-dayoff')
 @UseGuards(StaffJwtAuthGuard, PermissionsGuard)
@@ -38,8 +42,15 @@ export class StaffDayoffController {
   //@UseGuards(ApiKeyGuard)
   @ApiOperation({ summary: 'Create a new staff dayoff' })
   @ApiHeader({ name: 'branchId', description: 'Branch ID' })
-  create(@Body() dto: CreateStaffDayoffDto) {
-    return this.staffDayoffService.create(dto);
+  create(
+    @Body() dto: CreateStaffDayoffDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.staffDayoffService.create(
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get()
@@ -121,8 +132,15 @@ export class StaffDayoffController {
     @Param('id') id: string,
     @Body() dto: UpdateStaffDayoffDto,
     @Headers('branchId') branchId?: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
   ) {
-    return this.staffDayoffService.update(id, dto, branchId);
+    return this.staffDayoffService.update(
+      id,
+      dto,
+      branchId,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Delete(':id')
@@ -130,7 +148,16 @@ export class StaffDayoffController {
   //@UseGuards(ApiKeyGuard)
   @ApiOperation({ summary: 'Delete a staff dayoff' })
   @ApiHeader({ name: 'branchId', description: 'Branch ID' })
-  remove(@Param('id') id: string, @Headers('branchId') branchId?: string) {
-    return this.staffDayoffService.remove(id, branchId);
+  remove(
+    @Param('id') id: string,
+    @Headers('branchId') branchId?: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.staffDayoffService.remove(
+      id,
+      branchId,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 }

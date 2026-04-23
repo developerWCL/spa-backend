@@ -6,11 +6,13 @@ import { RoomBedClosure } from 'src/entities/room_bed_closure.entity';
 import { Room } from 'src/entities/rooms.entity';
 import { Bed } from 'src/entities/beds.entity';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
+import { LoggingModule } from 'src/core/logging/logging.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([RoomBedClosure, Room, Bed]),
     StaffAuthModule,
+    LoggingModule,
   ],
   providers: [RoomBedClosureService],
   controllers: [RoomBedClosureController],

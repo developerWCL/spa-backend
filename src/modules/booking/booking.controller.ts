@@ -21,6 +21,10 @@ import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { ApiBearerAuth } from '@nestjs/swagger/dist/decorators/api-bearer.decorator';
 import { ApiHeader, ApiOperation } from '@nestjs/swagger';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
 
 @Controller('bookings')
 @ApiBearerAuth()
@@ -32,8 +36,17 @@ export class BookingController {
   @Post()
   @ApiOperation({ summary: 'Create a new booking' })
   @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
-  create(@Body() data: CreateBookingDto) {
-    return this.bookingService.create(data);
+  create(
+    @Body() data: CreateBookingDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    console.log('currentUser', currentUser);
+
+    return this.bookingService.create(
+      data,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @UseGuards(
@@ -69,14 +82,26 @@ export class BookingController {
 
   @Patch(':id')
   @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
-  update(@Param('id') id: string, @Body() data: UpdateBookingDto) {
-    return this.bookingService.update(id, data);
+  update(
+    @Param('id') id: string,
+    @Body() data: UpdateBookingDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.bookingService.update(
+      id,
+      data,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Delete(':id')
   @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
-  remove(@Param('id') id: string) {
-    return this.bookingService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.bookingService.remove(id, currentUser?.sub, currentUser?.email);
   }
 
   @Post(':bookingId/send-confirmation')
@@ -86,9 +111,14 @@ export class BookingController {
     this.logger.log(`[send-confirmation] Called for bookingId=${bookingId}`);
     try {
       await this.bookingService.sendConfirmationEmail(bookingId);
-      this.logger.log(`[send-confirmation] Email sent for bookingId=${bookingId}`);
+      this.logger.log(
+        `[send-confirmation] Email sent for bookingId=${bookingId}`,
+      );
     } catch (error) {
-      this.logger.error(`[send-confirmation] Failed for bookingId=${bookingId}`, error);
+      this.logger.error(
+        `[send-confirmation] Failed for bookingId=${bookingId}`,
+        error,
+      );
       throw error;
     }
     return { success: true };
@@ -101,8 +131,14 @@ export class BookingController {
   createBookingItem(
     @Param('bookingId') bookingId: string,
     @Body() itemData: CreateBookingItemDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
   ) {
-    return this.bookingService.createBookingItem(bookingId, itemData);
+    return this.bookingService.createBookingItem(
+      bookingId,
+      itemData,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Patch('items/:itemId')
@@ -111,15 +147,28 @@ export class BookingController {
   updateBookingItem(
     @Param('itemId') itemId: string,
     @Body() itemData: UpdateBookingItemDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
   ) {
-    return this.bookingService.updateBookingItem(itemId, itemData);
+    return this.bookingService.updateBookingItem(
+      itemId,
+      itemData,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @UseGuards(StaffJwtAuthGuard, ApiKeyGuard)
   @Delete('items/:itemId')
   @ApiOperation({ summary: 'Delete a booking item' })
   @ApiHeader({ name: 'spa-id', description: 'The ID of the spa' })
-  deleteBookingItem(@Param('itemId') itemId: string) {
-    return this.bookingService.deleteBookingItem(itemId);
+  deleteBookingItem(
+    @Param('itemId') itemId: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.bookingService.deleteBookingItem(
+      itemId,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 }

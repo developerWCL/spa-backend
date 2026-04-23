@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
 import { Booking } from '../../entities/bookings.entity';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 import { BookingItem } from '../../entities/booking_items.entity';
 import { Promotion } from '../../entities/promotions.entity';
 import { Payment } from '../../entities/payments.entity';
@@ -57,11 +58,16 @@ export class BookingService {
     private readonly guestsService: GuestsService,
     private readonly mailService: MailService,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('BookingService');
   }
 
-  async create(data: CreateBookingDto): Promise<Booking> {
+  async create(
+    data: CreateBookingDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Booking> {
     this.logger.log('Creating booking', { branchId: data.branch });
     // Generate a unique booking ID: Branch code + running number
     let branchCode = 'BKG'; // Default fallback
@@ -132,6 +138,34 @@ export class BookingService {
     this.logger.log('Booking created successfully', {
       bookingId: savedBooking.id,
     });
+
+    // Log action to database (if user information provided)
+    if (actorId) {
+      const branchId =
+        typeof data.branch === 'string' ? data.branch : data.branch?.id;
+      await this.actionLogService.logAction({
+        actionType: 'create',
+        feature: 'booking',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: branchId || null,
+        newData: {
+          id: savedBooking.id,
+          bookingId: savedBooking.bookingId,
+          status: savedBooking.status,
+          bookingTime: savedBooking.bookingTime,
+          branchId: savedBooking.branch?.id,
+          customerId: savedBooking.customer?.id,
+          totalAmount: savedBooking.totalAmount,
+        },
+        entityType: 'booking',
+        entityId: savedBooking.id,
+        description: `Created booking: ${savedBooking.bookingId}`,
+        status: 'success',
+      });
+    }
+
     return savedBooking;
   }
 
@@ -273,9 +307,27 @@ export class BookingService {
     return booking;
   }
 
-  async update(id: string, data: UpdateBookingDto): Promise<Booking> {
-    const booking = await this.bookingRepository.findOne({ where: { id } });
+  async update(
+    id: string,
+    data: UpdateBookingDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Booking> {
+    const booking = await this.bookingRepository.findOne({
+      where: { id },
+      relations: ['customer', 'branch'],
+    });
     if (!booking) throw new NotFoundException('Booking not found');
+
+    // Capture old data before update
+    const oldData = {
+      id: booking.id,
+      bookingId: booking.bookingId,
+      status: booking.status,
+      totalAmount: booking.totalAmount,
+      branchId: booking.branch.id,
+    };
+
     // Separate items and payments data from booking data
     const { items, payments, ...bookingData } = data;
     // update payments if provided
@@ -340,10 +392,15 @@ export class BookingService {
         } else if (itemData.id) {
           // Update existing item
           const { id: itemId, ...updateItemData } = itemData;
-          await this.updateBookingItem(itemId, updateItemData);
+          await this.updateBookingItem(
+            itemId,
+            updateItemData,
+            actorId,
+            actorName,
+          );
         } else {
           // Create new item
-          await this.createBookingItem(id, itemData);
+          await this.createBookingItem(id, itemData, actorId, actorName);
         }
       }
     }
@@ -352,7 +409,6 @@ export class BookingService {
     const updatedBooking = await this.findOne(id);
 
     // Send status update email if status changed to confirmed or cancelled
-
     if (
       bookingData.status &&
       booking.status.toLowerCase() !== bookingData.status.toLowerCase() &&
@@ -374,11 +430,69 @@ export class BookingService {
       );
     }
 
+    // Log action to database (if user information provided)
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'update',
+        feature: 'booking',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: updatedBooking.branch?.id || null,
+        oldData,
+        newData: {
+          id: updatedBooking.id,
+          bookingId: updatedBooking.bookingId,
+          status: updatedBooking.status,
+          totalAmount: updatedBooking.totalAmount,
+          branchId: updatedBooking.branch?.id || null,
+        },
+        entityType: 'booking',
+        entityId: updatedBooking.id,
+        description: `Updated booking: ${updatedBooking.bookingId}`,
+        status: 'success',
+      });
+    }
+
     return updatedBooking;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(
+    id: string,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<void> {
+    const booking = await this.bookingRepository.findOne({ where: { id } });
+    if (!booking) throw new NotFoundException('Booking not found');
+
+    // Capture data before deletion
+    const deletedData = {
+      id: booking.id,
+      bookingId: booking.bookingId,
+      status: booking.status,
+      totalAmount: booking.totalAmount,
+      branchId: booking.branch.id,
+    };
+
     await this.bookingRepository.softDelete(id);
+
+    // Log action to database (if user information provided)
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'delete',
+        feature: 'booking',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: booking.branch?.id || null,
+        oldData: deletedData,
+        newData: null,
+        entityType: 'booking',
+        entityId: id,
+        description: `Deleted booking: ${booking.bookingId}`,
+        status: 'success',
+      });
+    }
   }
 
   async sendConfirmationEmail(bookingId: string): Promise<void> {
@@ -397,6 +511,8 @@ export class BookingService {
   async createBookingItem(
     bookingId: string,
     itemData: CreateBookingItemDto,
+    actorId?: string,
+    actorName?: string,
   ): Promise<BookingItem> {
     const booking = await this.bookingRepository.findOne({
       where: { id: bookingId },
@@ -596,13 +712,46 @@ export class BookingService {
       staff,
       guests: linkedGuests.length > 0 ? linkedGuests : undefined,
     });
-    return await this.bookingItemRepository.save(bookingItem);
+    const savedBookingItem = await this.bookingItemRepository.save(bookingItem);
+
+    // Log action to database (if user information provided)
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'create',
+        feature: 'booking',
+        subFeature: 'booking_item',
+        actorId,
+        actorName: actorName || null,
+        branchId: booking.branch.id || null,
+        newData: {
+          id: savedBookingItem.id,
+          itemType: savedBookingItem.itemType,
+          quantity: savedBookingItem.quantity,
+          price: savedBookingItem.price,
+          subtotal: savedBookingItem.subtotal,
+          scheduledDate: savedBookingItem.scheduledDate,
+        },
+        entityType: 'booking_item',
+        entityId: savedBookingItem.id,
+        description: `Created booking item in booking: ${booking.bookingId}`,
+        status: 'success',
+      });
+    }
+
+    return savedBookingItem;
   }
 
   async updateBookingItem(
     itemId: string,
     itemData: UpdateBookingItemDto,
+    actorId?: string,
+    actorName?: string,
   ): Promise<BookingItem> {
+    const oldBookingItem = await this.bookingItemRepository.findOne({
+      where: { id: itemId },
+      relations: ['guests', 'room', 'staff', 'bed'],
+    });
+    if (!oldBookingItem) throw new NotFoundException('Booking item not found');
     const updateData: any = {};
     let guestsToUpdate: any[] | undefined;
 
@@ -809,7 +958,7 @@ export class BookingService {
       }
     }
 
-    return this.bookingItemRepository.findOne({
+    const updatedItem = await this.bookingItemRepository.findOne({
       where: { id: itemId },
       relations: [
         'guests',
@@ -821,9 +970,73 @@ export class BookingService {
         'staff',
       ],
     });
+
+    // Log action to database (if user information provided)
+    if (actorId && updatedItem) {
+      await this.actionLogService.logAction({
+        actionType: 'update',
+        feature: 'booking',
+        subFeature: 'booking_item',
+        actorId,
+        actorName: actorName || null,
+        branchId: updatedItem.booking?.branch?.id || null,
+        oldData: oldBookingItem,
+        newData: {
+          id: updatedItem.id,
+          itemType: updatedItem.itemType,
+          quantity: updatedItem.quantity,
+          price: updatedItem.price,
+          subtotal: updatedItem.subtotal,
+          scheduledDate: updatedItem.scheduledDate,
+        },
+        entityType: 'booking_item',
+        entityId: updatedItem.id,
+        description: `Updated booking item`,
+        status: 'success',
+      });
+    }
+
+    return updatedItem;
   }
 
-  async deleteBookingItem(itemId: string): Promise<void> {
+  async deleteBookingItem(
+    itemId: string,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<void> {
+    const bookingItem = await this.bookingItemRepository.findOne({
+      where: { id: itemId },
+      relations: ['booking'],
+    });
+
+    const deletedData = bookingItem
+      ? {
+          id: bookingItem.id,
+          itemType: bookingItem.itemType,
+          quantity: bookingItem.quantity,
+          price: bookingItem.price,
+          subtotal: bookingItem.subtotal,
+        }
+      : null;
+
     await this.bookingItemRepository.delete(itemId);
+
+    // Log action to database (if user information provided and bookingItem was found)
+    if (actorId && bookingItem) {
+      await this.actionLogService.logAction({
+        actionType: 'delete',
+        feature: 'booking',
+        subFeature: 'booking_item',
+        actorId,
+        actorName: actorName || null,
+        branchId: bookingItem.booking?.branch?.id || null,
+        oldData: deletedData,
+        newData: null,
+        entityType: 'booking_item',
+        entityId: itemId,
+        description: `Deleted booking item`,
+        status: 'success',
+      });
+    }
   }
 }
