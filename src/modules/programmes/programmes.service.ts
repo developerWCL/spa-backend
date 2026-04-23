@@ -165,7 +165,7 @@ export class ProgrammesService {
       .where('programme.branchId = :branchId', { branchId })
       .andWhere('programme.deletedAt IS NULL')
       .orderBy('programme.createdAt', 'DESC')
-      .orderBy('media.createdAt', 'ASC');
+      .addOrderBy('media.createdAt', 'ASC');
 
     // Add search filter
     if (search && search.trim()) {
@@ -192,6 +192,7 @@ export class ProgrammesService {
       .skip(skip)
       .take(take)
       .getManyAndCount();
+    console.log('results', results);
 
     return paginate(paginationParams, totalCount, results);
   }

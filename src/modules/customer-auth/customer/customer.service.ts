@@ -79,21 +79,6 @@ export class CustomerService {
       relations: ['spa'],
     });
 
-    // Log the action
-    await this.actionLogService.logAction({
-      feature: 'customer',
-      subFeature: null,
-      actionType: 'update',
-      actorId,
-      actorName,
-      entityType: 'customer',
-      entityId: id,
-      newData: updatedCustomer,
-      oldData: oldCustomer,
-      description: `Updated customer: ${updatedCustomer?.email || id}`,
-      status: 'success',
-    });
-
     return updatedCustomer;
   }
 
@@ -104,20 +89,6 @@ export class CustomerService {
     const customer = await this.repo.findOne({ where: { id } });
 
     const result = await this.repo.softDelete(id);
-
-    // Log the action
-    await this.actionLogService.logAction({
-      feature: 'customer',
-      subFeature: null,
-      actionType: 'delete',
-      actorId,
-      actorName,
-      entityType: 'customer',
-      entityId: id,
-      oldData: customer,
-      description: `Deleted customer: ${customer?.email || id}`,
-      status: 'success',
-    });
 
     this.logger.log('Customer deleted successfully', { customerId: id });
     return result;
@@ -208,27 +179,6 @@ export class CustomerService {
     });
 
     const savedCustomer = await this.repo.save(customer);
-
-    // Log the action
-    await this.actionLogService.logAction({
-      feature: 'customer',
-      subFeature: null,
-      actionType: 'create',
-      actorId,
-      actorName,
-      entityType: 'customer',
-      entityId: savedCustomer.id,
-      newData: {
-        firstName: savedCustomer.firstName,
-        lastName: savedCustomer.lastName,
-        email: savedCustomer.email,
-        phone: savedCustomer.phone,
-        authProvider: savedCustomer.authProvider,
-        isVerified: savedCustomer.isVerified,
-      },
-      description: `Created customer: ${savedCustomer.email}`,
-      status: 'success',
-    });
 
     return savedCustomer;
   }
