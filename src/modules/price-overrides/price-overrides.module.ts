@@ -7,11 +7,13 @@ import { SubService } from 'src/entities/sub_services.entity';
 import { Package } from 'src/entities/packages.entity';
 import { Programme } from 'src/entities/programmes.entity';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
+import { LoggingModule } from 'src/core/logging/logging.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([PriceOverride, SubService, Package, Programme]),
     StaffAuthModule,
+    LoggingModule,
   ],
   controllers: [PriceOverridesController],
   providers: [PriceOverridesService],

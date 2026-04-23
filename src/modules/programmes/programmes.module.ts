@@ -9,6 +9,7 @@ import { ProgrammeStepTranslation } from 'src/entities/programme_step_translatio
 import { Branch } from 'src/entities/branch.entity';
 import { Media } from 'src/entities/media.entity';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
+import { LoggingModule } from 'src/core/logging/logging.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { StaffAuthModule } from '../staff-auth/staff-auth.module';
       Media,
     ]),
     StaffAuthModule,
+    LoggingModule,
   ],
   controllers: [ProgrammesController],
   providers: [ProgrammesService],

@@ -21,6 +21,10 @@ import {
   ApiTags,
 } from '@nestjs/swagger';
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
 
 @Controller('room-bed-closures')
 @UseGuards(StaffJwtAuthGuard)
@@ -34,8 +38,15 @@ export class RoomBedClosureController {
     summary: 'Create a room or bed closure',
     description: 'Create a closure for a specific date for a room or bed',
   })
-  create(@Body() dto: CreateRoomBedClosureDto) {
-    return this.closureService.create(dto);
+  create(
+    @Body() dto: CreateRoomBedClosureDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.closureService.create(
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get()
@@ -118,8 +129,17 @@ export class RoomBedClosureController {
     summary: 'Update a room/bed closure',
     description: 'Update details of a specific room/bed closure',
   })
-  update(@Param('id') id: string, @Body() dto: UpdateRoomBedClosureDto) {
-    return this.closureService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateRoomBedClosureDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.closureService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Delete(':id')
@@ -127,7 +147,10 @@ export class RoomBedClosureController {
     summary: 'Delete a room/bed closure',
     description: 'Delete a specific room/bed closure',
   })
-  remove(@Param('id') id: string) {
-    return this.closureService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.closureService.remove(id, currentUser?.sub, currentUser?.email);
   }
 }

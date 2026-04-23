@@ -6,11 +6,13 @@ import { Media } from '../../entities/media.entity';
 import { PromotionService } from './promotion.service';
 import { PromotionController } from './promotion.controller';
 import { SubscriptionClientModule } from '../../shared/subscription-client.module';
+import { LoggingModule } from 'src/core/logging/logging.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Promotion, Branch, Media]),
     SubscriptionClientModule,
+    LoggingModule,
   ],
   controllers: [PromotionController],
   providers: [PromotionService],

@@ -25,8 +25,15 @@ export class PromotionController {
 
   @UseGuards(StaffJwtAuthGuard)
   @Post()
-  create(@Body() dto: CreatePromotionDto) {
-    return this.promotionService.create(dto);
+  create(
+    @Body() dto: CreatePromotionDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.promotionService.create(
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get()
@@ -65,13 +72,29 @@ export class PromotionController {
 
   @UseGuards(StaffJwtAuthGuard)
   @Put(':id')
-  update(@Param('id') id: string, @Body() dto: UpdatePromotionDto) {
-    return this.promotionService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePromotionDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.promotionService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @UseGuards(StaffJwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.promotionService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.promotionService.remove(
+      id,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 }

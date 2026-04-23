@@ -13,6 +13,7 @@ import {
   UpdateRoomBedClosureDto,
 } from './room-bed-closure.types';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class RoomBedClosureService {
@@ -24,11 +25,16 @@ export class RoomBedClosureService {
     @InjectRepository(Bed)
     private readonly bedRepo: Repository<Bed>,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('RoomBedClosureService');
   }
 
-  async create(dto: CreateRoomBedClosureDto): Promise<RoomBedClosure> {
+  async create(
+    dto: CreateRoomBedClosureDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<RoomBedClosure> {
     this.logger.log('Creating room/bed closure', {
       roomId: dto.roomId,
       bedId: dto.bedId,
@@ -73,6 +79,7 @@ export class RoomBedClosureService {
     if (dto.roomId) {
       room = await this.roomRepo.findOne({
         where: { id: dto.roomId },
+        relations: ['branch'],
       });
       if (!room) {
         throw new NotFoundException(`Room with ID ${dto.roomId} not found`);
@@ -83,6 +90,7 @@ export class RoomBedClosureService {
     if (dto.bedId) {
       bed = await this.bedRepo.findOne({
         where: { id: dto.bedId },
+        relations: ['branch'],
       });
       if (!bed) {
         this.logger.error('Bed not found', null, { bedId: dto.bedId });
@@ -101,6 +109,27 @@ export class RoomBedClosureService {
     this.logger.log('Room/bed closure created successfully', {
       closureId: savedClosure.id,
     });
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'daily',
+      subFeature: 'room_closoure',
+      actionType: 'create',
+      actorId,
+      actorName,
+      entityType: 'room_bed_closure',
+      entityId: savedClosure.id,
+      newData: {
+        roomId: savedClosure.room?.id || null,
+        bedId: savedClosure.bed?.id || null,
+        closureDate: savedClosure.closureDate,
+        reason: savedClosure.reason || null,
+      },
+      description: `Created room/bed closure for date: ${savedClosure.closureDate.toDateString()}`,
+      status: 'success',
+      branchId: room?.branch?.id || bed?.branch?.id || null,
+    });
+
     return savedClosure;
   }
 
@@ -179,7 +208,7 @@ export class RoomBedClosureService {
   async findOne(id: string): Promise<RoomBedClosure> {
     const closure = await this.closureRepo.findOne({
       where: { id },
-      relations: ['room', 'bed'],
+      relations: ['room', 'bed', 'room.branch', 'bed.branch'],
     });
 
     if (!closure) {
@@ -220,34 +249,48 @@ export class RoomBedClosureService {
   async update(
     id: string,
     dto: UpdateRoomBedClosureDto,
+    actorId?: string,
+    actorName?: string,
   ): Promise<RoomBedClosure> {
     const closure = await this.findOne(id);
+
+    // Store old data for audit trail
+    const oldClosure = {
+      roomId: closure.room?.id || null,
+      bedId: closure.bed?.id || null,
+      closureDate: closure.closureDate,
+      reason: closure.reason || null,
+    };
 
     // If at least one of room or bed is being cleared, validate
     if ((dto.roomId || dto.bedId) && !dto.roomId && !dto.bedId) {
       throw new BadRequestException('Either roomId or bedId must be provided');
     }
-
+    let branchId: string | null = null;
     // Update room if provided
     if (dto.roomId && dto.roomId !== closure.room?.id) {
       const room = await this.roomRepo.findOne({
         where: { id: dto.roomId },
+        relations: ['branch'],
       });
       if (!room) {
         throw new NotFoundException(`Room with ID ${dto.roomId} not found`);
       }
       closure.room = room;
+      branchId = room.branch?.id || null;
     }
 
     // Update bed if provided
     if (dto.bedId && dto.bedId !== closure.bed?.id) {
       const bed = await this.bedRepo.findOne({
         where: { id: dto.bedId },
+        relations: ['branch'],
       });
       if (!bed) {
         throw new NotFoundException(`Bed with ID ${dto.bedId} not found`);
       }
       closure.bed = bed;
+      branchId = bed.branch?.id || null;
     }
 
     // Update other fields
@@ -258,11 +301,59 @@ export class RoomBedClosureService {
       closure.reason = dto.reason;
     }
 
-    return this.closureRepo.save(closure);
+    const updated = await this.closureRepo.save(closure);
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'daily',
+      subFeature: 'room_closoure',
+      actionType: 'update',
+      actorId,
+      actorName,
+      entityType: 'room_bed_closure',
+      entityId: id,
+      oldData: oldClosure,
+      newData: {
+        roomId: updated.room?.id || null,
+        bedId: updated.bed?.id || null,
+        closureDate: updated.closureDate,
+        reason: updated.reason || null,
+      },
+      description: `Updated room/bed closure: ${updated.closureDate.toDateString()}`,
+      status: 'success',
+      branchId,
+    });
+
+    return updated;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(
+    id: string,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<void> {
     const closure = await this.findOne(id);
+
+    // Log the action before deletion
+    await this.actionLogService.logAction({
+      feature: 'daily',
+      subFeature: 'room_closoure',
+      actionType: 'delete',
+      actorId,
+      actorName,
+      entityType: 'room_bed_closure',
+      entityId: id,
+      oldData: {
+        roomId: closure.room?.id || null,
+        bedId: closure.bed?.id || null,
+        closureDate: closure.closureDate,
+        reason: closure.reason || null,
+      },
+      description: `Deleted room/bed closure: ${closure.closureDate.toDateString()}`,
+      status: 'success',
+      branchId: closure.room?.branch?.id || closure.bed?.branch?.id || null,
+    });
+
     await this.closureRepo.softDelete(closure.id);
   }
 }

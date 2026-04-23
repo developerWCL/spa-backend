@@ -30,8 +30,11 @@ export class RoomsController {
 
   @Post()
   @ApiOperation({ summary: 'Create a new room' })
-  create(@Body() dto: CreateRoomDto) {
-    return this.roomsService.create(dto);
+  create(
+    @Body() dto: CreateRoomDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.roomsService.create(dto, currentUser?.sub, currentUser?.email);
   }
 
   @Get()
@@ -66,13 +69,25 @@ export class RoomsController {
 
   @Put(':id')
   @ApiOperation({ summary: 'Update room by ID' })
-  update(@Param('id') id: string, @Body() dto: UpdateRoomDto) {
-    return this.roomsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateRoomDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.roomsService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Delete(':id')
   @ApiOperation({ summary: 'Delete room by ID' })
-  remove(@Param('id') id: string) {
-    return this.roomsService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.roomsService.remove(id, currentUser?.sub, currentUser?.email);
   }
 }

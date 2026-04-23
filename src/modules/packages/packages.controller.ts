@@ -20,6 +20,10 @@ import {
   ApiParam,
 } from '@nestjs/swagger';
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
 import { PaginationParams } from 'src/shared/pagination.types';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 
@@ -41,8 +45,15 @@ export class PackagesController {
     description: 'The spa ID to which the package belongs',
     required: false,
   })
-  create(@Body() dto: CreatePackageDto) {
-    return this.packagesService.create(dto);
+  create(
+    @Body() dto: CreatePackageDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.packagesService.create(
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get()
@@ -127,8 +138,17 @@ export class PackagesController {
     type: 'string',
     description: 'Package ID',
   })
-  update(@Param('id') id: string, @Body() dto: UpdatePackageDto) {
-    return this.packagesService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdatePackageDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.packagesService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Delete(':id')
@@ -142,8 +162,15 @@ export class PackagesController {
     type: 'string',
     description: 'Package ID',
   })
-  delete(@Param('id') id: string) {
-    return this.packagesService.delete(id);
+  delete(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.packagesService.delete(
+      id,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get(':id/active-services')

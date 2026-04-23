@@ -10,6 +10,7 @@ import { PackageTranslation } from 'src/entities/package_translation.entity';
 import { Branch } from 'src/entities/branch.entity';
 import { Media } from 'src/entities/media.entity';
 import { StaffAuthModule } from '../staff-auth/staff-auth.module';
+import { LoggingModule } from 'src/core/logging/logging.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { StaffAuthModule } from '../staff-auth/staff-auth.module';
       Media,
     ]),
     StaffAuthModule,
+    LoggingModule,
   ],
   controllers: [PackagesController],
   providers: [PackagesService],

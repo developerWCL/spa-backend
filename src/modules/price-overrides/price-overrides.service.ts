@@ -22,6 +22,7 @@ import {
   UpdatePriceOverrideDto,
 } from './price-overrides.types';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class PriceOverridesService {
@@ -35,11 +36,16 @@ export class PriceOverridesService {
     @InjectRepository(Programme)
     private readonly programmeRepo: Repository<Programme>,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('PriceOverridesService');
   }
 
-  async create(dto: CreatePriceOverrideDto): Promise<PriceOverride> {
+  async create(
+    dto: CreatePriceOverrideDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<PriceOverride> {
     this.logger.log('Creating price override', {
       startDate: dto.overrideStartDate,
     });
@@ -53,10 +59,12 @@ export class PriceOverridesService {
     priceOverride.overrideEndDate = endDate;
 
     priceOverride.price = dto.price;
+    let branchId = null;
 
     if (dto.subServiceId) {
       const subService = await this.subServiceRepo.findOne({
         where: { id: dto.subServiceId },
+        relations: ['service', 'service.branch'],
       });
       if (!subService) {
         this.logger.error('SubService not found', null, {
@@ -67,7 +75,7 @@ export class PriceOverridesService {
         );
       }
       priceOverride.subService = subService;
-
+      branchId = subService.service?.branch?.id || null;
       // Check for overlapping date ranges with the same subService
       const overlappingSubServices = await this.priceOverrideRepo.find({
         where: {
@@ -90,6 +98,7 @@ export class PriceOverridesService {
     if (dto.packageId) {
       const pkg = await this.packageRepo.findOne({
         where: { id: dto.packageId },
+        relations: ['branch'],
       });
       if (!pkg) {
         throw new NotFoundException(
@@ -97,7 +106,7 @@ export class PriceOverridesService {
         );
       }
       priceOverride.package = pkg;
-
+      branchId = pkg.branch.id || null;
       // Check for overlapping date ranges with the same package
       const overlappingPackages = await this.priceOverrideRepo.find({
         where: {
@@ -120,6 +129,7 @@ export class PriceOverridesService {
     if (dto.programmeId) {
       const programme = await this.programmeRepo.findOne({
         where: { id: dto.programmeId },
+        relations: ['branch'],
       });
       if (!programme) {
         throw new NotFoundException(
@@ -127,7 +137,7 @@ export class PriceOverridesService {
         );
       }
       priceOverride.programme = programme;
-
+      branchId = programme.branch.id || null;
       // Check for overlapping date ranges with the same programme
       const overlappingProgrammes = await this.priceOverrideRepo.find({
         where: {
@@ -147,7 +157,31 @@ export class PriceOverridesService {
       }
     }
 
-    return this.priceOverrideRepo.save(priceOverride);
+    const savedPriceOverride = await this.priceOverrideRepo.save(priceOverride);
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'daily',
+      subFeature: 'price',
+      actionType: 'create',
+      actorId,
+      actorName,
+      entityType: 'price_override',
+      entityId: savedPriceOverride.id,
+      newData: {
+        price: savedPriceOverride.price,
+        overrideStartDate: savedPriceOverride.overrideStartDate,
+        overrideEndDate: savedPriceOverride.overrideEndDate,
+        subServiceId: savedPriceOverride.subService?.id || null,
+        packageId: savedPriceOverride.package?.id || null,
+        programmeId: savedPriceOverride.programme?.id || null,
+      },
+      description: `Created price override: ${savedPriceOverride.price}`,
+      status: 'success',
+      branchId,
+    });
+
+    return savedPriceOverride;
   }
 
   async findAll(filters?: {
@@ -246,8 +280,12 @@ export class PriceOverridesService {
     const priceOverride = await this.priceOverrideRepo
       .createQueryBuilder('priceOverride')
       .leftJoinAndSelect('priceOverride.subService', 'subService')
+      .leftJoinAndSelect('subService.service', 'subServiceService')
+      .leftJoinAndSelect('subServiceService.branch', 'serviceBranch')
       .leftJoinAndSelect('priceOverride.package', 'package')
+      .leftJoinAndSelect('package.branch', 'packageBranch')
       .leftJoinAndSelect('priceOverride.programme', 'programme')
+      .leftJoinAndSelect('programme.branch', 'programmeBranch')
       .where('priceOverride.id = :id', { id })
       .getOne();
 
@@ -286,8 +324,20 @@ export class PriceOverridesService {
   async update(
     id: string,
     dto: UpdatePriceOverrideDto,
+    actorId?: string,
+    actorName?: string,
   ): Promise<PriceOverride> {
     const priceOverride = await this.findOne(id);
+
+    // Store old data for audit trail
+    const oldPriceOverride = {
+      price: priceOverride.price,
+      overrideStartDate: priceOverride.overrideStartDate,
+      overrideEndDate: priceOverride.overrideEndDate,
+      subServiceId: priceOverride.subService?.id || null,
+      packageId: priceOverride.package?.id || null,
+      programmeId: priceOverride.programme?.id || null,
+    };
 
     let startDate = priceOverride.overrideStartDate;
     let endDate = priceOverride.overrideEndDate;
@@ -305,7 +355,6 @@ export class PriceOverridesService {
     if (dto.price !== undefined) {
       priceOverride.price = dto.price;
     }
-
     // Check overlap for subService (either existing or new)
     const subServiceIdToCheck =
       dto?.subServiceId || priceOverride?.subService?.id;
@@ -313,6 +362,7 @@ export class PriceOverridesService {
       if (dto.subServiceId) {
         const subService = await this.subServiceRepo.findOne({
           where: { id: dto.subServiceId },
+          relations: ['service', 'service.branch'],
         });
         if (!subService) {
           throw new NotFoundException(
@@ -348,6 +398,7 @@ export class PriceOverridesService {
       if (dto.packageId) {
         const pkg = await this.packageRepo.findOne({
           where: { id: dto.packageId },
+          relations: ['branch'],
         });
         if (!pkg) {
           throw new NotFoundException(
@@ -383,6 +434,7 @@ export class PriceOverridesService {
       if (dto.programmeId) {
         const programme = await this.programmeRepo.findOne({
           where: { id: dto.programmeId },
+          relations: ['branch'],
         });
         if (!programme) {
           throw new NotFoundException(
@@ -412,11 +464,74 @@ export class PriceOverridesService {
       }
     }
 
-    return this.priceOverrideRepo.save(priceOverride);
+    const updatedPriceOverride =
+      await this.priceOverrideRepo.save(priceOverride);
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'daily',
+      subFeature: 'price',
+      actionType: 'update',
+      actorId,
+      actorName,
+      entityType: 'price_override',
+      entityId: id,
+      oldData: oldPriceOverride,
+      newData: {
+        price: updatedPriceOverride.price,
+        overrideStartDate: updatedPriceOverride.overrideStartDate,
+        overrideEndDate: updatedPriceOverride.overrideEndDate,
+        subServiceId: updatedPriceOverride.subService?.id || null,
+        packageId: updatedPriceOverride.package?.id || null,
+        programmeId: updatedPriceOverride.programme?.id || null,
+      },
+      description: `Updated price override: ${updatedPriceOverride.price}`,
+      status: 'success',
+      branchId:
+        priceOverride.subService?.service?.branch?.id ||
+        priceOverride.package?.branch?.id ||
+        priceOverride.programme?.branch?.id ||
+        null,
+    });
+
+    return updatedPriceOverride;
   }
 
-  async remove(id: string): Promise<void> {
-    await this.findOne(id);
+  async remove(
+    id: string,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<void> {
+    const priceOverride = await this.findOne(id);
+    if (!priceOverride) {
+      throw new NotFoundException('Price override not found');
+    }
+    // Log the action before deletion
+    await this.actionLogService.logAction({
+      feature: 'daily',
+      subFeature: 'price',
+      actionType: 'delete',
+      actorId,
+      actorName,
+      entityType: 'price_override',
+      entityId: id,
+      oldData: {
+        price: priceOverride.price,
+        overrideStartDate: priceOverride.overrideStartDate,
+        overrideEndDate: priceOverride.overrideEndDate,
+        subServiceId: priceOverride.subService?.id || null,
+        packageId: priceOverride.package?.id || null,
+        programmeId: priceOverride.programme?.id || null,
+      },
+      description: `Deleted price override: ${priceOverride.price}`,
+      status: 'success',
+      branchId:
+        priceOverride.subService?.service?.branch?.id ||
+        priceOverride.package?.branch?.id ||
+        priceOverride.programme?.branch?.id ||
+        null,
+    });
+
     await this.priceOverrideRepo.softDelete(id);
   }
 }

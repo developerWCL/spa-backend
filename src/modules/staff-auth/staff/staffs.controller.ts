@@ -115,7 +115,13 @@ export class StaffsController {
     @Body() body: CreateStaffDto,
     @CurrentUser() currentUser: CurrentUserPayload,
   ) {
-    return this.svc.create(body, currentUser.branchIds, currentUser.spaIds);
+    return this.svc.create(
+      body,
+      currentUser.branchIds,
+      currentUser.spaIds,
+      currentUser.sub,
+      currentUser.email,
+    );
   }
 
   @ApiOperation({ summary: 'Update a staff' })
@@ -123,8 +129,12 @@ export class StaffsController {
   @Put(':id')
   // @Permissions('manage:staffs')
   @UseGuards(BranchGuard)
-  update(@Param('id') id: string, @Body() body: UpdateStaffDto) {
-    return this.svc.update(id, body);
+  update(
+    @Param('id') id: string,
+    @Body() body: UpdateStaffDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.svc.update(id, body, currentUser?.sub, currentUser?.email);
   }
 
   @ApiOperation({ summary: 'Delete a staff (soft delete)' })
@@ -133,7 +143,10 @@ export class StaffsController {
   // @Permissions('manage:staffs')
   @UseGuards(BranchGuard)
   @HttpCode(204)
-  remove(@Param('id') id: string) {
-    return this.svc.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.svc.remove(id, currentUser?.sub, currentUser?.email);
   }
 }

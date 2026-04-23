@@ -85,9 +85,14 @@ export class AdminCustomerController {
   //@UseGuards(ApiKeyGuard)
   create(
     @Body() body: CreateCustomerDto,
-    @CurrentUser() currentUser: CurrentUserPayload,
+    @CurrentUser() currentUser?: CurrentUserPayload,
   ): Promise<any> {
-    return this.customerService.createWithSpa(body, currentUser.spaIds);
+    return this.customerService.createWithSpa(
+      body,
+      currentUser?.spaIds,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @ApiOperation({ summary: 'Update a customer' })
@@ -98,8 +103,15 @@ export class AdminCustomerController {
   update(
     @Param('id') id: string,
     @Body() body: UpdateCustomerDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
   ): Promise<any> {
-    return this.customerService.update(id, body);
+    return this.customerService.update(
+      id,
+      body,
+      undefined,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @ApiOperation({ summary: 'Delete a customer (soft delete)' })
@@ -108,7 +120,14 @@ export class AdminCustomerController {
   @Permissions('manage:customers')
   //@UseGuards(ApiKeyGuard)
   @HttpCode(204)
-  remove(@Param('id') id: string): Promise<any> {
-    return this.customerService.delete(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ): Promise<any> {
+    return this.customerService.delete(
+      id,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 }

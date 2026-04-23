@@ -23,6 +23,10 @@ import {
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
+import {
+  CurrentUser,
+  CurrentUserPayload,
+} from 'src/decorator/current-user.decorator';
 
 @Controller('programmes')
 @ApiTags('Programmes')
@@ -50,8 +54,15 @@ export class ProgrammesController {
     status: 404,
     description: 'Branch not found',
   })
-  create(@Body() dto: CreateProgrammeDto) {
-    return this.programmesService.create(dto);
+  create(
+    @Body() dto: CreateProgrammeDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.programmesService.create(
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Get()
@@ -143,8 +154,17 @@ export class ProgrammesController {
     status: 404,
     description: 'Programme not found',
   })
-  update(@Param('id') id: string, @Body() dto: UpdateProgrammeDto) {
-    return this.programmesService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateProgrammeDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.programmesService.update(
+      id,
+      dto,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Delete(':id')
@@ -161,8 +181,15 @@ export class ProgrammesController {
     status: 404,
     description: 'Programme not found',
   })
-  remove(@Param('id') id: string) {
-    return this.programmesService.remove(id);
+  remove(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.programmesService.remove(
+      id,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 
   @Patch(':id/restore')
@@ -178,7 +205,14 @@ export class ProgrammesController {
     status: 404,
     description: 'Programme not found',
   })
-  restore(@Param('id') id: string) {
-    return this.programmesService.restore(id);
+  restore(
+    @Param('id') id: string,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.programmesService.restore(
+      id,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 }

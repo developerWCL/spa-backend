@@ -25,6 +25,7 @@ import {
 } from './packages.types';
 import { PriceOverride } from 'src/entities/price_overides.entity';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class PackagesService {
@@ -45,6 +46,7 @@ export class PackagesService {
     private mediaRepo: Repository<Media>,
     private dataSource: DataSource,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('PackagesService');
   }
@@ -97,110 +99,138 @@ export class PackagesService {
     return createdSubServices;
   }
 
-  async create(dto: CreatePackageDto) {
+  async create(dto: CreatePackageDto, actorId?: string, actorName?: string) {
     this.logger.log('Creating package', {
       name: dto.name,
       branchId: dto.branchId,
     });
-    return this.dataSource.transaction(async (manager: EntityManager) => {
-      // Validate branch exists
-      const branch = await manager.findOne(Branch, {
-        where: { id: dto.branchId },
-      });
-      if (!branch) {
-        throw new NotFoundException(`Branch with ID ${dto.branchId} not found`);
-      }
-
-      // Collect sub-services from both existing IDs and new sub-services
-      const allSubServices: SubService[] = [];
-
-      // Handle existing sub-services
-      if (dto.subServiceIds && dto.subServiceIds.length > 0) {
-        const existingSubServices = await manager.find(SubService, {
-          where: {
-            id: In(dto.subServiceIds),
-            status: EntityStatus.ACTIVE,
-          },
+    const result = await this.dataSource.transaction(
+      async (manager: EntityManager) => {
+        // Validate branch exists
+        const branch = await manager.findOne(Branch, {
+          where: { id: dto.branchId },
         });
-
-        if (existingSubServices.length < dto.subServiceIds.length) {
-          const foundIds = new Set(existingSubServices.map((s) => s.id));
-          const missingIds = dto.subServiceIds.filter(
-            (id) => !foundIds.has(id),
+        if (!branch) {
+          throw new NotFoundException(
+            `Branch with ID ${dto.branchId} not found`,
           );
+        }
+
+        // Collect sub-services from both existing IDs and new sub-services
+        const allSubServices: SubService[] = [];
+
+        // Handle existing sub-services
+        if (dto.subServiceIds && dto.subServiceIds.length > 0) {
+          const existingSubServices = await manager.find(SubService, {
+            where: {
+              id: In(dto.subServiceIds),
+              status: EntityStatus.ACTIVE,
+            },
+          });
+
+          if (existingSubServices.length < dto.subServiceIds.length) {
+            const foundIds = new Set(existingSubServices.map((s) => s.id));
+            const missingIds = dto.subServiceIds.filter(
+              (id) => !foundIds.has(id),
+            );
+            throw new BadRequestException(
+              `Some sub-services are inactive or not found: ${missingIds.join(', ')}`,
+            );
+          }
+
+          allSubServices.push(...existingSubServices);
+        }
+
+        // Handle new sub-services
+        if (dto.newSubServices && dto.newSubServices.length > 0) {
+          const newSubServices = await this.createNewSubServices(
+            dto.newSubServices,
+            manager,
+          );
+          allSubServices.push(...newSubServices);
+        }
+
+        // Validate that we have at least 1 sub-service total
+        if (allSubServices.length === 0) {
           throw new BadRequestException(
-            `Some sub-services are inactive or not found: ${missingIds.join(', ')}`,
+            'Package must have at least 1 sub-service',
           );
         }
 
-        allSubServices.push(...existingSubServices);
-      }
-
-      // Handle new sub-services
-      if (dto.newSubServices && dto.newSubServices.length > 0) {
-        const newSubServices = await this.createNewSubServices(
-          dto.newSubServices,
-          manager,
-        );
-        allSubServices.push(...newSubServices);
-      }
-
-      // Validate that we have at least 1 sub-service total
-      if (allSubServices.length === 0) {
-        throw new BadRequestException(
-          'Package must have at least 1 sub-service',
-        );
-      }
-
-      // Validate max 10 sub-services
-      if (allSubServices.length > 10) {
-        throw new BadRequestException(
-          'Package can have at most 10 sub-services',
-        );
-      }
-
-      // Create package
-      const pkg = new Package();
-      pkg.branch = branch;
-      pkg.name = dto.name;
-      pkg.price = dto.price;
-      pkg.startDate = new Date(dto.startDate);
-      pkg.endDate = new Date(dto.endDate);
-      pkg.status = dto.status || EntityStatus.ACTIVE;
-      pkg.subServices = allSubServices;
-
-      const savedPackage = await manager.save(pkg);
-
-      // Handle media associations
-      if (dto.mediaIds && dto.mediaIds.length > 0) {
-        const mediaList = await manager.find(Media, {
-          where: { id: In(dto.mediaIds) },
-        });
-
-        for (const media of mediaList) {
-          media.package = savedPackage;
-          await manager.save(media);
+        // Validate max 10 sub-services
+        if (allSubServices.length > 10) {
+          throw new BadRequestException(
+            'Package can have at most 10 sub-services',
+          );
         }
-      }
 
-      // Create translations
-      if (dto.translations && dto.translations.length > 0) {
-        const translations = dto.translations.map((t) => {
-          const translation = new PackageTranslation();
-          translation.package = savedPackage;
-          translation.languageCode = t.languageCode;
-          translation.name = t.name;
-          translation.description = t.description;
-          return translation;
+        // Create package
+        const pkg = new Package();
+        pkg.branch = branch;
+        pkg.name = dto.name;
+        pkg.price = dto.price;
+        pkg.startDate = new Date(dto.startDate);
+        pkg.endDate = new Date(dto.endDate);
+        pkg.status = dto.status || EntityStatus.ACTIVE;
+        pkg.subServices = allSubServices;
+
+        const savedPackage = await manager.save(pkg);
+
+        // Handle media associations
+        if (dto.mediaIds && dto.mediaIds.length > 0) {
+          const mediaList = await manager.find(Media, {
+            where: { id: In(dto.mediaIds) },
+          });
+
+          for (const media of mediaList) {
+            media.package = savedPackage;
+            await manager.save(media);
+          }
+        }
+
+        // Create translations
+        if (dto.translations && dto.translations.length > 0) {
+          const translations = dto.translations.map((t) => {
+            const translation = new PackageTranslation();
+            translation.package = savedPackage;
+            translation.languageCode = t.languageCode;
+            translation.name = t.name;
+            translation.description = t.description;
+            return translation;
+          });
+          await manager.save(translations);
+        }
+
+        return manager.findOne(Package, {
+          where: { id: savedPackage.id },
+          relations: ['subServices', 'translations', 'media', 'branch'],
         });
-        await manager.save(translations);
-      }
+      },
+    );
 
-      return manager.findOne(Package, {
-        where: { id: savedPackage.id },
-        relations: ['subServices', 'translations', 'media', 'branch'],
-      });
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'package',
+      subFeature: null,
+      actionType: 'create',
+      actorId,
+      actorName,
+      entityType: 'package',
+      entityId: result.id,
+      newData: {
+        name: result.name,
+        price: result.price,
+        startDate: result.startDate,
+        endDate: result.endDate,
+        status: result.status,
+        subServicesCount: result.subServices?.length || 0,
+      },
+      description: `Created package: ${result.name}`,
+      status: 'success',
+      branchId: result.branch?.id || null,
     });
+
+    return result;
   }
 
   async findAll(
@@ -273,144 +303,218 @@ export class PackagesService {
     return pkg;
   }
 
-  async update(id: string, dto: UpdatePackageDto) {
-    return this.dataSource.transaction(async (manager: EntityManager) => {
-      const pkg = await manager.findOne(Package, {
-        where: { id },
-        relations: ['subServices', 'translations', 'media'],
-      });
+  async update(
+    id: string,
+    dto: UpdatePackageDto,
+    actorId?: string,
+    actorName?: string,
+  ) {
+    // Fetch current package data before transaction for audit trail
+    const currentPkg = await this.packageRepo.findOne({
+      where: { id },
+      relations: ['subServices'],
+    });
 
-      if (!pkg) {
-        throw new NotFoundException(`Package with ID ${id} not found`);
-      }
+    if (!currentPkg) {
+      throw new NotFoundException(`Package with ID ${id} not found`);
+    }
 
-      // Update basic fields
-      if (dto.name !== undefined) pkg.name = dto.name;
-      if (dto.price !== undefined) {
-        pkg.price = dto.price;
-        if (dto.isOverride !== undefined && dto.isOverride === true) {
-          // soft delete existing price overrides for this sub-service
-          await manager.softDelete(PriceOverride, {
-            package: { id: pkg.id },
-          });
+    const oldPackage = {
+      name: currentPkg.name,
+      price: currentPkg.price,
+      startDate: currentPkg.startDate,
+      endDate: currentPkg.endDate,
+      status: currentPkg.status,
+      subServicesCount: currentPkg.subServices?.length || 0,
+    };
+
+    const result = await this.dataSource.transaction(
+      async (manager: EntityManager) => {
+        const pkg = await manager.findOne(Package, {
+          where: { id },
+          relations: ['subServices', 'translations', 'media'],
+        });
+
+        if (!pkg) {
+          throw new NotFoundException(`Package with ID ${id} not found`);
         }
-      }
-      if (dto.startDate !== undefined) pkg.startDate = new Date(dto.startDate);
-      if (dto.endDate !== undefined) pkg.endDate = new Date(dto.endDate);
-      if (dto.status !== undefined) pkg.status = dto.status;
 
-      // Update sub-services if provided
-      if (
-        (dto.subServiceIds !== undefined && dto.subServiceIds.length > 0) ||
-        (dto.newSubServices !== undefined && dto.newSubServices.length > 0)
-      ) {
-        const allSubServices: SubService[] = [];
+        // Update basic fields
+        if (dto.name !== undefined) pkg.name = dto.name;
+        if (dto.price !== undefined) {
+          pkg.price = dto.price;
+          if (dto.isOverride !== undefined && dto.isOverride === true) {
+            // soft delete existing price overrides for this sub-service
+            await manager.softDelete(PriceOverride, {
+              package: { id: pkg.id },
+            });
+          }
+        }
+        if (dto.startDate !== undefined)
+          pkg.startDate = new Date(dto.startDate);
+        if (dto.endDate !== undefined) pkg.endDate = new Date(dto.endDate);
+        if (dto.status !== undefined) pkg.status = dto.status;
 
-        // Handle existing sub-services
-        if (dto.subServiceIds && dto.subServiceIds.length > 0) {
-          const existingSubServices = await manager.find(SubService, {
-            where: {
-              id: In(dto.subServiceIds),
-              status: EntityStatus.ACTIVE,
-            },
-          });
+        // Update sub-services if provided
+        if (
+          (dto.subServiceIds !== undefined && dto.subServiceIds.length > 0) ||
+          (dto.newSubServices !== undefined && dto.newSubServices.length > 0)
+        ) {
+          const allSubServices: SubService[] = [];
 
-          if (existingSubServices.length < dto.subServiceIds.length) {
-            const foundIds = new Set(existingSubServices.map((s) => s.id));
-            const missingIds = dto.subServiceIds.filter(
-              (id) => !foundIds.has(id),
+          // Handle existing sub-services
+          if (dto.subServiceIds && dto.subServiceIds.length > 0) {
+            const existingSubServices = await manager.find(SubService, {
+              where: {
+                id: In(dto.subServiceIds),
+                status: EntityStatus.ACTIVE,
+              },
+            });
+
+            if (existingSubServices.length < dto.subServiceIds.length) {
+              const foundIds = new Set(existingSubServices.map((s) => s.id));
+              const missingIds = dto.subServiceIds.filter(
+                (id) => !foundIds.has(id),
+              );
+              throw new BadRequestException(
+                `Some sub-services are inactive or not found: ${missingIds.join(', ')}`,
+              );
+            }
+
+            allSubServices.push(...existingSubServices);
+          }
+
+          // Handle new sub-services
+          if (dto.newSubServices && dto.newSubServices.length > 0) {
+            const newSubServices = await this.createNewSubServices(
+              dto.newSubServices,
+              manager,
             );
+            allSubServices.push(...newSubServices);
+          }
+
+          // Validate that we have at least 1 sub-service total
+          if (allSubServices.length === 0) {
             throw new BadRequestException(
-              `Some sub-services are inactive or not found: ${missingIds.join(', ')}`,
+              'Package must have at least 1 sub-service',
             );
           }
 
-          allSubServices.push(...existingSubServices);
+          // Validate max 10 sub-services
+          if (allSubServices.length > 10) {
+            throw new BadRequestException(
+              'Package can have at most 10 sub-services',
+            );
+          }
+
+          pkg.subServices = allSubServices;
         }
 
-        // Handle new sub-services
-        if (dto.newSubServices && dto.newSubServices.length > 0) {
-          const newSubServices = await this.createNewSubServices(
-            dto.newSubServices,
-            manager,
-          );
-          allSubServices.push(...newSubServices);
-        }
+        const updatedPackage = await manager.save(pkg);
 
-        // Validate that we have at least 1 sub-service total
-        if (allSubServices.length === 0) {
-          throw new BadRequestException(
-            'Package must have at least 1 sub-service',
-          );
-        }
-
-        // Validate max 10 sub-services
-        if (allSubServices.length > 10) {
-          throw new BadRequestException(
-            'Package can have at most 10 sub-services',
-          );
-        }
-
-        pkg.subServices = allSubServices;
-      }
-
-      const updatedPackage = await manager.save(pkg);
-
-      // Update media if provided
-      if (dto.mediaIds !== undefined) {
-        // Remove old media associations
-        for (const media of pkg.media) {
-          media.package = null;
-          await manager.save(media);
-        }
-
-        // Add new media associations
-        if (dto.mediaIds.length > 0) {
-          const mediaList = await manager.find(Media, {
-            where: { id: In(dto.mediaIds) },
-          });
-
-          for (const media of mediaList) {
-            media.package = updatedPackage;
+        // Update media if provided
+        if (dto.mediaIds !== undefined) {
+          // Remove old media associations
+          for (const media of pkg.media) {
+            media.package = null;
             await manager.save(media);
           }
+
+          // Add new media associations
+          if (dto.mediaIds.length > 0) {
+            const mediaList = await manager.find(Media, {
+              where: { id: In(dto.mediaIds) },
+            });
+
+            for (const media of mediaList) {
+              media.package = updatedPackage;
+              await manager.save(media);
+            }
+          }
         }
-      }
 
-      // Update translations if provided
-      if (dto.translations !== undefined) {
-        // Remove old translations
-        await manager.delete(PackageTranslation, { package: updatedPackage });
+        // Update translations if provided
+        if (dto.translations !== undefined) {
+          // Remove old translations
+          await manager.delete(PackageTranslation, { package: updatedPackage });
 
-        // Add new translations
-        if (dto.translations.length > 0) {
-          const translations = dto.translations.map((t) => {
-            const translation = new PackageTranslation();
-            translation.package = updatedPackage;
-            translation.languageCode = t.languageCode;
-            translation.name = t.name;
-            translation.description = t.description;
-            return translation;
-          });
-          await manager.save(translations);
+          // Add new translations
+          if (dto.translations.length > 0) {
+            const translations = dto.translations.map((t) => {
+              const translation = new PackageTranslation();
+              translation.package = updatedPackage;
+              translation.languageCode = t.languageCode;
+              translation.name = t.name;
+              translation.description = t.description;
+              return translation;
+            });
+            await manager.save(translations);
+          }
         }
-      }
 
-      return manager.findOne(Package, {
-        where: { id: updatedPackage.id },
-        relations: ['subServices', 'translations', 'media', 'branch'],
-      });
+        return manager.findOne(Package, {
+          where: { id: updatedPackage.id },
+          relations: ['subServices', 'translations', 'media', 'branch'],
+        });
+      },
+    );
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'package',
+      subFeature: null,
+      actionType: 'update',
+      actorId,
+      actorName,
+      entityType: 'package',
+      entityId: id,
+      oldData: oldPackage,
+      newData: {
+        name: result.name,
+        price: result.price,
+        startDate: result.startDate,
+        endDate: result.endDate,
+        status: result.status,
+        subServicesCount: result.subServices?.length || 0,
+      },
+      description: `Updated package: ${result.name}`,
+      status: 'success',
+      branchId: result.branch?.id || null,
     });
+
+    return result;
   }
 
-  async delete(id: string) {
+  async delete(id: string, actorId?: string, actorName?: string) {
     const pkg = await this.packageRepo.findOne({
       where: { id },
+      relations: ['branch'],
     });
 
     if (!pkg) {
       throw new NotFoundException(`Package with ID ${id} not found`);
     }
+
+    // Log the action before deletion
+    await this.actionLogService.logAction({
+      feature: 'package',
+      subFeature: null,
+      actionType: 'delete',
+      actorId,
+      actorName,
+      entityType: 'package',
+      entityId: id,
+      oldData: {
+        name: pkg.name,
+        price: pkg.price,
+        startDate: pkg.startDate,
+        endDate: pkg.endDate,
+        status: pkg.status,
+      },
+      description: `Deleted package: ${pkg.name}`,
+      status: 'success',
+      branchId: pkg.branch?.id || null,
+    });
 
     await this.packageRepo.softRemove(pkg);
     return { id, message: 'Package deleted successfully' };

@@ -87,8 +87,11 @@ export class ReportService {
         branch: { id: branchId },
         status: In([BookingStatus.COMPLETED, BookingStatus.CONFIRMED]),
         bookingTime: startDate && endDate ? undefined : undefined,
+        payments: {
+          status: In([PaymentStatus.PAID, PaymentStatus.PENDING]),
+        },
       },
-      relations: ['customer', 'branch', 'items', 'items.guests'],
+      relations: ['customer', 'branch', 'items', 'items.guests', 'payments'],
     });
 
     // Filter by date range
@@ -325,6 +328,9 @@ export class ReportService {
         branch: { id: branchId },
         status: In([BookingStatus.COMPLETED, BookingStatus.CONFIRMED]),
         bookingTime: startDate && endDate ? undefined : undefined,
+        payments: {
+          status: In([PaymentStatus.PAID, PaymentStatus.PENDING]),
+        },
       },
       relations: [
         'customer',
@@ -374,11 +380,7 @@ export class ReportService {
           const lastPayment = booking.payments
             ? booking.payments[booking.payments.length - 1]
             : null;
-          const paymentStatus = lastPayment
-            ? lastPayment.status === PaymentStatus.PAID
-              ? 'Paid'
-              : 'Pending'
-            : 'No Payment';
+          const paymentStatus = lastPayment ? lastPayment.status : 'No Payment';
 
           // Get customer name (from guest if customer not available)
           const customerName = booking.customer
@@ -417,7 +419,7 @@ export class ReportService {
             duration,
             serviceDate: item.scheduledDate,
             serviceTime,
-            price: parseFloat(item.price || '0'),
+            price: parseFloat(booking.totalAmount || '0'),
             bookingStatus: booking.status,
             paymentStatus,
             bookingDate: booking.bookingTime,

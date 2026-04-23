@@ -11,9 +11,14 @@ import { PermissionsGuard } from '../../../guards/permissions.guard';
 import { StaffJwtAuthGuard } from '../../../guards/staff-jwt.guard';
 import { SubscriptionClientService } from 'src/shared/subscription-client.service';
 import { ApiKeyGuard } from 'src/guards/api-key.guard';
+import { LoggingModule } from 'src/core/logging/logging.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Customer, Spa]), RolesSubmodule],
+  imports: [
+    TypeOrmModule.forFeature([Customer, Spa]),
+    RolesSubmodule,
+    LoggingModule,
+  ],
   providers: [
     CustomerService,
     PermissionsGuard,

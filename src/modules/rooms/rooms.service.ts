@@ -13,6 +13,7 @@ import { paginate } from 'src/shared/pagination.util';
 import { PaginatedResponse } from 'src/shared/pagination.types';
 import { RoomStatus } from 'src/entities/enums/entity-room.enum';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class RoomsService {
@@ -22,11 +23,16 @@ export class RoomsService {
     @InjectRepository(Branch)
     private readonly branchRepo: Repository<Branch>,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('RoomsService');
   }
 
-  async create(dto: CreateRoomDto): Promise<Room> {
+  async create(
+    dto: CreateRoomDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Room> {
     this.logger.log('Creating room', {
       name: dto.name,
       branchId: dto.branchId,
@@ -49,6 +55,29 @@ export class RoomsService {
     });
     const savedRoom = await this.roomRepo.save(room);
     this.logger.log('Room created successfully', { roomId: savedRoom.id });
+
+    // Log action to database
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'create',
+        feature: 'room',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: branchId,
+        newData: {
+          id: savedRoom.id,
+          name: savedRoom.name,
+          status: savedRoom.status,
+          branchId: branchId,
+        },
+        entityType: 'room',
+        entityId: savedRoom.id,
+        description: `Created room: ${savedRoom.name}`,
+        status: 'success',
+      });
+    }
+
     return savedRoom;
   }
 
@@ -153,23 +182,92 @@ export class RoomsService {
     });
   }
 
-  async update(id: string, dto: UpdateRoomDto): Promise<Room> {
+  async update(
+    id: string,
+    dto: UpdateRoomDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Room> {
     this.logger.log('Updating room', { roomId: id });
     const room = await this.findOne(id);
+
+    // Capture old data before update
+    const oldData = {
+      id: room.id,
+      name: room.name,
+      status: room.status,
+      branchId: room.branch.id,
+    };
+
     Object.assign(room, dto);
-    await this.roomRepo.save(room);
+    const updatedRoom = await this.roomRepo.save(room);
     this.logger.log('Room updated successfully', { roomId: id });
-    return room;
+
+    // Log action to database
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'update',
+        feature: 'room',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: room.branch.id,
+        oldData,
+        newData: {
+          id: updatedRoom.id,
+          name: updatedRoom.name,
+          status: updatedRoom.status,
+          branchId: room.branch.id,
+        },
+        entityType: 'room',
+        entityId: updatedRoom.id,
+        description: `Updated room: ${updatedRoom.name}`,
+        status: 'success',
+      });
+    }
+
+    return updatedRoom;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(
+    id: string,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<void> {
     this.logger.log('Deleting room', { roomId: id });
     const room = await this.findOne(id);
     if (!room) {
       this.logger.error('Room not found', null, { roomId: id });
       throw new NotFoundException('Room not found');
     }
+
+    // Capture data before deletion
+    const deletedData = {
+      id: room.id,
+      name: room.name,
+      status: room.status,
+      branchId: room.branch.id,
+    };
+
     await this.roomRepo.softDelete(room.id);
     this.logger.log('Room deleted successfully', { roomId: id });
+
+    // Log action to database
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'delete',
+        feature: 'room',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: room.branch.id,
+        oldData: deletedData,
+        newData: null,
+        entityType: 'room',
+        entityId: id,
+        description: `Deleted room: ${room.name}`,
+        status: 'success',
+      });
+    }
   }
 }

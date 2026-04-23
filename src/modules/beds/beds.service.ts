@@ -13,6 +13,7 @@ import { PaginatedResponse } from 'src/shared/pagination.types';
 import { RoomStatus } from 'src/entities/enums/entity-room.enum';
 import { Room } from 'src/entities/rooms.entity';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class BedsService {
@@ -20,11 +21,16 @@ export class BedsService {
     @InjectRepository(Bed)
     private readonly bedRepo: Repository<Bed>,
     private logger: AppLoggerService,
+    private actionLogService: ActionLogService,
   ) {
     this.logger.setContext('BedsService');
   }
 
-  async create(dto: CreateBedDto): Promise<Bed> {
+  async create(
+    dto: CreateBedDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Bed> {
     this.logger.log('Creating bed', {
       bedName: dto.name,
       roomId: dto.roomId,
@@ -58,6 +64,30 @@ export class BedsService {
       bedId: savedBed.id,
       bedName: savedBed.name,
     });
+
+    // Log action to database
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'create',
+        feature: 'bed',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: dto.branchId,
+        newData: {
+          id: savedBed.id,
+          name: savedBed.name,
+          status: savedBed.status,
+          roomId: savedBed.room?.id || null,
+          branchId: dto.branchId,
+        },
+        entityType: 'bed',
+        entityId: savedBed.id,
+        description: `Created bed: ${savedBed.name}`,
+        status: 'success',
+      });
+    }
+
     return savedBed;
   }
 
@@ -148,7 +178,7 @@ export class BedsService {
   async findOne(id: string): Promise<Bed> {
     const bed = await this.bedRepo.findOne({
       where: { id },
-      relations: ['room', 'room.branch'],
+      relations: ['room', 'room.branch', 'branch'],
     });
     if (!bed) {
       this.logger.warn('Bed not found', { bedId: id });
@@ -160,7 +190,7 @@ export class BedsService {
   async findByRoomId(roomId: string): Promise<Bed[]> {
     const beds = await this.bedRepo.find({
       where: { room: { id: roomId } },
-      relations: ['room', 'room.branch'],
+      relations: ['room', 'room.branch', 'branch'],
       order: { createdAt: 'DESC' },
     });
     // Optionally, you can add roomId and branchId as extra properties (not as part of Bed type)
@@ -169,13 +199,27 @@ export class BedsService {
     return beds;
   }
 
-  async update(id: string, dto: UpdateBedDto): Promise<Bed> {
+  async update(
+    id: string,
+    dto: UpdateBedDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Bed> {
     this.logger.log('Updating bed', { bedId: id });
     const bed = await this.findOne(id);
     if (!bed) {
       this.logger.error('Bed not found for update', null, { bedId: id });
       throw new NotFoundException('Bed not found');
     }
+
+    // Capture old data before update
+    const oldData = {
+      id: bed.id,
+      name: bed.name,
+      status: bed.status,
+      roomId: bed.room?.id || null,
+      branchId: bed.branch?.id || null,
+    };
 
     // If roomId is being updated, check if the new room exists
     if (dto.roomId && dto.roomId !== bed?.room?.id && dto.roomId !== 'none') {
@@ -197,13 +241,70 @@ export class BedsService {
     Object.assign(bed, dto);
     const updatedBed = await this.bedRepo.save(bed);
     this.logger.log('Bed updated successfully', { bedId: id });
+
+    // Log action to database
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'update',
+        feature: 'bed',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: bed.branch?.id || null,
+        oldData,
+        newData: {
+          id: updatedBed.id,
+          name: updatedBed.name,
+          status: updatedBed.status,
+          roomId: updatedBed.room?.id || null,
+          branchId: bed.branch?.id || null,
+        },
+        entityType: 'bed',
+        entityId: updatedBed.id,
+        description: `Updated bed: ${updatedBed.name}`,
+        status: 'success',
+      });
+    }
+
     return updatedBed;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(
+    id: string,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<void> {
     this.logger.log('Deleting bed', { bedId: id });
     const bed = await this.findOne(id);
+
+    // Capture data before deletion
+    const deletedData = {
+      id: bed.id,
+      name: bed.name,
+      status: bed.status,
+      roomId: bed.room?.id || null,
+      branchId: bed.branch?.id || null,
+    };
+
     await this.bedRepo.softDelete(bed.id);
     this.logger.log('Bed deleted successfully', { bedId: id });
+
+    // Log action to database
+    if (actorId) {
+      await this.actionLogService.logAction({
+        actionType: 'delete',
+        feature: 'bed',
+        subFeature: null,
+        actorId,
+        actorName: actorName || null,
+        branchId: bed.branch?.id || null,
+        oldData: deletedData,
+        newData: null,
+        entityType: 'bed',
+        entityId: id,
+        description: `Deleted bed: ${bed.name}`,
+        status: 'success',
+      });
+    }
   }
 }

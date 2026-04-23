@@ -16,6 +16,7 @@ import { PaginationParams } from 'src/shared/pagination.types';
 import { CreateCustomerDto } from '../dto/create-customer.dto';
 import { UpdateCustomerDto } from '../dto/update-customer.dto';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class CustomerService {
@@ -25,6 +26,7 @@ export class CustomerService {
     @InjectRepository(Spa)
     private readonly spaRepo: Repository<Spa>,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('CustomerService');
   }
@@ -53,10 +55,15 @@ export class CustomerService {
     id: string,
     data: Partial<Customer> | UpdateCustomerDto,
     entityManager?: EntityManager,
+    actorId?: string,
+    actorName?: string,
   ) {
     const repo = entityManager
       ? entityManager.getRepository(Customer)
       : this.repo;
+
+    // Get old data for audit trail
+    const oldCustomer = await repo.findOne({ where: { id } });
 
     // Hash password if it's being updated
     if ('password' in data && data.password) {
@@ -67,12 +74,22 @@ export class CustomerService {
       await repo.update(id, data);
     }
 
-    return repo.findOne({ where: { id }, relations: ['spa'] });
+    const updatedCustomer = await repo.findOne({
+      where: { id },
+      relations: ['spa'],
+    });
+
+    return updatedCustomer;
   }
 
-  async delete(id: string) {
+  async delete(id: string, actorId?: string, actorName?: string) {
     this.logger.log('Deleting customer', { customerId: id });
+
+    // Get customer data before deletion for audit trail
+    const customer = await this.repo.findOne({ where: { id } });
+
     const result = await this.repo.softDelete(id);
+
     this.logger.log('Customer deleted successfully', { customerId: id });
     return result;
   }
@@ -124,7 +141,12 @@ export class CustomerService {
     return customer;
   }
 
-  async createWithSpa(dto: CreateCustomerDto, spaIds?: string[]) {
+  async createWithSpa(
+    dto: CreateCustomerDto,
+    spaIds?: string[],
+    actorId?: string,
+    actorName?: string,
+  ) {
     // Check if customer already exists
     const existingCustomer = await this.repo.findOne({
       where: { email: dto.email },
@@ -156,6 +178,8 @@ export class CustomerService {
       isVerified: true, // Admin can create verified customers
     });
 
-    return this.repo.save(customer);
+    const savedCustomer = await this.repo.save(customer);
+
+    return savedCustomer;
   }
 }

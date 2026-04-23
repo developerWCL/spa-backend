@@ -20,6 +20,7 @@ import { Programme } from 'src/entities/programmes.entity';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 import { PriceOverride } from 'src/entities/price_overides.entity';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class ServicesService {
@@ -46,11 +47,12 @@ export class ServicesService {
     private programmeRepo: Repository<Programme>,
     private dataSource: DataSource,
     private logger: AppLoggerService,
+    private actionLogService: ActionLogService,
   ) {
     this.logger.setContext('ServicesService');
   }
 
-  async create(dto: CreateServiceDto) {
+  async create(dto: CreateServiceDto, actorId?: string, actorName?: string) {
     this.logger.log('Creating service', {
       name: dto.name,
       branchId: dto.branchId,
@@ -149,6 +151,30 @@ export class ServicesService {
           }
         }
       }
+
+      // Log the action
+      await this.actionLogService.logAction({
+        feature: 'service',
+        subFeature: null,
+        actionType: 'create',
+        actorId,
+        actorName,
+        entityType: 'service',
+        entityId: savedService.id,
+        newData: {
+          name: savedService.name,
+          description: savedService.description,
+          basePrice: savedService.basePrice,
+          durationMinutes: savedService.durationMinutes,
+          status: savedService.status,
+          maxConcurrentBookings: savedService.maxConcurrentBookings,
+          maxBookingsPerDay: savedService.maxBookingsPerDay,
+          categoryId: category?.id,
+        },
+        description: `Created service: ${savedService.name}`,
+        status: 'success',
+        branchId: dto.branchId,
+      });
 
       return savedService;
     });
@@ -256,7 +282,12 @@ export class ServicesService {
     return service;
   }
 
-  async update(id: string, dto: UpdateServiceDto) {
+  async update(
+    id: string,
+    dto: UpdateServiceDto,
+    actorId?: string,
+    actorName?: string,
+  ) {
     this.logger.log('Updating service', { serviceId: id });
     return this.dataSource.transaction(async (manager: EntityManager) => {
       const service = await manager.findOne(Service, {
@@ -266,6 +297,7 @@ export class ServicesService {
           'subServices',
           'subServices.translations',
           'translations',
+          'branch',
         ],
       });
 
@@ -275,6 +307,17 @@ export class ServicesService {
         });
         throw new NotFoundException('Service not found');
       }
+
+      // Store old data for audit trail
+      const oldService = {
+        name: service.name,
+        description: service.description,
+        basePrice: service.basePrice,
+        durationMinutes: service.durationMinutes,
+        status: service.status,
+        maxConcurrentBookings: service.maxConcurrentBookings,
+        maxBookingsPerDay: service.maxBookingsPerDay,
+      };
 
       if (dto.categoryId) {
         const category = await manager.findOne(ServiceCategory, {
@@ -436,27 +479,101 @@ export class ServicesService {
       }
 
       this.logger.log('Service updated successfully', { serviceId: id });
+
+      // Log the action
+      await this.actionLogService.logAction({
+        feature: 'service',
+        subFeature: null,
+        actionType: 'update',
+        actorId,
+        actorName,
+        entityType: 'service',
+        entityId: id,
+        oldData: oldService,
+        newData: {
+          name: service.name,
+          description: service.description,
+          basePrice: service.basePrice,
+          durationMinutes: service.durationMinutes,
+          status: service.status,
+          maxConcurrentBookings: service.maxConcurrentBookings,
+          maxBookingsPerDay: service.maxBookingsPerDay,
+        },
+        description: `Updated service: ${service.name}`,
+        status: 'success',
+        branchId: service.branch?.id || null,
+      });
+
       return this.findOne(id);
     });
   }
 
-  async remove(id: string) {
+  async remove(id: string, actorId?: string, actorName?: string) {
     this.logger.log('Deleting service', { serviceId: id });
-    await this.findOne(id); // Verify service exists
+    const service = await this.findOne(id); // Verify service exists
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'service',
+      subFeature: null,
+      actionType: 'delete',
+      actorId,
+      actorName,
+      entityType: 'service',
+      entityId: id,
+      oldData: {
+        name: service.name,
+        description: service.description,
+        basePrice: service.basePrice,
+        durationMinutes: service.durationMinutes,
+        status: service.status,
+      },
+      description: `Deleted service: ${service.name}`,
+      status: 'success',
+      branchId: service.branch?.id || null,
+    });
+
     await this.serviceRepo.softDelete(id);
     this.logger.log('Service deleted successfully', { serviceId: id });
     return { success: true, message: 'Service deleted successfully' };
   }
 
-  async removeSubService(subServiceId: string) {
+  async removeSubService(
+    subServiceId: string,
+    actorId?: string,
+    actorName?: string,
+  ) {
     this.logger.log('Deleting sub-service', { subServiceId });
     const subService = await this.subServiceRepo.findOne({
       where: { id: subServiceId },
+      relations: ['service', 'service.branch'],
     });
     if (!subService) {
       this.logger.warn('Sub-service not found', { subServiceId });
       throw new NotFoundException('Sub-service not found');
     }
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'service',
+      subFeature: null,
+      actionType: 'delete',
+      actorId,
+      actorName,
+      entityType: 'sub_service',
+      entityId: subServiceId,
+      oldData: {
+        name: subService.name,
+        price: subService.price,
+        durationMinutes: subService.durationMinutes,
+        status: subService.status,
+        serviceId: subService.service?.id,
+      },
+      description: `Deleted sub-service: ${subService.name}`,
+      status: 'success',
+      branchId: subService.service?.branch?.id || null,
+    });
+
     await this.subServiceRepo.softDelete(subServiceId);
     this.logger.log('Sub-service deleted successfully', { subServiceId });
     return { success: true, message: 'Sub-service deleted successfully' };

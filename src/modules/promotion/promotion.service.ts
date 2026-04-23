@@ -9,6 +9,7 @@ import { PaginatedResponse } from 'src/shared/pagination.types';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 import { paginate } from 'src/shared/pagination.util';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { ActionLogService } from 'src/core/logging/action-log.service';
 
 @Injectable()
 export class PromotionService {
@@ -20,11 +21,16 @@ export class PromotionService {
     @InjectRepository(Media)
     private readonly mediaRepository: Repository<Media>,
     private readonly logger: AppLoggerService,
+    private readonly actionLogService: ActionLogService,
   ) {
     this.logger.setContext('PromotionService');
   }
 
-  async create(dto: CreatePromotionDto): Promise<Promotion> {
+  async create(
+    dto: CreatePromotionDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Promotion> {
     this.logger.log('Creating promotion', { name: dto.name, code: dto.code });
     const { mediaIds, ...dtoWithoutMediaIds } = dto;
     const promotion = this.promotionRepository.create({
@@ -47,10 +53,33 @@ export class PromotionService {
     }
 
     // Return promotion with linked media
-    return await this.promotionRepository.findOne({
+    const result = await this.promotionRepository.findOne({
       where: { id: savedPromotion.id },
       relations: ['branch', 'branch.spa', 'media'],
     });
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'promotion',
+      subFeature: null,
+      actionType: 'create',
+      actorId,
+      actorName,
+      entityType: 'promotion',
+      entityId: result.id,
+      newData: {
+        name: result.name,
+        code: result.code,
+        discountType: result.discountType,
+        discountValue: result.discountValue,
+        status: result.status,
+      },
+      description: `Created promotion: ${result.name}`,
+      status: 'success',
+      branchId: result.branch?.id || null,
+    });
+
+    return result;
   }
 
   async findAll(
@@ -143,8 +172,23 @@ export class PromotionService {
     return promotion;
   }
 
-  async update(id: string, dto: UpdatePromotionDto): Promise<Promotion> {
+  async update(
+    id: string,
+    dto: UpdatePromotionDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Promotion> {
     const promotion = await this.findOne(id);
+
+    // Store old data for audit trail
+    const oldPromotion = {
+      name: promotion.name,
+      code: promotion.code,
+      discountType: promotion.discountType,
+      discountValue: promotion.discountValue,
+      status: promotion.status,
+    };
+
     if (dto.branchId) {
       promotion.branch = await this.branchRepository.findOne({
         where: { id: dto.branchId },
@@ -189,14 +233,64 @@ export class PromotionService {
     }
 
     // Return promotion with linked media
-    return await this.promotionRepository.findOne({
+    const result = await this.promotionRepository.findOne({
       where: { id: savedPromotion.id },
       relations: ['branch', 'branch.spa', 'media'],
     });
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'promotion',
+      subFeature: null,
+      actionType: 'update',
+      actorId,
+      actorName,
+      entityType: 'promotion',
+      entityId: id,
+      oldData: oldPromotion,
+      newData: {
+        name: result.name,
+        code: result.code,
+        discountType: result.discountType,
+        discountValue: result.discountValue,
+        status: result.status,
+      },
+      description: `Updated promotion: ${result.name}`,
+      status: 'success',
+      branchId: result.branch?.id || null,
+    });
+
+    return result;
   }
 
-  async remove(id: string): Promise<void> {
+  async remove(
+    id: string,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<void> {
     const promotion = await this.findOne(id);
+
+    // Log the action before deletion
+    await this.actionLogService.logAction({
+      feature: 'promotion',
+      subFeature: null,
+      actionType: 'delete',
+      actorId,
+      actorName,
+      entityType: 'promotion',
+      entityId: id,
+      oldData: {
+        name: promotion.name,
+        code: promotion.code,
+        discountType: promotion.discountType,
+        discountValue: promotion.discountValue,
+        status: promotion.status,
+      },
+      description: `Deleted promotion: ${promotion.name}`,
+      status: 'success',
+      branchId: promotion.branch?.id || null,
+    });
+
     await this.promotionRepository.softRemove(promotion);
   }
 
