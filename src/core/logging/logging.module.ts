@@ -5,6 +5,7 @@ import { AppLoggerService } from './app-logger.service';
 import { LogS3UploaderService } from './log-s3-uploader.service';
 import { LogFileReaderService } from './log-file-reader.service';
 import { ActionLogService } from './action-log.service';
+import { ActionLogCleanupService } from './action-log-cleanup.service';
 import { LogsController } from './logs.controller';
 import { ActionLogController } from './action-log.controller';
 import { ActionLog } from '../../entities/action_log.entity';
@@ -24,12 +25,14 @@ import { ActionLog } from '../../entities/action_log.entity';
     LogS3UploaderService,
     LogFileReaderService,
     ActionLogService,
+    ActionLogCleanupService,
   ],
   exports: [
     AppLoggerService,
     LogS3UploaderService,
     LogFileReaderService,
     ActionLogService,
+    ActionLogCleanupService,
   ],
 })
 export class LoggingModule {}

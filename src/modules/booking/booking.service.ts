@@ -176,6 +176,7 @@ export class BookingService {
     status?: string,
     startDateTime?: Date,
     endDateTime?: Date,
+    hasBedOrRoom?: boolean,
   ): Promise<PaginatedResponse<Booking>> {
     const { skip, take } = getPaginationQueryTypeORM(params);
 
@@ -254,6 +255,15 @@ export class BookingService {
       query = query.andWhere('items.scheduledDate <= :endDateTime', {
         endDateTime,
       });
+    }
+
+    // Filter for bookings with bed or room assigned
+    if (hasBedOrRoom === true) {
+      query = query.andWhere(
+        new Brackets((qb) => {
+          qb.where('items.bed IS NOT NULL').orWhere('items.room IS NOT NULL');
+        }),
+      );
     }
 
     // CRITICAL FIX FOR PAGINATION WITH JOINS:

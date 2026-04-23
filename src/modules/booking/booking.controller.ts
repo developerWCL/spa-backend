@@ -63,7 +63,9 @@ export class BookingController {
     @Query('status') status?: string,
     @Query('startDateTime') startDateTime?: Date,
     @Query('endDateTime') endDateTime?: Date,
+    @Query('hasBedOrRoom') hasBedOrRoom?: string,
   ) {
+    const hasBedOrRoomBool = hasBedOrRoom === 'true' ? true : undefined;
     return this.bookingService.findAll(
       branchId,
       { page, limit },
@@ -71,6 +73,7 @@ export class BookingController {
       status,
       startDateTime,
       endDateTime,
+      hasBedOrRoomBool,
     );
   }
 
