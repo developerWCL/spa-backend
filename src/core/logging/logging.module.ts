@@ -6,6 +6,7 @@ import { LogS3UploaderService } from './log-s3-uploader.service';
 import { LogFileReaderService } from './log-file-reader.service';
 import { ActionLogService } from './action-log.service';
 import { LogsController } from './logs.controller';
+import { ActionLogController } from './action-log.controller';
 import { ActionLog } from '../../entities/action_log.entity';
 
 /**
@@ -17,7 +18,7 @@ import { ActionLog } from '../../entities/action_log.entity';
 @Global()
 @Module({
   imports: [ScheduleModule.forRoot(), TypeOrmModule.forFeature([ActionLog])],
-  controllers: [LogsController],
+  controllers: [LogsController, ActionLogController],
   providers: [
     AppLoggerService,
     LogS3UploaderService,
