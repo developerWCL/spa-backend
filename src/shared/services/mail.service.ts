@@ -280,8 +280,7 @@ export class MailService {
     if (!booking.items?.length) return [{ name: 'Spa Service', price: '0' }];
     return booking.items.map((item: any) => {
       const svcName = item.subService
-        ? `${item?.subService?.service?.name} - ${item.subService.name}` ||
-          'Spa Service'
+        ? item.subService.name || 'Spa Service'
         : item.package
           ? item.package.name || 'Spa Service'
           : item.programme
