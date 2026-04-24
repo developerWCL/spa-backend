@@ -61,6 +61,7 @@ export class BranchesController {
   update(@Param('id') id: string, @Body() dto: UpdateBranchDto) {
     return this.branchesService.update(id, dto);
   }
+
   @UseGuards(StaffJwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
