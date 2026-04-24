@@ -597,6 +597,12 @@ export class ServicesService {
     });
   }
 
+  private formatTime(date: Date): string {
+    const hours = String(date.getHours()).padStart(2, '0');
+    const minutes = String(date.getMinutes()).padStart(2, '0');
+    return `${hours}:${minutes}`;
+  }
+
   async countBookingsByServiceAndTime(filters: {
     serviceId: string;
     serviceType: 'services' | 'packages' | 'programs';
@@ -887,8 +893,8 @@ export class ServicesService {
 
       // Convert to response format
       const results = consolidatedSlots.map((slot) => ({
-        startTimeSlot: slot.startTimeSlot,
-        endTimeSlot: slot.endTimeSlot,
+        startTimeSlot: this.formatTime(slot.startTimeSlot),
+        endTimeSlot: this.formatTime(slot.endTimeSlot),
         count: slot.bookings.length,
       }));
 
@@ -938,8 +944,8 @@ export class ServicesService {
       );
 
       return {
-        startTimeSlot: startDateTime,
-        endTimeSlot: endDateTime,
+        startTimeSlot: this.formatTime(startDateTime),
+        endTimeSlot: this.formatTime(endDateTime),
         count: parseInt(r.count, 10),
       };
     });
@@ -956,8 +962,8 @@ export class ServicesService {
       );
       transformedResults.length = 0; // Clear array
       transformedResults.push({
-        startTimeSlot: packageBookingData.startTime,
-        endTimeSlot: packageBookingData.endTime,
+        startTimeSlot: this.formatTime(packageBookingData.startTime),
+        endTimeSlot: this.formatTime(packageBookingData.endTime),
         count: totalCount,
       });
     }
