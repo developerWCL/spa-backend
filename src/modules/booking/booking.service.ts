@@ -63,21 +63,11 @@ export class BookingService {
     this.logger.setContext('BookingService');
   }
 
-<<<<<<< HEAD
   /**
    * Pre-generate a booking reference (e.g. "DPR-00003") without creating the booking.
    * Used by PayPal flow to set invoice_id before the order is captured.
    */
   async generateBookingReference(branchId: string): Promise<string> {
-=======
-  async create(
-    data: CreateBookingDto,
-    actorId?: string,
-    actorName?: string,
-  ): Promise<Booking> {
-    this.logger.log('Creating booking', { branchId: data.branch });
-    // Generate a unique booking ID: Branch code + running number
->>>>>>> 26f1dbfa352cb8884eb4b9ed6d124250930f81b3
     let branchCode = 'BKG'; // Default fallback
 
     const branch = await this.bookingRepository.query(
@@ -105,7 +95,11 @@ export class BookingService {
     return `${branchCode}-${runningNumber}`;
   }
 
-  async create(data: CreateBookingDto): Promise<Booking> {
+  async create(
+    data: CreateBookingDto,
+    actorId?: string,
+    actorName?: string,
+  ): Promise<Booking> {
     this.logger.log('Creating booking', { branchId: data.branch });
     // Generate a unique booking ID: Branch code + running number
     // If a bookingId was pre-generated (e.g. PayPal flow), use it directly to keep
