@@ -287,11 +287,12 @@ export class MailService {
           : item.programme
             ? item.programme.name || 'Spa Service'
             : 'Spa Service';
+      const durationStr = item.duration ? ` - ${item.duration} min` : '';
       this.logger.debug(
-        `[extractServiceNames] item subService=${item.subService?.id} svc.translations=${JSON.stringify(item.subService?.service?.translations)} resolved="${svcName}"`,
+        `[extractServiceNames] item subService=${item.subService?.id} svc.translations=${JSON.stringify(item.subService?.service?.translations)} resolved="${svcName}" duration=${item.duration}`,
       );
       return {
-        name: svcName,
+        name: `${svcName}${durationStr}`,
         price: parseFloat(item.price || '0').toLocaleString('en-US'),
       };
     });
