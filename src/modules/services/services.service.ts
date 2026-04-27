@@ -914,6 +914,7 @@ export class ServicesService {
         startTimeSlot: this.formatTime(slot.startTimeSlot),
         endTimeSlot: this.formatTime(slot.endTimeSlot),
         count: slot.bookings.length,
+        bookingIds: slot.bookings.map((id) => id.toString()),
       }));
 
       return {
@@ -965,6 +966,7 @@ export class ServicesService {
         startTimeSlot: this.formatTime(startDateTime),
         endTimeSlot: this.formatTime(endDateTime),
         count: parseInt(r.count, 10),
+        bookingIds: r.bookingIds,
       };
     });
 
@@ -983,6 +985,7 @@ export class ServicesService {
         startTimeSlot: this.formatTime(packageBookingData.startTime),
         endTimeSlot: this.formatTime(packageBookingData.endTime),
         count: totalCount,
+        bookingIds: [], // Optionally, you could aggregate booking IDs here as well
       });
     }
 
