@@ -794,13 +794,11 @@ export class ServicesService {
 
     // Apply date filters if provided
     if (startDate) {
-      startDate.setHours(0, 0, 0, 0); // Start of the day
       query = query.andWhere('items.scheduledDate >= :startDate', {
         startDate,
       });
     }
     if (endDate) {
-      endDate.setHours(23, 59, 59, 999); // End of the day
       query = query.andWhere('items.scheduledDate <= :endDate', { endDate });
     }
 
