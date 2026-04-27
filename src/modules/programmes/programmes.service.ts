@@ -188,12 +188,11 @@ export class ProgrammesService {
     }
 
     const { skip, take } = getPaginationQueryTypeORM(paginationParams);
-    const [results, totalCount] = await query
+    const [results, total] = await query
       .skip(skip)
       .take(take)
       .getManyAndCount();
-    console.log('results', results);
-
+    const totalCount = await query.getCount();
     return paginate(paginationParams, totalCount, results);
   }
 

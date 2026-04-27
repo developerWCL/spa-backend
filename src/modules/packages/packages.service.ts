@@ -280,7 +280,9 @@ export class PackagesService {
       .take(paginationQuery.take)
       .getManyAndCount();
 
-    return paginate(paginationParams || {}, total, data);
+    const totalCount = await query.getCount();
+
+    return paginate(paginationParams || {}, totalCount, data);
   }
 
   async findOne(id: string) {

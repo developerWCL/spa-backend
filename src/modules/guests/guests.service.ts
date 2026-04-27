@@ -161,8 +161,9 @@ export class GuestsService {
     query = query.take(limit).skip(skip);
 
     const [guests, total] = await query.getManyAndCount();
+    const totalCount = await query.getCount();
 
-    return paginate({ page, limit }, total, guests);
+    return paginate({ page, limit }, totalCount, guests);
   }
 
   async findOne(id: string): Promise<Guest> {

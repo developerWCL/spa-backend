@@ -238,20 +238,13 @@ export class ServicesService {
       // Fallback to non-paginated response for backward compatibility
       return await query.getMany();
     }
-
-    const { skip, take } = getPaginationQueryTypeORM(paginationParams);
-    const [results, totalCount] = await query
-      .skip(skip)
-      .take(take)
+    const paginationQuery = getPaginationQueryTypeORM(paginationParams);
+    const [data, total] = await query
+      .skip(paginationQuery.skip)
+      .take(paginationQuery.take)
       .getManyAndCount();
-
-    this.logger.log('Fetched services with pagination', {
-      branchId,
-      filters,
-      pagination: paginationParams,
-      totalCount,
-    });
-    return paginate(paginationParams, totalCount, results);
+    const totalCount = await query.getCount();
+    return paginate(paginationParams, totalCount, data);
   }
 
   async findOne(id: string) {
