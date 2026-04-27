@@ -239,11 +239,36 @@ export class ServicesService {
       return await query.getMany();
     }
     const paginationQuery = getPaginationQueryTypeORM(paginationParams);
-    const [data, total] = await query
+
+    // Get paginated service IDs first (to handle joins correctly)
+    const [serviceIds, totalCount] = await this.serviceRepo
+      .createQueryBuilder('service')
+      .select('service.id')
+      .where('service.branchId = :branchId', { branchId })
+      .andWhere('service.deletedAt IS NULL')
       .skip(paginationQuery.skip)
       .take(paginationQuery.take)
+      .orderBy('service.createdAt', 'DESC')
       .getManyAndCount();
-    const totalCount = await query.getCount();
+
+    // Now fetch the services with all their relations
+    if (serviceIds.length === 0) {
+      return paginate(paginationParams, 0, []);
+    }
+
+    const ids = serviceIds.map((s) => s.id);
+    const data = await this.serviceRepo
+      .createQueryBuilder('service')
+      .where('service.id IN (:...ids)', { ids })
+      .leftJoinAndSelect('service.category', 'category')
+      .leftJoinAndSelect('service.subServices', 'subServices')
+      .leftJoinAndSelect('subServices.translations', 'subServiceTranslations')
+      .leftJoinAndSelect('service.translations', 'translations')
+      .leftJoinAndSelect('service.media', 'media')
+      .orderBy('service.createdAt', 'DESC')
+      .addOrderBy('media.createdAt', 'ASC')
+      .getMany();
+
     return paginate(paginationParams, totalCount, data);
   }
 
