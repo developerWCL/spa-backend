@@ -776,10 +776,10 @@ export class ServicesService {
       // 2. Bookings of packages that include any of these sub-services
       if (applicableServiceIds.length > 0) {
         if (applicablePackageIds.length > 0) {
-          // query = query.andWhere(
-          //   '(subService.id IN (:...applicableServiceIds) OR package.id IN (:...applicablePackageIds))',
-          //   { applicableServiceIds, applicablePackageIds },
-          // );
+          query = query.andWhere(
+            '(subService.id IN (:...applicableServiceIds) OR package.id IN (:...applicablePackageIds))',
+            { applicableServiceIds, applicablePackageIds },
+          );
         } else {
           query = query.andWhere(
             'subService.id IN (:...applicableServiceIds)',
@@ -811,10 +811,12 @@ export class ServicesService {
         .addSelect('items.scheduledTime', 'scheduledTime')
         .addSelect('items.duration', 'duration')
         .addSelect('booking.id', 'bookingId')
+        .addSelect('items.subServiceId', 'subServiceId')
         .orderBy('items.scheduledDate', 'ASC')
         .addOrderBy('items.scheduledTime', 'ASC');
 
       const allBookings = await query.getRawMany();
+      console.log('allBookings', allBookings);
 
       // Consolidate overlapping bookings
       const consolidatedSlots: Array<{
