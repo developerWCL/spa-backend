@@ -16,31 +16,31 @@ export async function seedBranches() {
   const branches = [
     {
       name: 'Patong Phuket',
-      location: 'Patong, Phuket, Thailand',
+      location: 'Phuket',
       phone: '+66 (0) 7629 0435-6, +66 (0) 7629 0387',
       email: 'rsvn@orientalaspa.com',
     },
     {
       name: 'Deevana Patong Resort & Spa',
-      location: 'Patong, Phuket, Thailand',
+      location: 'Phuket',
       phone: '+66 (0) 76317 179 Ext. Spa, +66 (0) 76 290 387 Ext. 21',
       email: 'rsvn@orientalaspa.com',
     },
     {
       name: 'Ramada by Wyndham Phuket Deevana Patong',
-      location: 'Patong, Phuket, Thailand',
+      location: 'Phuket',
       phone: '+66 (0) 76207 500 Ext. Spa, +66 (0) 76 290 387 Ext. 21',
       email: 'rsvn@orientalaspa.com',
     },
     {
       name: 'Deevana Plaza Phuket Patong',
-      location: 'Patong, Phuket, Thailand',
+      location: 'Phuket',
       phone: '+66 (0) 7630 2187, +66 (0) 76 290 387 Ext. 21',
       email: 'rsvn@orientalaspa.com',
     },
     {
       name: 'Deevana Plaza Krabi Aonang',
-      location: 'Aonang, Krabi, Thailand',
+      location: 'Krabi',
       phone: '+66 (0) 75 639 999 Ext. 6',
       email: 'spa@deevanaplazakrabi.com',
     },

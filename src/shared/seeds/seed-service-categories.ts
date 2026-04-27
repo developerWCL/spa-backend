@@ -39,6 +39,11 @@ export async function seedServiceCategories() {
       description: 'Facial massage and treatments',
       displayOrder: 4,
     },
+    {
+      name: 'Classic Experience',
+      description: 'Classic spa experience packages',
+      displayOrder: 5,
+    },
   ];
 
   for (const catData of categories) {
