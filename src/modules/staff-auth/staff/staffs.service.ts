@@ -93,12 +93,12 @@ export class StaffsService {
       });
     }
 
-    const [results, totalCount] = await query
+    const [results, total] = await query
       .skip(skip)
       .take(take)
       .orderBy('staff.createdAt', 'DESC')
       .getManyAndCount();
-
+    const totalCount = await query.getCount();
     return paginate(paginationParams, totalCount, results);
   }
 

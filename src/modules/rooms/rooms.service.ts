@@ -159,7 +159,8 @@ export class RoomsService {
     }
 
     const [rooms, total] = await query.take(limit).skip(skip).getManyAndCount();
-    return paginate({ page, limit }, total, rooms);
+    const totalCount = await query.getCount();
+    return paginate({ page, limit }, totalCount, rooms);
   }
 
   async findOne(id: string): Promise<Room> {

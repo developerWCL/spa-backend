@@ -312,8 +312,9 @@ export class BookingService {
       .skip(skip)
       .take(take)
       .getManyAndCount();
+    const totalCount = await query.getCount();
 
-    return paginate(params, total, data);
+    return paginate(params, totalCount, data);
   }
 
   async findOne(id: string): Promise<Booking> {
