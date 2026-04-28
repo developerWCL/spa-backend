@@ -102,12 +102,17 @@ export class PackagesController {
     @Query('search') search?: string,
     @Query('status') status?: EntityStatus,
     @Query('onlyAvailable') onlyAvailable?: boolean,
-    @Query() paginationParams?: PaginationParams,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
   ) {
+    const paginationParams: PaginationParams = {};
+    if (page !== undefined) paginationParams.page = page;
+    if (limit !== undefined) paginationParams.limit = limit;
+
     return this.packagesService.findAll(
       branchId,
       { search, status, onlyAvailable },
-      paginationParams,
+      Object.keys(paginationParams).length > 0 ? paginationParams : undefined,
     );
   }
 

@@ -226,7 +226,7 @@ export class ServicesService {
     }
     if (filters?.onlyPackage !== undefined) {
       const onlyPackage = Boolean(filters.onlyPackage);
-      if (onlyPackage) {
+      if (onlyPackage === true) {
         query = query.andWhere('service.name != :name', {
           name: 'PACKAGE ONLY',
         });
@@ -241,33 +241,11 @@ export class ServicesService {
     const paginationQuery = getPaginationQueryTypeORM(paginationParams);
 
     // Get paginated service IDs first (to handle joins correctly)
-    const [serviceIds, totalCount] = await this.serviceRepo
-      .createQueryBuilder('service')
-      .select('service.id')
-      .where('service.branchId = :branchId', { branchId })
-      .andWhere('service.deletedAt IS NULL')
-      .skip(paginationQuery.skip)
+    const [data, total] = await query
       .take(paginationQuery.take)
-      .orderBy('service.createdAt', 'DESC')
+      .skip(paginationQuery.skip)
       .getManyAndCount();
-
-    // Now fetch the services with all their relations
-    if (serviceIds.length === 0) {
-      return paginate(paginationParams, 0, []);
-    }
-
-    const ids = serviceIds.map((s) => s.id);
-    const data = await this.serviceRepo
-      .createQueryBuilder('service')
-      .where('service.id IN (:...ids)', { ids })
-      .leftJoinAndSelect('service.category', 'category')
-      .leftJoinAndSelect('service.subServices', 'subServices')
-      .leftJoinAndSelect('subServices.translations', 'subServiceTranslations')
-      .leftJoinAndSelect('service.translations', 'translations')
-      .leftJoinAndSelect('service.media', 'media')
-      .orderBy('service.createdAt', 'DESC')
-      .addOrderBy('media.createdAt', 'ASC')
-      .getMany();
+    const totalCount = await query.getCount();
 
     return paginate(paginationParams, totalCount, data);
   }
