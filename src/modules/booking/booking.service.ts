@@ -31,6 +31,7 @@ import {
   PaginatedResponse,
 } from '../../shared/pagination.types';
 import { isUUID } from 'class-validator';
+import { PaymentType } from 'src/entities/enums/booking.enum';
 
 @Injectable()
 export class BookingService {
@@ -517,6 +518,16 @@ export class BookingService {
       customerEmail,
       customerName,
     );
+    if (
+      booking.branch?.email &&
+      booking.payments[0]?.paymentType !== PaymentType.PAYPAL
+    ) {
+      await this.mailService.sendBookingNotificationToAdmin(
+        booking,
+        booking.branch.email,
+        booking.branch.name,
+      );
+    }
   }
 
   async createBookingItem(

@@ -4,8 +4,10 @@ import {
   Logger,
 } from '@nestjs/common';
 import { Resend } from 'resend';
-import { bookingPendingTemplate } from '../templates/booking-pending.template';
+import { bookingReceivedTemplate } from '../templates/booking-recieved.template';
 import { bookingConfirmedTemplate } from '../templates/booking-confirmed.template';
+import { bookingPendingTemplate } from '../templates/booking-pending.template';
+import { PaymentType } from 'src/entities/enums/booking.enum';
 
 @Injectable()
 export class MailService {
@@ -313,6 +315,20 @@ export class MailService {
     return time ? `${datePart} at ${time}` : datePart;
   }
 
+  private paymentTypeToText(paymentType: PaymentType): string {
+    switch (paymentType) {
+      case PaymentType.PAYPAL:
+        return 'PayPal';
+      case PaymentType.CREDIT_CARD:
+        return 'Credit Card';
+      case PaymentType.BANK_TRANSFER:
+        return 'Bank Transfer';
+      case PaymentType.ON_ARRIVAL:
+        return 'Pay on Arrival';
+      default:
+        return paymentType || 'Unknown';
+    }
+  }
   private extractGuestCount(booking: any): number {
     // Sum quantity across all booking items
     if (booking.items?.length) {
@@ -335,56 +351,54 @@ export class MailService {
     }
 
     try {
-      const itemsList =
-        booking.items && booking.items.length > 0
-          ? booking.items
-              .map(
-                (item: any) => `
-              <li>
-                <strong>${item.itemType}:</strong> ${item.subService?.name || item.package?.name || item.programme?.name || 'N/A'}
-                (Qty: ${item.quantity}, Price: ${item.price})
-              </li>
-            `,
-              )
-              .join('')
-          : '<li>No items</li>';
-
-      const customerInfo = booking.customer
-        ? `
-            <p><strong>Customer Name:</strong> ${booking.customer.firstName} ${booking.customer.lastName}</p>
-            <p><strong>Customer Email:</strong> ${booking.customer.email}</p>
-            <p><strong>Customer Phone:</strong> ${booking.customer.phone || 'N/A'}</p>
-          `
-        : '<p><em>Anonymous booking (no registered customer)</em></p>';
+      const services = this.extractServiceNames(booking);
+      const bookingDate = this.extractBookingDate(booking);
+      const guestCount = this.extractGuestCount(booking);
+      const paymentType = this.paymentTypeToText(
+        booking.payments?.[0]?.paymentType,
+      );
+      const specialRequest = booking.items?.[0]?.notes || undefined;
+      const branch = booking.branch;
+      const spa = branch?.spa;
+      const spaName = spa?.name;
+      const logoUrl = spa?.metadata?.logo_url;
+      const primaryColor = spa?.metadata?.primary_color;
+      const customerName = booking.customer
+        ? `${booking.customer.firstName} ${booking.customer.lastName}`
+        : `${booking.items?.[0]?.guests?.[0] ? `${booking.items[0].guests[0].firstName} ${booking.items[0].guests[0].lastName}` : 'Guest'}`;
 
       await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
         to: adminEmail,
         subject: `New Booking Created - ${booking.bookingId}`,
-        html: `
-          <h2>New Booking Notification</h2>
-          <p>A new booking has been created at ${branchName || 'your branch'}.</p>
-          <br/>
-          <h3>Booking Information</h3>
-          <ul>
-            <li><strong>Booking ID:</strong> ${booking.bookingId}</li>
-            <li><strong>Status:</strong> ${booking.status || 'Pending'}</li>
-            <li><strong>Total Amount:</strong> ${booking.totalAmount || 'N/A'}</li>
-            <li><strong>Booking Time:</strong> ${new Date(booking.bookingTime).toLocaleString() || 'N/A'}</li>
-          </ul>
-          <br/>
-          <h3>Customer Details</h3>
-          ${customerInfo}
-          <br/>
-          <h3>Booking Items</h3>
-          <ul>
-            ${itemsList}
-          </ul>
-          <br/>
-          <p>Please log in to the admin panel to view full booking details.</p>
-          <br/>
-          <p>Best regards,<br/>Orientala Spa System</p>
-        `,
+        html: bookingReceivedTemplate({
+          recipientName: 'Admin',
+          bookingId: booking.bookingId,
+          bookingDate,
+          services,
+          subtotalAmount: booking.amount
+            ? parseFloat(booking.amount).toLocaleString('en-US')
+            : undefined,
+          totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString(
+            'en-US',
+          ),
+          discountAmount: booking.discountAmount
+            ? parseFloat(booking.discountAmount).toLocaleString('en-US')
+            : undefined,
+          currency: 'THB',
+          guestCount,
+          specialRequest: specialRequest
+            ? `Customer: ${customerName}\n${specialRequest}`
+            : `Customer: ${customerName}`,
+          branchName: branch?.name,
+          branchPhone: branch?.phone,
+          branchEmail: branch?.email,
+          spaName,
+          logoUrl,
+          primaryColor,
+          paymentType,
+          captureId: booking.payments?.[0]?.paypalCaptureId,
+        }),
       });
     } catch (error) {
       console.error('Error sending booking notification to admin:', error);
