@@ -112,13 +112,20 @@ export class ProgrammesController {
   })
   findAll(
     @Query('branchId') branchId: string,
-    @Query() params: PaginationParams,
+    @Query('page') page?: number,
+    @Query('limit') limit?: number,
     @Query('search') search?: string,
     @Query('status') status?: string,
   ) {
-    params.page = params.page || 1;
-    params.limit = params.limit || 10;
-    return this.programmesService.findAll(branchId, params, search, status);
+    const paginationParams: PaginationParams = {};
+    if (page !== undefined) paginationParams.page = page;
+    if (limit !== undefined) paginationParams.limit = limit;
+    return this.programmesService.findAll(
+      branchId,
+      Object.keys(paginationParams).length > 0 ? paginationParams : undefined,
+      search,
+      status,
+    );
   }
 
   @Get(':id')

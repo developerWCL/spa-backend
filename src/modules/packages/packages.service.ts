@@ -274,15 +274,19 @@ export class PackagesService {
 
     query.orderBy('pkg.createdAt', 'DESC');
 
-    const paginationQuery = getPaginationQueryTypeORM(paginationParams);
-    const [data, total] = await query
-      .skip(paginationQuery.skip)
-      .take(paginationQuery.take)
-      .getManyAndCount();
+    if (paginationParams) {
+      const paginationQuery = getPaginationQueryTypeORM(paginationParams);
+      const [data, total] = await query
+        .skip(paginationQuery.skip)
+        .take(paginationQuery.take)
+        .getManyAndCount();
 
-    const totalCount = await query.getCount();
+      const totalCount = await query.getCount();
 
-    return paginate(paginationParams || {}, totalCount, data);
+      return paginate(paginationParams || {}, totalCount, data);
+    } else {
+      return query.getMany();
+    }
   }
 
   async findOne(id: string) {
