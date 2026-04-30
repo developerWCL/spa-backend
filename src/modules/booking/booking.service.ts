@@ -69,7 +69,7 @@ export class BookingService {
     actorId?: string,
     actorName?: string,
   ): Promise<Booking> {
-    this.logger.log('Creating booking', { branchId: data.branch });
+    this.logger.log('Creating booking', { branchId: data.branch, data });
     // Generate a unique booking ID: Branch code + running number
     let branchCode = 'BKG'; // Default fallback
 
@@ -592,9 +592,7 @@ export class BookingService {
     // Handle guest creation/linking
     const linkedGuests: Guest[] = [];
 
-    this.logger.log(
-      `[createBookingItem] guestData=${JSON.stringify(itemData.guestData)}, guests=${JSON.stringify(itemData.guests)}`,
-    );
+    this.logger.log(`[createBookingItem] itemData=${JSON.stringify(itemData)}`);
 
     if (itemData.guestData && itemData.guestData.length > 0) {
       // Create or find guests from guestData
