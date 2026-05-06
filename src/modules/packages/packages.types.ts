@@ -87,10 +87,14 @@ export class CreateNewSubServiceDto {
 }
 
 export class CreatePackageDto {
-  @ApiProperty({ description: 'Branch ID' })
+  @ApiProperty({ description: 'Branch ID or array of Branch IDs' })
+  @IsString({ each: true })
+  @IsArray()
+  branchId: string | string[];
+
+  @ApiProperty({ description: 'Main Branch ID is required' })
   @IsString()
-  @IsUUID()
-  branchId: string;
+  mainBranchId: string;
 
   @ApiProperty({ description: 'Package name' })
   @IsString()

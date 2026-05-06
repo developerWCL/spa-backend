@@ -14,6 +14,7 @@ import { ProgrammeTranslation } from './programme_translation.entity';
 import { Media } from './media.entity';
 import { EntityStatus } from './enums/entity-status.enum';
 import { PriceOverride } from './price_overides.entity';
+import { PromotionProgramme } from './promotion_programmes.entity';
 
 @Entity('programmes')
 export class Programme {
@@ -67,6 +68,9 @@ export class Programme {
 
   @OneToMany(() => PriceOverride, (po) => po.programme)
   priceOverrides: PriceOverride[];
+
+  @OneToMany(() => PromotionProgramme, (pp) => pp.programme)
+  promotions: PromotionProgramme[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

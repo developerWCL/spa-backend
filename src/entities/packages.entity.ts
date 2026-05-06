@@ -16,6 +16,7 @@ import { Media } from './media.entity';
 import { PackageTranslation } from './package_translation.entity';
 import { SubService } from './sub_services.entity';
 import { PriceOverride } from './price_overides.entity';
+import { PromotionPackage } from './promotion_packages.entity';
 
 @Entity('packages')
 export class Package {
@@ -58,6 +59,9 @@ export class Package {
 
   @OneToMany(() => PriceOverride, (po) => po.package)
   priceOverrides: PriceOverride[];
+
+  @OneToMany(() => PromotionPackage, (pp) => pp.package)
+  promotions: PromotionPackage[];
 
   @ManyToOne(() => Branch, (b) => b.packages, { onDelete: 'CASCADE' })
   branch: Branch;

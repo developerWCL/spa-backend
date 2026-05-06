@@ -14,6 +14,7 @@ import { SubService } from './sub_services.entity';
 import { ServiceTranslation } from './service_translations.entity';
 import { Media } from './media.entity';
 import { EntityStatus } from './enums/entity-status.enum';
+import { PromotionService } from './promotion_services.entity';
 
 @Entity('services')
 export class Service {
@@ -73,6 +74,9 @@ export class Service {
     eager: true,
   })
   translations: ServiceTranslation[];
+
+  @OneToMany(() => PromotionService, (ps) => ps.service)
+  promotions: PromotionService[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

@@ -72,6 +72,21 @@ export class CreatePromotionDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  serviceIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  packageIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  programmeIds?: string[];
 }
 
 export class UpdatePromotionDto {
@@ -135,4 +150,19 @@ export class UpdatePromotionDto {
   @IsArray()
   @IsString({ each: true })
   mediaIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  serviceIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  packageIds?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  programmeIds?: string[];
 }
