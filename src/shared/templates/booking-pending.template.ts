@@ -19,6 +19,11 @@ export function bookingPendingTemplate(data: {
   spaName?: string;
   logoUrl?: string;
   primaryColor?: string;
+  guestEmail?: string;
+  guestPhone?: string;
+  promotionName?: string;
+  promotionCode?: string;
+  paymentMethod?: string;
 }): string {
   const PRIMARY = data.primaryColor || '#2d7d62';
   const LIGHT_BG = '#f0faf6';
@@ -94,6 +99,19 @@ export function bookingPendingTemplate(data: {
                 </tr>
               </table>
 
+              <!-- Guest Information -->
+              <p style="margin:0 0 12px;color:#111827;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Guest Information</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;background:${LIGHT_BG};border-radius:6px;padding:16px;">
+                <tr>
+                  <td style="padding:0;">
+                    <p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Name</p>
+                    <p style="margin:0 0 12px;color:#111827;font-size:14px;">${data.recipientName}</p>
+                    ${data.guestEmail ? `<p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Email</p><p style="margin:0 0 12px;color:#111827;font-size:14px;">${data.guestEmail}</p>` : ''}
+                    ${data.guestPhone ? `<p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Phone</p><p style="margin:0;color:#111827;font-size:14px;">${data.guestPhone}</p>` : ''}
+                  </td>
+                </tr>
+              </table>
+
               <!-- Services -->
               <p style="margin:0 0 8px;color:#111827;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Services</p>
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
@@ -103,6 +121,23 @@ export function bookingPendingTemplate(data: {
               ${data.specialRequest ? `
               <p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Special Request</p>
               <p style="margin:0 0 24px;color:#374151;font-size:14px;">${data.specialRequest}</p>
+              ` : ''}
+
+              <!-- Promotion -->
+              ${data.promotionName ? `
+              <table width="100%" cellpadding="0" cellspacing="0" style="background:#dcfce7;border-radius:6px;margin-bottom:24px;">
+                <tr>
+                  <td style="padding:16px 20px;">
+                    <p style="margin:0;color:#15803d;font-size:14px;font-weight:600;">You got promotion: <strong>${data.promotionName}</strong> (${data.promotionCode})</p>
+                  </td>
+                </tr>
+              </table>
+              ` : ''}
+
+              <!-- Payment Method -->
+              ${data.paymentMethod ? `
+              <p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Pay by</p>
+              <p style="margin:0 0 24px;color:#111827;font-size:14px;font-weight:600;">${data.paymentMethod}</p>
               ` : ''}
 
               <!-- Total -->

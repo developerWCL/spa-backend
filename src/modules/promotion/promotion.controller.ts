@@ -46,6 +46,7 @@ export class PromotionController {
     @Query('limit') limit?: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
+    @Query('serviceIds') serviceIds?: string,
   ) {
     return this.promotionService.findAll(
       spaId,
@@ -54,6 +55,7 @@ export class PromotionController {
       search,
       status,
       branchId,
+      serviceIds,
     );
   }
 

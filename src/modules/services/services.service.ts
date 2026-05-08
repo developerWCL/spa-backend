@@ -53,131 +53,166 @@ export class ServicesService {
   }
 
   async create(dto: CreateServiceDto, actorId?: string, actorName?: string) {
+    // Normalize branchId to array
+    const branchIds = Array.isArray(dto.branchId)
+      ? dto.branchId
+      : [dto.branchId];
+
     this.logger.log('Creating service', {
       name: dto.name,
-      branchId: dto.branchId,
+      branchIds,
+      totalBranches: branchIds.length,
     });
-    return this.dataSource.transaction(async (manager: EntityManager) => {
-      const branch = await manager.findOne(Branch, {
-        where: { id: dto.branchId },
-      });
-      if (!branch) {
-        this.logger.error('Branch not found', null, { branchId: dto.branchId });
-        throw new NotFoundException(`Branch with ID ${dto.branchId} not found`);
-      }
 
-      let category = null;
-      if (dto.categoryId) {
-        category = await manager.findOne(ServiceCategory, {
-          where: { id: dto.categoryId },
-        });
-        if (!category) {
-          throw new NotFoundException(
-            `Category with ID ${dto.categoryId} not found`,
-          );
-        }
-      }
+    const createdServices = [];
 
-      const service = new Service();
-      service.branch = branch;
-      service.category = category;
-      service.name = dto.name;
-      service.description = dto.description;
-      service.basePrice = dto.basePrice;
-      service.durationMinutes = dto.durationMinutes;
-      service.status = dto.status;
-      service.maxConcurrentBookings = dto.maxConcurrentBookings;
-      service.maxBookingsPerDay = dto.maxBookingsPerDay;
-
-      const savedService = await manager.save(service);
-      this.logger.log('Service created successfully', {
-        serviceId: savedService.id,
-        name: savedService.name,
-      });
-
-      // Handle media associations
-      if (dto.mediaIds && dto.mediaIds.length > 0) {
-        const mediaList = await manager.find(Media, {
-          where: { id: In(dto.mediaIds) },
-        });
-
-        for (const media of mediaList) {
-          media.service = savedService;
-          await manager.save(media);
-        }
-      }
-
-      // Create translations
-      if (dto.translations && dto.translations.length > 0) {
-        const translations = dto.translations.map((t) => {
-          const translation = new ServiceTranslation();
-          translation.service = savedService;
-          translation.languageCode = t.languageCode;
-          translation.name = t.name;
-          translation.description = t.description;
-          return translation;
-        });
-        await manager.save(translations);
-      }
-
-      // Create sub-services
-      if (dto.subServices && dto.subServices.length > 0) {
-        for (const subServiceDto of dto.subServices) {
-          const subService = new SubService();
-          subService.service = savedService;
-          subService.name = subServiceDto.name;
-          subService.durationMinutes = subServiceDto.durationMinutes;
-          subService.price = subServiceDto.price;
-          subService.status = subServiceDto.status;
-
-          const savedSubService = await manager.save(subService);
-
-          // Create sub-service translations
-          if (
-            subServiceDto.translations &&
-            subServiceDto.translations.length > 0
-          ) {
-            const subServiceTranslations = subServiceDto.translations.map(
-              (t) => {
-                const translation = new SubServiceTranslation();
-                translation.subService = savedSubService;
-                translation.languageCode = t.languageCode;
-                translation.name = t.name;
-                translation.description = t.description;
-                return translation;
-              },
-            );
-            await manager.save(subServiceTranslations);
+    for (const branchId of branchIds) {
+      const service = await this.dataSource.transaction(
+        async (manager: EntityManager) => {
+          const branch = await manager.findOne(Branch, {
+            where: { id: branchId },
+          });
+          if (!branch) {
+            this.logger.error('Branch not found', null, { branchId });
+            throw new NotFoundException(`Branch with ID ${branchId} not found`);
           }
-        }
-      }
 
-      // Log the action
-      await this.actionLogService.logAction({
-        feature: 'service',
-        subFeature: null,
-        actionType: 'create',
-        actorId,
-        actorName,
-        entityType: 'service',
-        entityId: savedService.id,
-        newData: {
-          name: savedService.name,
-          description: savedService.description,
-          basePrice: savedService.basePrice,
-          durationMinutes: savedService.durationMinutes,
-          status: savedService.status,
-          maxConcurrentBookings: savedService.maxConcurrentBookings,
-          maxBookingsPerDay: savedService.maxBookingsPerDay,
-          categoryId: category?.id,
+          let category = null;
+          if (dto.categoryId) {
+            const existingCategory = await manager.findOne(ServiceCategory, {
+              where: { id: dto.categoryId },
+            });
+            category = await manager.findOne(ServiceCategory, {
+              where: { name: existingCategory.name, branch: { id: branchId } },
+            });
+            if (!category) {
+              // create new category if it doesn't exist for this branch
+              category = manager.create(ServiceCategory, {
+                name: existingCategory.name || 'Uncategorized',
+                description: existingCategory.description,
+                branch: branch,
+              });
+              category = await manager.save(category);
+            }
+          }
+
+          const newService = new Service();
+          newService.branch = branch;
+          newService.category = category;
+          newService.name = dto.name;
+          newService.description = dto.description;
+          newService.basePrice = dto.basePrice;
+          newService.durationMinutes = dto.durationMinutes;
+          newService.maxConcurrentBookings = dto.maxConcurrentBookings;
+          newService.maxBookingsPerDay = dto.maxBookingsPerDay;
+          if (branchId === dto.mainBranchId) {
+            newService.status = dto.status;
+          } else {
+            newService.status = EntityStatus.INACTIVE; // Set to inactive for non-main branches
+          }
+
+          const savedService = await manager.save(newService);
+          this.logger.log('Service created successfully', {
+            serviceId: savedService.id,
+            name: savedService.name,
+            branchId,
+          });
+
+          // Handle media associations
+          if (dto.mediaIds && dto.mediaIds.length > 0) {
+            const mediaList = await manager.find(Media, {
+              where: { id: In(dto.mediaIds) },
+            });
+
+            for (const media of mediaList) {
+              media.service = savedService;
+              await manager.save(media);
+            }
+          }
+
+          // Create translations
+          if (dto.translations && dto.translations.length > 0) {
+            const translations = dto.translations.map((t) => {
+              const translation = new ServiceTranslation();
+              translation.service = savedService;
+              translation.languageCode = t.languageCode;
+              translation.name = t.name;
+              translation.description = t.description;
+              return translation;
+            });
+            await manager.save(translations);
+          }
+
+          // Create sub-services
+          if (dto.subServices && dto.subServices.length > 0) {
+            for (const subServiceDto of dto.subServices) {
+              const subService = new SubService();
+              subService.service = savedService;
+              subService.name = subServiceDto.name;
+              subService.durationMinutes = subServiceDto.durationMinutes;
+              subService.price = subServiceDto.price;
+              subService.status = subServiceDto.status;
+
+              const savedSubService = await manager.save(subService);
+
+              // Create sub-service translations
+              if (
+                subServiceDto.translations &&
+                subServiceDto.translations.length > 0
+              ) {
+                const subServiceTranslations = subServiceDto.translations.map(
+                  (t) => {
+                    const translation = new SubServiceTranslation();
+                    translation.subService = savedSubService;
+                    translation.languageCode = t.languageCode;
+                    translation.name = t.name;
+                    translation.description = t.description;
+                    return translation;
+                  },
+                );
+                await manager.save(subServiceTranslations);
+              }
+            }
+          }
+
+          // Log the action
+          await this.actionLogService.logAction({
+            feature: 'service',
+            subFeature: null,
+            actionType: 'create',
+            actorId,
+            actorName,
+            entityType: 'service',
+            entityId: savedService.id,
+            newData: {
+              name: savedService.name,
+              description: savedService.description,
+              basePrice: savedService.basePrice,
+              durationMinutes: savedService.durationMinutes,
+              status: savedService.status,
+              maxConcurrentBookings: savedService.maxConcurrentBookings,
+              maxBookingsPerDay: savedService.maxBookingsPerDay,
+              categoryId: category?.id,
+            },
+            description: `Created service: ${savedService.name}`,
+            status: 'success',
+            branchId,
+          });
+
+          return savedService;
         },
-        description: `Created service: ${savedService.name}`,
-        status: 'success',
-        branchId: dto.branchId,
-      });
+      );
 
-      return savedService;
+      createdServices.push(service);
+    }
+
+    this.logger.log('Service creation completed', {
+      name: dto.name,
+      totalServicesCreated: createdServices.length,
     });
+
+    // Return the first created service (or all if needed)
+    return createdServices[0];
   }
 
   async findAll(

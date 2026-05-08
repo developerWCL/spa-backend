@@ -40,6 +40,15 @@ export class Customer {
   @Column({ nullable: true })
   phone: string;
 
+  @Column({ name: 'date_of_birth', type: 'date', nullable: true })
+  dateOfBirth: string | null;
+
+  @Column({ nullable: true })
+  nationality: string | null;
+
+  @Column({ nullable: true })
+  gender: string | null;
+
   @Column({ name: 'is_verified', type: 'boolean', default: false })
   isVerified: boolean;
 

@@ -40,7 +40,10 @@ export class AuthService {
     firstName: string,
     lastName: string,
     phone: string,
-    spaId: string,
+    dateOfBirth?: string,
+    nationality?: string,
+    gender?: string,
+    spaId?: string,
   ) {
     this.logger.log('Customer registration started', { email, spaId });
     const existing = await this.customerService.findByEmail(email);
@@ -65,6 +68,9 @@ export class AuthService {
           firstName,
           lastName,
           phone,
+          dateOfBirth: dateOfBirth || null,
+          nationality: nationality || null,
+          gender: gender || null,
           spa: spa,
           isVerified: false,
         },

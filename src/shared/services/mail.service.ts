@@ -8,6 +8,8 @@ import { bookingReceivedTemplate } from '../templates/booking-recieved.template'
 import { bookingConfirmedTemplate } from '../templates/booking-confirmed.template';
 import { bookingPendingTemplate } from '../templates/booking-pending.template';
 import { PaymentType } from 'src/entities/enums/booking.enum';
+import { Booking } from 'src/entities/bookings.entity';
+import { BookingItem } from 'src/entities/booking_items.entity';
 
 @Injectable()
 export class MailService {
@@ -243,6 +245,16 @@ export class MailService {
     );
 
     try {
+      const guestEmail = booking.customer
+        ? booking.customer.email
+        : booking.items?.[0]?.guests?.[0]?.email;
+      const guestPhone = booking.customer
+        ? booking.customer.phone
+        : booking.items?.[0]?.guests?.[0]?.phone;
+      const paymentMethod = this.paymentTypeToText(
+        booking.payments?.[0]?.paymentType,
+      );
+
       await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
         to: recipientEmail,
@@ -271,6 +283,11 @@ export class MailService {
           spaName,
           logoUrl,
           primaryColor,
+          guestEmail,
+          guestPhone,
+          paymentMethod,
+          promotionName: booking.promotion?.name,
+          promotionCode: booking.promotion?.code,
         }),
       });
     } catch (error) {
@@ -278,9 +295,11 @@ export class MailService {
     }
   }
 
-  private extractServiceNames(booking: any): { name: string; price: string }[] {
+  private extractServiceNames(
+    booking: Booking,
+  ): { name: string; price: string }[] {
     if (!booking.items?.length) return [{ name: 'Spa Service', price: '0' }];
-    return booking.items.map((item: any) => {
+    return booking.items.map((item: BookingItem) => {
       const svcName = item.subService
         ? item.subService.name || 'Spa Service'
         : item.package
@@ -294,7 +313,7 @@ export class MailService {
       );
       return {
         name: `${svcName}${durationStr}`,
-        price: parseFloat(item.price || '0').toLocaleString('en-US'),
+        price: parseFloat(item.subtotal || '0').toLocaleString('en-US'),
       };
     });
   }
@@ -357,7 +376,6 @@ export class MailService {
       const paymentType = this.paymentTypeToText(
         booking.payments?.[0]?.paymentType,
       );
-      const specialRequest = booking.items?.[0]?.notes || undefined;
       const branch = booking.branch;
       const spa = branch?.spa;
       const spaName = spa?.name;
@@ -366,6 +384,16 @@ export class MailService {
       const customerName = booking.customer
         ? `${booking.customer.firstName} ${booking.customer.lastName}`
         : `${booking.items?.[0]?.guests?.[0] ? `${booking.items[0].guests[0].firstName} ${booking.items[0].guests[0].lastName}` : 'Guest'}`;
+
+      const guestEmail = booking.customer
+        ? booking.customer.email
+        : booking.items?.[0]?.guests?.[0]?.email;
+      const guestPhone = booking.customer
+        ? booking.customer.phone
+        : booking.items?.[0]?.guests?.[0]?.phone;
+      const paymentMethod = this.paymentTypeToText(
+        booking.payments?.[0]?.paymentType,
+      );
 
       await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
@@ -387,9 +415,6 @@ export class MailService {
             : undefined,
           currency: 'THB',
           guestCount,
-          specialRequest: specialRequest
-            ? `Customer: ${customerName}\n${specialRequest}`
-            : `Customer: ${customerName}`,
           branchName: branch?.name,
           branchPhone: branch?.phone,
           branchEmail: branch?.email,
@@ -398,6 +423,12 @@ export class MailService {
           primaryColor,
           paymentType,
           captureId: booking.payments?.[0]?.paypalCaptureId,
+          guestName: customerName,
+          guestEmail,
+          guestPhone,
+          paymentMethod,
+          promotionName: booking.promotion?.name,
+          promotionCode: booking.promotion?.code,
         }),
       });
     } catch (error) {
@@ -431,7 +462,6 @@ export class MailService {
     const services = this.extractServiceNames(booking);
     const bookingDate = this.extractBookingDate(booking);
     const guestCount = this.extractGuestCount(booking);
-    const specialRequest = booking.items?.[0]?.notes || undefined;
     const branch = booking.branch;
     const spa = branch?.spa;
     const spaName = spa?.name;
@@ -440,6 +470,16 @@ export class MailService {
 
     try {
       if (newStatus.toLowerCase() === 'confirmed') {
+        const guestEmail = booking.customer
+          ? booking.customer.email
+          : booking.items?.[0]?.guests?.[0]?.email;
+        const guestPhone = booking.customer
+          ? booking.customer.phone
+          : booking.items?.[0]?.guests?.[0]?.phone;
+        const paymentMethod = this.paymentTypeToText(
+          booking.payments?.[0]?.paymentType,
+        );
+
         await this.resend.emails.send({
           from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
           to: recipientEmail,
@@ -461,13 +501,17 @@ export class MailService {
               : undefined,
             currency: 'THB',
             guestCount,
-            specialRequest,
             branchName: branch?.name,
             branchPhone: branch?.phone,
             branchEmail: branch?.email,
             spaName,
             logoUrl,
             primaryColor,
+            guestEmail,
+            guestPhone,
+            paymentMethod,
+            promotionName: booking.promotion?.name,
+            promotionCode: booking.promotion?.code,
           }),
         });
       } else if (newStatus.toLowerCase() === 'cancelled') {
