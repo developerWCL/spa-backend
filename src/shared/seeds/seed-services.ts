@@ -29,8 +29,9 @@ export async function seedServices() {
   const treatmentCategory =
     serviceCategories.find((c) => c.name === 'TREATMENT') ||
     serviceCategories[0];
-  const massageCategory =
-    serviceCategories.find((c) => c.name === 'MASSAGE') || serviceCategories[1];
+  const classicCategory =
+    serviceCategories.find((c) => c.name === 'Classic Experience') ||
+    serviceCategories[1];
   const onlyPackageCategory =
     serviceCategories.find((c) => c.name === 'ONLY_PACKAGE') ||
     serviceCategories[2];
@@ -81,7 +82,7 @@ export async function seedServices() {
         'Thai massage results in health and relaxation. It incorporates pressure on lines and muscles throughout your body with the techniques of massage, pressure kneading and stretching to stimulate blood circulation, eliminate toxins, relieve tension and reduce muscle and joint pains. Oil is not applied, and customers are required to wear a massage outfit. This massage is suitable for those who like hard massage on the body lines.',
       basePrice: '600',
       durationMinutes: 60,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'FOOT RELAXING MASSAGE',
@@ -89,35 +90,35 @@ export async function seedServices() {
         'Foot reflexology massage helps stimulate the functions of the organs, balance the body and relieve calf and foot pains.',
       basePrice: '600',
       durationMinutes: 60,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'ASIAN BLEND MASSAGE',
       description: '',
       basePrice: '850',
       durationMinutes: 60,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'BACK & SHOULDER MASSAGE',
       description: '',
       basePrice: '1000',
       durationMinutes: 60,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'INDIAN HEAD MASSAGE',
       description: '',
       basePrice: '1000',
       durationMinutes: 60,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'AROMA OIL MASSAGE',
       description: '',
       basePrice: '1200',
       durationMinutes: 60,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'WARM OIL MASSAGE',
@@ -125,7 +126,7 @@ export async function seedServices() {
         'Aromatherapy massage is a combination of oil massage and various massage techniques to reduce and relieve aches and to relieve stress due to work and daily routines. It increases blood and lymph circulation. This massage is special as it incorporates warm aroma oils of your choice. The essential oils help you feel relaxed, both body and mind.',
       basePrice: '1500',
       durationMinutes: 60,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'THAI MASSAGE',
@@ -133,56 +134,56 @@ export async function seedServices() {
         'Thai massage results in health and relaxation. It incorporates pressure on lines and muscles throughout your body with the techniques of massage, pressure kneading and stretching to stimulate blood circulation, eliminate toxins, relieve tension and reduce muscle and joint pains. Oil is not applied, and customers are required to wear a massage outfit. This massage is suitable for those who like hard massage on the body lines.',
       basePrice: '1000',
       durationMinutes: 120,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'THAI & FOOT MASSAGE',
       description: '',
       basePrice: '1000',
       durationMinutes: 120,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'THAI MASSAGE & HERBAL COMPRESS',
       description: '',
       basePrice: '1200',
       durationMinutes: 120,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'THAI MASSAGE & AROMA OIL MASSAGE',
       description: 'Thai Massage and Aroma Oil Massage 2 hours for 1 person',
       basePrice: '1500',
       durationMinutes: 120,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'AROMA OIL & FOOT MASSAGE',
       description: '',
       basePrice: '1500',
       durationMinutes: 120,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'AROMA OIL & HERBAL COMPRESS',
       description: '',
       basePrice: '1500',
       durationMinutes: 120,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'AROMA OIL MASSAGE',
       description: '',
       basePrice: '2000',
       durationMinutes: 120,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'BODY SCRUB & AROMA OIL MASSAGE',
       description: 'Body Scrub and Aroma Oil Massage 2 hours for 1 person',
       basePrice: '2200',
       durationMinutes: 120,
-      category: massageCategory,
+      category: classicCategory,
     },
     {
       name: 'PACKAGE ONLY',
