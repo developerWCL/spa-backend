@@ -78,9 +78,13 @@ export function bookingPendingTemplate(data: {
               <!-- Booking ID box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background:${LIGHT_BG};border-radius:6px;margin-bottom:24px;">
                 <tr>
-                  <td style="padding:16px 20px;">
+                  <td width="50%" style="padding:16px 20px;border-right:1px solid #e5e7eb;">
                     <p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Booking Reference</p>
                     <p style="margin:0;color:${PRIMARY};font-size:20px;font-weight:700;">${data.bookingId}</p>
+                  </td>
+                  <td width="50%" style="padding:16px 20px;vertical-align:top;">
+                    <p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Branch</p>
+                    <p style="margin:0;color:#111827;font-size:15px;font-weight:600;">${data.branchName || "—"}</p>
                   </td>
                 </tr>
               </table>

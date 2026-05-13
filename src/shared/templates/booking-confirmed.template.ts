@@ -82,6 +82,7 @@ export function bookingConfirmedTemplate(data: {
                   <td style="padding:16px 20px;">
                     <p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Booking Reference</p>
                     <p style="margin:0;color:${PRIMARY};font-size:20px;font-weight:700;">${data.bookingId}</p>
+                    ${data.branchName ? `<p style="margin:8px 0 0;color:#6b7280;font-size:13px;">${data.branchName}</p>` : ''}
                   </td>
                   <td style="padding:16px 20px;text-align:right;vertical-align:middle;">
                     <span style="background:${PRIMARY};color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">CONFIRMED</span>
