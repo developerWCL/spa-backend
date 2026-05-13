@@ -16,6 +16,8 @@ export async function seedSpa() {
       status: 'active',
       metadata: {
         logo_url:
+          'https://hotapp-io-core-bucket.s3.ap-southeast-7.amazonaws.com/services/02e03f30-1210-4a24-8870-4edcad2ebf7d/service-image-1-1778657627665.jpg',
+        white_logo_url:
           'https://hotapp-io-core-bucket.s3.ap-southeast-7.amazonaws.com/services/627e5487-0683-478b-a289-25fdbe29e77a/service-image-1-1778135189365.jpg',
         banner_url: 'https://example.com/banner.png',
         primary_color: '#245743',
