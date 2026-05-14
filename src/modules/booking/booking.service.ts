@@ -457,6 +457,7 @@ export class BookingService {
 
     // Get the updated booking with all details
     const updatedBooking = await this.findOne(id);
+    console.log('updatedBooking', updatedBooking.items[0]);
 
     // Send status update email if status changed to confirmed or cancelled
     if (
@@ -469,8 +470,8 @@ export class BookingService {
         updatedBooking.customer?.email ||
         updatedBooking.items[0]?.guests?.[0]?.email;
       const customerName = updatedBooking.customer
-        ? `${updatedBooking.customer.firstName || updatedBooking.items[0].guests?.[0]?.firstName} ${updatedBooking.customer.lastName || updatedBooking.items[0].guests?.[0]?.lastName}`
-        : undefined;
+        ? `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`
+        : `${updatedBooking.items[0].guests?.[0]?.firstName} ${updatedBooking.items[0].guests?.[0]?.lastName}`;
 
       await this.mailService.sendBookingStatusUpdateEmail(
         updatedBooking,

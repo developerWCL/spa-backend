@@ -301,7 +301,7 @@ export class MailService {
     if (!booking.items?.length) return [{ name: 'Spa Service', price: '0' }];
     return booking.items.map((item: BookingItem) => {
       const svcName = item.subService
-        ? item.subService.name || 'Spa Service'
+        ? `${item?.subService?.service?.name} - ${item.subService.name}`
         : item.package
           ? item.package.name || 'Spa Service'
           : item.programme
