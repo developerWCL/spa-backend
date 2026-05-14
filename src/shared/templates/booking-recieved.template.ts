@@ -1,8 +1,8 @@
 /**
- * Email template: Booking Confirmed
- * Sent to guest when admin updates booking status to "confirmed".
+ * Email template: Booking Received
+ * Sent to guest when a booking is created and pending confirmation.
  */
-export function bookingConfirmedTemplate(data: {
+export function bookingReceivedTemplate(data: {
   recipientName: string;
   bookingId: string;
   bookingDate: string;
@@ -19,6 +19,9 @@ export function bookingConfirmedTemplate(data: {
   spaName?: string;
   logoUrl?: string;
   primaryColor?: string;
+  paymentType?: string;
+  captureId?: string;
+  guestName?: string;
   guestEmail?: string;
   guestPhone?: string;
   promotionName?: string;
@@ -61,7 +64,7 @@ export function bookingConfirmedTemplate(data: {
                 <tr>
                   <td style="vertical-align:middle;">${header}</td>
                   <td style="text-align:right;vertical-align:middle;">
-                    <p style="margin:0;color:${PRIMARY};font-size:13px;font-weight:600;">Booking Confirmed</p>
+                    <p style="margin:0;color:${PRIMARY};font-size:13px;font-weight:600;">Booking Received</p>
                   </td>
                 </tr>
               </table>
@@ -73,7 +76,7 @@ export function bookingConfirmedTemplate(data: {
             <td style="padding:36px 40px;">
               <p style="margin:0 0 8px;color:#111827;font-size:16px;">Dear <strong>${data.recipientName}</strong>,</p>
               <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
-                We are pleased to inform you that your booking has been confirmed. We look forward to welcoming you!
+                A new booking has been received and is pending your review and confirmation. Please verify the booking details and confirm or make necessary adjustments.
               </p>
 
               <!-- Booking ID box -->
@@ -85,7 +88,7 @@ export function bookingConfirmedTemplate(data: {
                     ${data.branchName ? `<p style="margin:8px 0 0;color:#6b7280;font-size:13px;">${data.branchName}</p>` : ''}
                   </td>
                   <td style="padding:16px 20px;text-align:right;vertical-align:middle;">
-                    <span style="background:${PRIMARY};color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">CONFIRMED</span>
+                    <span style="background:#f59e0b;color:#fff;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:600;">PENDING</span>
                   </td>
                 </tr>
               </table>
@@ -94,7 +97,7 @@ export function bookingConfirmedTemplate(data: {
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                 <tr>
                   <td width="50%" style="padding:0 12px 0 0;vertical-align:top;">
-                    <p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Treatment Date</p>
+                    <p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Requested Date</p>
                     <p style="margin:0;color:#111827;font-size:15px;font-weight:600;">${data.bookingDate}</p>
                   </td>
                   <td width="50%" style="padding:0 0 0 12px;vertical-align:top;">
@@ -110,7 +113,7 @@ export function bookingConfirmedTemplate(data: {
                 <tr>
                   <td style="padding:16px 20px;">
                     <p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Name</p>
-                    <p style="margin:0 0 12px;color:#111827;font-size:14px;">${data.recipientName}</p>
+                    <p style="margin:0 0 12px;color:#111827;font-size:14px;">${data.guestName}</p>
                     ${data.guestEmail ? `<p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Email</p><p style="margin:0 0 12px;color:#111827;font-size:14px;">${data.guestEmail}</p>` : ''}
                     ${data.guestPhone ? `<p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Phone</p><p style="margin:0;color:#111827;font-size:14px;">${data.guestPhone}</p>` : ''}
                   </td>
@@ -122,6 +125,22 @@ export function bookingConfirmedTemplate(data: {
               <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
                 ${serviceRows}
               </table>
+
+              ${data.paymentType ? `
+              <p style="margin:0 0 8px;color:#111827;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Payment Details</p>
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+                <tr>
+                  <td style="padding:8px 0;color:#374151;border-bottom:1px solid #e5e7eb;">Payment Type</td>
+                  <td style="padding:8px 0;color:#374151;text-align:right;border-bottom:1px solid #e5e7eb;white-space:nowrap;">${data.paymentType}</td>
+                </tr>
+                ${data.paymentType.toLowerCase() === 'paypal' && data.captureId ? `
+                <tr>
+                  <td style="padding:8px 0;color:#374151;">Capture ID</td>
+                  <td style="padding:8px 0;color:#374151;text-align:right;white-space:nowrap;">${data.captureId}</td>
+                </tr>
+                ` : ''}
+              </table>
+              ` : ''}
 
               ${data.specialRequest ? `
               <p style="margin:0 0 4px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Special Request</p>
@@ -137,12 +156,6 @@ export function bookingConfirmedTemplate(data: {
                   </td>
                 </tr>
               </table>
-              ` : ''}
-
-              <!-- Payment Method -->
-              ${data.paymentMethod ? `
-              <p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Pay by</p>
-              <p style="margin:0 0 24px;color:#111827;font-size:14px;font-weight:600;">${data.paymentMethod}</p>
               ` : ''}
 
               <!-- Total -->
@@ -165,8 +178,12 @@ export function bookingConfirmedTemplate(data: {
                 </tr>
               </table>
 
+              <p style="margin:0 0 16px;color:#6b7280;font-size:13px;line-height:1.6;">
+                We will review your booking request and send you a confirmation email within 24 hours. If you need to make any changes, please contact us as soon as possible.
+              </p>
+
               <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">
-                Please arrive 10–15 minutes before your appointment. If you need to reschedule or cancel, contact us at least 24 hours in advance.
+                Once confirmed, please arrive 10–15 minutes before your appointment. If you need to reschedule or cancel, contact us at least 24 hours in advance.
               </p>
             </td>
           </tr>

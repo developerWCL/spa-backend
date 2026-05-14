@@ -16,6 +16,9 @@ import {
 } from './enums/entity-promotion.enum';
 import { EntityStatus } from './enums/entity-status.enum';
 import { Media } from './media.entity';
+import { PromotionService } from './promotion_services.entity';
+import { PromotionPackage } from './promotion_packages.entity';
+import { PromotionProgramme } from './promotion_programmes.entity';
 
 @Entity('promotions')
 export class Promotion {
@@ -83,6 +86,24 @@ export class Promotion {
 
   @OneToMany(() => Media, (media) => media.promotion)
   media: Media[];
+
+  @OneToMany(() => PromotionService, (ps) => ps.promotion, {
+    cascade: true,
+    eager: true,
+  })
+  services: PromotionService[];
+
+  @OneToMany(() => PromotionPackage, (pp) => pp.promotion, {
+    cascade: true,
+    eager: true,
+  })
+  packages: PromotionPackage[];
+
+  @OneToMany(() => PromotionProgramme, (pprog) => pprog.promotion, {
+    cascade: true,
+    eager: true,
+  })
+  programmes: PromotionProgramme[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

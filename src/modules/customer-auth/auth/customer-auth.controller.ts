@@ -18,6 +18,9 @@ export class AuthController {
       firstName: string;
       lastName: string;
       phone: string;
+      birthDate?: string;
+      nationality?: string;
+      gender?: string;
       spaId: string;
     },
   ) {
@@ -27,6 +30,9 @@ export class AuthController {
       dto.firstName,
       dto.lastName,
       dto.phone,
+      dto.birthDate,
+      dto.nationality,
+      dto.gender,
       dto.spaId,
     );
   }

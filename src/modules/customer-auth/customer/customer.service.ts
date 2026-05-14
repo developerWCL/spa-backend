@@ -123,11 +123,13 @@ export class CustomerService {
       );
     }
 
-    const [results, totalCount] = await query
+    const [results, total] = await query
       .skip(skip)
       .take(take)
       .orderBy('customer.createdAt', 'DESC')
       .getManyAndCount();
+
+    const totalCount = await query.getCount();
 
     return paginate(paginationParams, totalCount, results);
   }

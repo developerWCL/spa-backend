@@ -27,10 +27,9 @@ import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
 
 @Controller('guests')
 @ApiBearerAuth()
-@UseGuards(
-  StaffJwtAuthGuard,
-  //ApiKeyGuard
-)
+@UseGuards()
+//StaffJwtAuthGuard,
+//ApiKeyGuard
 export class GuestsController {
   constructor(private readonly guestsService: GuestsService) {}
 

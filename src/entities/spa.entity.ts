@@ -46,6 +46,9 @@ export class Spa {
   @Column({ default: 'active' })
   status: string;
 
+  @Column({ type: 'integer', default: 60, name: 'service_duration' })
+  serviceDuration: number;
+
   @Column({ type: 'text', nullable: true })
   @Column({ name: 'api_key', type: 'text', nullable: true })
   apiKey?: string;

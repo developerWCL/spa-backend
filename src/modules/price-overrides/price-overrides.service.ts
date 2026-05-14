@@ -312,11 +312,13 @@ export class PriceOverridesService {
 
     const { skip, take } = getPaginationQueryTypeORM(paginationParams);
 
-    const [results, totalCount] = await query
+    const [results, total] = await query
       .orderBy('priceOverride.overrideDate', 'DESC')
       .skip(skip)
       .take(take)
       .getManyAndCount();
+
+    const totalCount = await query.getCount();
 
     return paginate(paginationParams, totalCount, results);
   }

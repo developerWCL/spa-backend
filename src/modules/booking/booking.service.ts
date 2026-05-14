@@ -31,6 +31,7 @@ import {
   PaginatedResponse,
 } from '../../shared/pagination.types';
 import { isUUID } from 'class-validator';
+import { PaymentType } from 'src/entities/enums/booking.enum';
 
 @Injectable()
 export class BookingService {
@@ -100,7 +101,7 @@ export class BookingService {
     actorId?: string,
     actorName?: string,
   ): Promise<Booking> {
-    this.logger.log('Creating booking', { branchId: data.branch });
+    this.logger.log('Creating booking', { branchId: data.branch, data });
     // Generate a unique booking ID: Branch code + running number
     // If a bookingId was pre-generated (e.g. PayPal flow), use it directly to keep
     // the reference consistent between the PayPal invoice and the booking record.
@@ -312,8 +313,9 @@ export class BookingService {
       .skip(skip)
       .take(take)
       .getManyAndCount();
+    const totalCount = await query.getCount();
 
-    return paginate(params, total, data);
+    return paginate(params, totalCount, data);
   }
 
   async findOne(id: string): Promise<Booking> {
@@ -455,6 +457,7 @@ export class BookingService {
 
     // Get the updated booking with all details
     const updatedBooking = await this.findOne(id);
+    console.log('updatedBooking', updatedBooking.items[0]);
 
     // Send status update email if status changed to confirmed or cancelled
     if (
@@ -467,8 +470,8 @@ export class BookingService {
         updatedBooking.customer?.email ||
         updatedBooking.items[0]?.guests?.[0]?.email;
       const customerName = updatedBooking.customer
-        ? `${updatedBooking.customer.firstName || updatedBooking.items[0].guests?.[0]?.firstName} ${updatedBooking.customer.lastName || updatedBooking.items[0].guests?.[0]?.lastName}`
-        : undefined;
+        ? `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`
+        : `${updatedBooking.items[0].guests?.[0]?.firstName} ${updatedBooking.items[0].guests?.[0]?.lastName}`;
 
       await this.mailService.sendBookingStatusUpdateEmail(
         updatedBooking,
@@ -554,6 +557,16 @@ export class BookingService {
       customerEmail,
       customerName,
     );
+    if (
+      booking.branch?.email &&
+      booking.payments[0]?.paymentType !== PaymentType.PAYPAL
+    ) {
+      await this.mailService.sendBookingNotificationToAdmin(
+        booking,
+        booking.branch.email,
+        booking.branch.name,
+      );
+    }
   }
 
   async createBookingItem(
@@ -618,9 +631,7 @@ export class BookingService {
     // Handle guest creation/linking
     const linkedGuests: Guest[] = [];
 
-    this.logger.log(
-      `[createBookingItem] guestData=${JSON.stringify(itemData.guestData)}, guests=${JSON.stringify(itemData.guests)}`,
-    );
+    this.logger.log(`[createBookingItem] itemData=${JSON.stringify(itemData)}`);
 
     if (itemData.guestData && itemData.guestData.length > 0) {
       // Create or find guests from guestData

@@ -77,9 +77,14 @@ export class SubServiceDto {
 }
 
 export class CreateServiceDto {
-  @ApiProperty({ description: 'Branch ID' })
+  @ApiProperty({ description: 'Main Branch ID is required' })
   @IsString()
-  branchId: string;
+  mainBranchId: string;
+
+  @ApiProperty({ description: 'Branch ID or array of Branch IDs' })
+  @IsString({ each: true })
+  @IsArray()
+  branchId: string | string[];
 
   @ApiPropertyOptional({ description: 'Service category ID' })
   @IsOptional()

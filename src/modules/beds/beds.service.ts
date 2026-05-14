@@ -170,9 +170,9 @@ export class BedsService {
     }
 
     const [beds, total] = await query.take(limit).skip(skip).getManyAndCount();
-
+    const totalCount = await query.getCount();
     // Return beds with full room and branch data
-    return paginate({ page, limit }, total, beds);
+    return paginate({ page, limit }, totalCount, beds);
   }
 
   async findOne(id: string): Promise<Bed> {

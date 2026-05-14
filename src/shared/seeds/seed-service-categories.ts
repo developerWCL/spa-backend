@@ -24,20 +24,25 @@ export async function seedServiceCategories() {
       description: 'Spa treatment services',
       displayOrder: 1,
     },
+    // {
+    //   name: 'MASSAGE',
+    //   description: 'Massage therapy treatments',
+    //   displayOrder: 2,
+    // },
+    // {
+    //   name: 'SIGNATURE PACKAGES',
+    //   description: 'Special signature spa packages',
+    //   displayOrder: 3,
+    // },
+    // {
+    //   name: 'FACIAL MASSAGE',
+    //   description: 'Facial massage and treatments',
+    //   displayOrder: 4,
+    // },
     {
-      name: 'MASSAGE',
-      description: 'Massage therapy treatments',
+      name: 'Classic Experience',
+      description: 'Classic spa experience packages',
       displayOrder: 2,
-    },
-    {
-      name: 'SIGNATURE PACKAGES',
-      description: 'Special signature spa packages',
-      displayOrder: 3,
-    },
-    {
-      name: 'FACIAL MASSAGE',
-      description: 'Facial massage and treatments',
-      displayOrder: 4,
     },
   ];
 

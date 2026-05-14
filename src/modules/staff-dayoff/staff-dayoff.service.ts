@@ -105,12 +105,12 @@ export class StaffDayoffService {
 
     const { skip, take } = getPaginationQueryTypeORM(paginationParams);
 
-    const [results, totalCount] = await query
+    const [results, total] = await query
       .orderBy('staffDayoff.createdAt', 'DESC')
       .skip(skip)
       .take(take)
       .getManyAndCount();
-
+    const totalCount = await query.getCount();
     return paginate(paginationParams, totalCount, results);
   }
 
