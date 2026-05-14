@@ -300,8 +300,21 @@ export class MailService {
   ): { name: string; price: string }[] {
     if (!booking.items?.length) return [{ name: 'Spa Service', price: '0' }];
     return booking.items.map((item: BookingItem) => {
+      this.logger.debug(
+        `[extractServiceNames] FULL ITEM DEBUG: ${JSON.stringify({
+          subServiceId: item.subService?.id,
+          subServiceName: item.subService?.name,
+          subServiceTranslations: item.subService?.translations?.map((t) => ({
+            lang: t.languageCode,
+            name: t.name,
+          })),
+          serviceName: item.subService?.service?.name,
+          itemDuration: item.duration,
+        })}`,
+      );
+
       const svcName = item.subService
-        ? `${item?.subService?.service?.name} - ${item.subService.name}`
+        ? `${item.subService.service.name} - ${item.subService.name}`
         : item.package
           ? item.package.name || 'Spa Service'
           : item.programme
