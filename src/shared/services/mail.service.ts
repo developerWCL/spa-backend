@@ -321,7 +321,7 @@ export class MailService {
             ? item.programme.name || 'Spa Service'
             : 'Spa Service';
       this.logger.debug(
-        `[extractServiceNames] item subService=${item.subService?.id} svc.translations=${JSON.stringify(item.subService?.service?.translations)} resolved="${svcName}"`,
+        `[extractServiceNames] item subService=${item.subService?.id} svc.translations=${JSON.stringify(item.subService?.service?.translations)} resolved="${svcName}" duration=${item.duration}`,
       );
       return {
         name: svcName,

@@ -64,6 +64,38 @@ export class BookingService {
     this.logger.setContext('BookingService');
   }
 
+  /**
+   * Pre-generate a booking reference (e.g. "DPR-00003") without creating the booking.
+   * Used by PayPal flow to set invoice_id before the order is captured.
+   */
+  async generateBookingReference(branchId: string): Promise<string> {
+    let branchCode = 'BKG'; // Default fallback
+
+    const branch = await this.bookingRepository.query(
+      `SELECT id, name FROM branch WHERE id = $1`,
+      [branchId],
+    );
+
+    if (branch?.[0]?.name) {
+      // Generate code from branch name (e.g., "Siam Branch" -> "SB")
+      branchCode =
+        branch[0].name
+          .split(' ')
+          .map((word: string) => word.charAt(0).toUpperCase())
+          .join('')
+          .substring(0, 3) || 'BKG';
+    }
+
+    // Get the next running number for this branch
+    const bookingCount = await this.bookingRepository
+      .createQueryBuilder('booking')
+      .where('booking.branchId = :branchId', { branchId })
+      .getCount();
+
+    const runningNumber = String(bookingCount + 1).padStart(5, '0');
+    return `${branchCode}-${runningNumber}`;
+  }
+
   async create(
     data: CreateBookingDto,
     actorId?: string,
@@ -71,41 +103,47 @@ export class BookingService {
   ): Promise<Booking> {
     this.logger.log('Creating booking', { branchId: data.branch, data });
     // Generate a unique booking ID: Branch code + running number
-    let branchCode = 'BKG'; // Default fallback
+    // If a bookingId was pre-generated (e.g. PayPal flow), use it directly to keep
+    // the reference consistent between the PayPal invoice and the booking record.
+    let bookingId = (data as any).bookingId as string | undefined;
 
-    // If branch is provided, generate code from branch
-    if (data.branch) {
-      const branch =
-        typeof data.branch === 'string'
-          ? await this.bookingRepository.query(
-              `SELECT id, name FROM branch WHERE id = $1`,
-              [data.branch],
-            )
-          : data.branch;
+    if (!bookingId) {
+      let branchCode = 'BKG'; // Default fallback
 
-      if (branch && (branch.name || branch[0]?.name)) {
-        const branchName = branch.name || branch[0]?.name;
-        // Generate code from branch name (e.g., "Siam Branch" -> "SB")
-        branchCode =
-          branchName
-            .split(' ')
-            .map((word) => word.charAt(0).toUpperCase())
-            .join('')
-            .substring(0, 3) || 'BKG';
+      // If branch is provided, generate code from branch
+      if (data.branch) {
+        const branch =
+          typeof data.branch === 'string'
+            ? await this.bookingRepository.query(
+                `SELECT id, name FROM branch WHERE id = $1`,
+                [data.branch],
+              )
+            : data.branch;
+
+        if (branch && (branch.name || branch[0]?.name)) {
+          const branchName = branch.name || branch[0]?.name;
+          // Generate code from branch name (e.g., "Siam Branch" -> "SB")
+          branchCode =
+            (branchName as string)
+              .split(' ')
+              .map((word: string) => word.charAt(0).toUpperCase())
+              .join('')
+              .substring(0, 3) || 'BKG';
+        }
       }
+
+      // Get the next running number for this branch
+      const bookingCount = await this.bookingRepository
+        .createQueryBuilder('booking')
+        .where('booking.branchId = :branchId', {
+          branchId:
+            typeof data.branch === 'string' ? data.branch : data.branch?.id,
+        })
+        .getCount();
+
+      const runningNumber = String(bookingCount + 1).padStart(5, '0');
+      bookingId = `${branchCode}-${runningNumber}`;
     }
-
-    // Get the next running number for this branch
-    const bookingCount = await this.bookingRepository
-      .createQueryBuilder('booking')
-      .where('booking.branchId = :branchId', {
-        branchId:
-          typeof data.branch === 'string' ? data.branch : data.branch?.id,
-      })
-      .getCount();
-
-    const runningNumber = String(bookingCount + 1).padStart(5, '0');
-    const bookingId = `${branchCode}-${runningNumber}`;
 
     // Exclude payments array from booking data to prevent duplication
     const { payments, ...bookingDataWithoutPayments } = data;

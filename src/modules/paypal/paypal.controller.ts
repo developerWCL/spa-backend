@@ -33,14 +33,23 @@ export class PaypalController {
 
   @Post('create-order')
   async createOrder(@Body() dto: CreatePaypalOrderDto) {
-    const { approvalUrl, orderId } = await this.paypalService.createOrder(dto);
+    // Pre-generate booking reference so PayPal invoice_id matches the booking record
+    const bookingReference = await this.bookingService.generateBookingReference(
+      dto.branchId,
+    );
+
+    const { approvalUrl, orderId } = await this.paypalService.createOrder({
+      ...dto,
+      invoiceId: bookingReference,
+    });
 
     // Store booking payload — no booking created in DB yet
+    // Embed bookingReference so capture can use it as the bookingId
     await this.pendingOrderRepo.save(
       this.pendingOrderRepo.create({
         paypalOrderId: orderId,
         branchId: dto.branchId,
-        bookingPayload: dto.bookingPayload,
+        bookingPayload: { ...dto.bookingPayload, bookingId: bookingReference },
         bookingItems: dto.bookingItems ?? null,
       }),
     );

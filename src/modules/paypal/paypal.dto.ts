@@ -55,6 +55,10 @@ export class CreatePaypalOrderDto {
 
   @IsOptional()
   bookingItems?: Record<string, any>[];
+
+  @IsOptional()
+  @IsString()
+  invoiceId?: string;
 }
 
 // ── Admin: PayPal account CRUD ──
