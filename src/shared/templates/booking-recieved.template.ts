@@ -109,9 +109,9 @@ export function bookingReceivedTemplate(data: {
 
               <!-- Guest Information -->
               <p style="margin:0 0 12px;color:#111827;font-size:14px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Guest Information</p>
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;background:${LIGHT_BG};border-radius:6px;padding:16px;">
+              <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:24px;background:${LIGHT_BG};border-radius:6px;">
                 <tr>
-                  <td style="padding:0;">
+                  <td style="padding:16px 20px;">
                     <p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Name</p>
                     <p style="margin:0 0 12px;color:#111827;font-size:14px;">${data.guestName}</p>
                     ${data.guestEmail ? `<p style="margin:0 0 8px;color:#6b7280;font-size:12px;text-transform:uppercase;letter-spacing:0.8px;">Email</p><p style="margin:0 0 12px;color:#111827;font-size:14px;">${data.guestEmail}</p>` : ''}
