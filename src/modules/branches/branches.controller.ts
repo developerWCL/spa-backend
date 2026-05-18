@@ -30,7 +30,7 @@ export class BranchesController {
   @UseGuards(StaffJwtAuthGuard)
   @ApiOperation({ summary: 'List branch by spaId' })
   @Get()
-  findAll(@CurrentUser() currentUser: CurrentUserPayload) {
+  findAllByAdmin(@CurrentUser() currentUser: CurrentUserPayload) {
     return this.branchesService.findAll(currentUser.branchIds);
   }
 

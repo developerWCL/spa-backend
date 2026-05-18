@@ -293,6 +293,7 @@ export class PackagesService {
       search?: string;
       status?: EntityStatus;
       onlyAvailable?: boolean;
+      promotionId?: string;
     },
     paginationParams?: PaginationParams,
   ) {
@@ -302,7 +303,8 @@ export class PackagesService {
       .leftJoinAndSelect('subServices.service', 'service')
       .leftJoinAndSelect('pkg.translations', 'translations')
       .leftJoinAndSelect('pkg.media', 'media')
-      .leftJoinAndSelect('pkg.branch', 'branch');
+      .leftJoinAndSelect('pkg.branch', 'branch')
+      .leftJoinAndSelect('branch.spa', 'spa');
 
     if (branchId && branchId !== 'undefined') {
       query.where('pkg.branchId = :branchId', { branchId });
@@ -316,6 +318,19 @@ export class PackagesService {
 
     query.addOrderBy('media.createdAt', 'ASC');
 
+    if (filters?.promotionId) {
+      const promotionServiceSubQuery = this.dataSource
+        .createQueryBuilder()
+        .select('pp.packageId')
+        .from('promotion_packages', 'pp')
+        .where('pp.promotionId = :promotionId', {
+          promotionId: filters.promotionId,
+        });
+      query.andWhere(
+        `pkg.id IN (${promotionServiceSubQuery.getQuery()})`,
+        promotionServiceSubQuery.getParameters(),
+      );
+    }
     if (filters?.search) {
       query.andWhere('pkg.name ILIKE :search', {
         search: `%${filters.search}%`,
@@ -336,10 +351,23 @@ export class PackagesService {
         .getManyAndCount();
 
       const totalCount = await query.getCount();
+      const dataWithLink = data.map((pkg) => {
+        return {
+          ...pkg,
+          link: `${process.env.BOOKING_ENGINE_URL}/${pkg.branch.spa.id}?branchId=${pkg.branch.id}&serviceId=${pkg.id}&serviceType=packages`,
+        };
+      });
 
-      return paginate(paginationParams || {}, totalCount, data);
+      return paginate(paginationParams || {}, totalCount, dataWithLink);
     } else {
-      return query.getMany();
+      const data = await query.getMany();
+      const dataWithLink = data.map((pkg) => {
+        return {
+          ...pkg,
+          link: `${process.env.BOOKING_ENGINE_URL}/${pkg.branch.spa.id}?branchId=${pkg.branch.id}&serviceId=${pkg.id}&serviceType=packages`,
+        };
+      });
+      return dataWithLink;
     }
   }
 

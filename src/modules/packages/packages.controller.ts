@@ -104,6 +104,7 @@ export class PackagesController {
     @Query('onlyAvailable') onlyAvailable?: boolean,
     @Query('page') page?: number,
     @Query('limit') limit?: number,
+    @Query('promotionId') promotionId?: string,
   ) {
     const paginationParams: PaginationParams = {};
     if (page !== undefined) paginationParams.page = page;
@@ -111,7 +112,7 @@ export class PackagesController {
 
     return this.packagesService.findAll(
       branchId,
-      { search, status, onlyAvailable },
+      { search, status, onlyAvailable, promotionId },
       Object.keys(paginationParams).length > 0 ? paginationParams : undefined,
     );
   }
