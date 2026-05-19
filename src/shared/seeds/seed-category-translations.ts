@@ -20,6 +20,10 @@ export async function seedServiceCategoryTranslations() {
       en: 'Treatment',
       th: 'บำรุงรักษา',
     },
+    'Classic Experience': {
+      en: 'Classic Experience',
+      th: 'ประสบการณ์คลาสสิก',
+    },
     MASSAGE: {
       en: 'Massage',
       th: 'นวด',
@@ -35,6 +39,38 @@ export async function seedServiceCategoryTranslations() {
     'PACKAGE ONLY': {
       en: 'Package Only',
       th: 'เฉพาะแพคเกจ',
+    },
+    'Thai Massage': {
+      en: 'Thai Massage',
+      th: 'นวดแบบไทย',
+    },
+    'Relaxation Packages': {
+      en: 'Relaxation Packages',
+      th: 'แพคเกจผ่อนคลาย',
+    },
+    'Facial Care': {
+      en: 'Facial Care',
+      th: 'ดูแลผิวหน้า',
+    },
+    'Body Treatments': {
+      en: 'Body Treatments',
+      th: 'บำรุงรักษาร่างกาย',
+    },
+    'Wellness Services': {
+      en: 'Wellness Services',
+      th: 'บริการสุขภาพ',
+    },
+    'Deep Tissue Massage': {
+      en: 'Deep Tissue Massage',
+      th: 'นวดลึก',
+    },
+    'Premium Therapies': {
+      en: 'Premium Therapies',
+      th: 'บำรุงรักษาพรีเมียม',
+    },
+    'Couple Packages': {
+      en: 'Couple Packages',
+      th: 'แพคเกจสำหรับคู่รัก',
     },
   };
 

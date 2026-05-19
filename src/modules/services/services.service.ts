@@ -222,15 +222,19 @@ export class ServicesService {
       categoryId?: string;
       status?: EntityStatus;
       onlyPackage?: boolean;
+      minDurationMinutes?: number;
+      maxDurationMinutes?: number;
+      promotionId?: string;
     },
     paginationParams?: PaginationParams,
   ) {
     // Build query with filters
     let query = this.serviceRepo
       .createQueryBuilder('service')
-      .where('service.branchId = :branchId', { branchId })
-      .andWhere('service.deletedAt IS NULL')
+      .where('service.deletedAt IS NULL')
       .leftJoinAndSelect('service.category', 'category')
+      .leftJoinAndSelect('service.branch', 'branch')
+      .leftJoinAndSelect('branch.spa', 'spa')
       .leftJoinAndSelect('service.subServices', 'subServices')
       .leftJoinAndSelect('subServices.translations', 'subServiceTranslations')
       .leftJoinAndSelect('service.translations', 'translations')
@@ -238,6 +242,52 @@ export class ServicesService {
       .orderBy('service.createdAt', 'DESC')
       .addOrderBy('media.createdAt', 'ASC');
 
+    if (branchId) {
+      query = query.andWhere('service.branchId = :branchId', { branchId });
+    }
+
+    if (filters?.promotionId) {
+      // Filter services that are included in the specified promotion
+      const promotionServiceSubQuery = this.dataSource
+        .createQueryBuilder()
+        .select('ps.serviceId')
+        .from('promotion_services', 'ps')
+        .where('ps.promotionId = :promotionId', {
+          promotionId: filters.promotionId,
+        });
+      query = query.andWhere(
+        `service.id IN (${promotionServiceSubQuery.getQuery()})`,
+        promotionServiceSubQuery.getParameters(),
+      );
+    }
+
+    if (filters?.minDurationMinutes !== undefined) {
+      // Only return services that have at least one subService meeting the duration criteria
+      const subQuery = this.subServiceRepo
+        .createQueryBuilder('ss')
+        .select('ss.serviceId')
+        .where('ss.durationMinutes >= :minDurationMinutes', {
+          minDurationMinutes: filters.minDurationMinutes,
+        });
+      query = query.andWhere(
+        `service.id IN (${subQuery.getQuery()})`,
+        subQuery.getParameters(),
+      );
+    }
+
+    if (filters?.maxDurationMinutes !== undefined) {
+      // Only return services that have at least one subService meeting the duration criteria
+      const subQuery = this.subServiceRepo
+        .createQueryBuilder('ss')
+        .select('ss.serviceId')
+        .where('ss.durationMinutes <= :maxDurationMinutes', {
+          maxDurationMinutes: filters.maxDurationMinutes,
+        });
+      query = query.andWhere(
+        `service.id IN (${subQuery.getQuery()})`,
+        subQuery.getParameters(),
+      );
+    }
     // Apply search filter
     if (filters?.search) {
       const searchTerm = `%${filters.search}%`;
@@ -271,7 +321,14 @@ export class ServicesService {
     // Handle pagination
     if (!paginationParams) {
       // Fallback to non-paginated response for backward compatibility
-      return await query.getMany();
+      const data = await query.getMany();
+      const dataWithLink = data.map((service) => {
+        return {
+          ...service,
+          link: `${process.env.BOOKING_ENGINE_URL}/${service.branch.spa.id}?branchId=${service.branch.id}&serviceId=${service.id}&serviceType=services`,
+        };
+      });
+      return dataWithLink;
     }
     const paginationQuery = getPaginationQueryTypeORM(paginationParams);
 
@@ -281,8 +338,15 @@ export class ServicesService {
       .skip(paginationQuery.skip)
       .getManyAndCount();
     const totalCount = await query.getCount();
+    //orientalaspa.webconnection.app/aed498b0-b67d-4a3d-a569-1d1b2dad685b?branchId=35870acd-2787-4232-9eeb-bdcc098e05b4&serviceId=903eac8a-ea41-404e-92f5-eaa3f3185c97&serviceType=services
+    const dataWithLink = data.map((service) => {
+      return {
+        ...service,
+        link: `${process.env.BOOKING_ENGINE_URL}/${service.branch.spa.id}?branchId=${service.branch.id}&serviceId=${service.id}&serviceType=services`,
+      };
+    });
 
-    return paginate(paginationParams, totalCount, data);
+    return paginate(paginationParams, totalCount, dataWithLink);
   }
 
   async findOne(id: string) {

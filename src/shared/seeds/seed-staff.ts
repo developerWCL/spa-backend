@@ -100,10 +100,30 @@ export async function seedStaff() {
       name: 'Deevana Patong Resort & Spa',
     },
   });
+  const orBranch = await branchRepo.find({
+    where: {
+      spa: {
+        name: 'Orientala Spa',
+      },
+    },
+  });
+  const wclBranch = await branchRepo.find({
+    where: {
+      spa: {
+        name: 'Web Connection Spa',
+      },
+    },
+  });
 
   // Create default admin staff
   const adminEmail = 'admin@spa.local';
+  const wclAdminEmail = 'wcl-admin@spa.local';
+
   let adminStaff = await staffRepo.findOne({ where: { email: adminEmail } });
+  let wclAdminStaff = await staffRepo.findOne({
+    where: { email: wclAdminEmail },
+  });
+
   if (!adminStaff) {
     const adminPassword = 'admin123456'; // Default password
     const passwordHash = await hashPassword(adminPassword);
@@ -113,7 +133,7 @@ export async function seedStaff() {
       lastName: 'User',
       email: adminEmail,
       passwordHash: passwordHash,
-      branches: [branch],
+      branches: orBranch,
       roles: [adminRole],
       isActive: true,
     });
@@ -122,6 +142,26 @@ export async function seedStaff() {
     console.log(`Default password: ${adminPassword}`);
   } else {
     console.log(`Admin staff already exists: ${adminEmail}`);
+  }
+
+  if (!wclAdminStaff) {
+    const wclAdminPassword = 'wcladmin123456'; // Default password
+    const passwordHash = await hashPassword(wclAdminPassword);
+
+    wclAdminStaff = staffRepo.create({
+      firstName: 'WCL Admin',
+      lastName: 'User',
+      email: wclAdminEmail,
+      passwordHash: passwordHash,
+      branches: wclBranch,
+      roles: [adminRole],
+      isActive: true,
+    });
+    wclAdminStaff = await staffRepo.save(wclAdminStaff);
+    console.log(`Created WCL admin staff: ${wclAdminEmail}`);
+    console.log(`Default password: ${wclAdminPassword}`);
+  } else {
+    console.log(`WCL Admin staff already exists: ${wclAdminEmail}`);
   }
 
   // Create therapist staff

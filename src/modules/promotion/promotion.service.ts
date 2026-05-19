@@ -77,9 +77,9 @@ export class PromotionService {
     }
 
     // Link services to promotion if serviceIds are provided
-    if ((serviceIds as string[]).length > 0) {
+    if (serviceIds.length > 0) {
       const services = await this.serviceRepository.find({
-        where: { id: In(serviceIds as string[]) },
+        where: { id: In(serviceIds) },
       });
       const promotionServices = services.map((service) =>
         this.promotionServiceRepository.create({
@@ -91,9 +91,9 @@ export class PromotionService {
     }
 
     // Link packages to promotion if packageIds are provided
-    if ((packageIds as string[]).length > 0) {
+    if (packageIds.length > 0) {
       const packages = await this.packageRepository.find({
-        where: { id: In(packageIds as string[]) },
+        where: { id: In(packageIds) },
       });
       const promotionPackages = packages.map((pkg) =>
         this.promotionPackageRepository.create({
@@ -105,9 +105,9 @@ export class PromotionService {
     }
 
     // Link programmes to promotion if programmeIds are provided
-    if ((programmeIds as string[]).length > 0) {
+    if (programmeIds.length > 0) {
       const programmes = await this.programmeRepository.find({
-        where: { id: In(programmeIds as string[]) },
+        where: { id: In(programmeIds) },
       });
       const promotionProgrammes = programmes.map((programme) =>
         this.promotionProgrammeRepository.create({
@@ -233,11 +233,20 @@ export class PromotionService {
       .take(defaultLimit);
 
     const [promotions, total] = await query.getManyAndCount();
-
+    const promotionsWithLinks = promotions.map((promotion) => {
+      let link = `${process.env.BOOKING_ENGINE_URL}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&promotionId=${promotion.id}`;
+      if (promotion.services.length + promotion.packages.length === 1) {
+        link = `${process.env.BOOKING_ENGINE_URL}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&serviceId=${promotion.services[0]?.service.id || promotion.packages[0]?.package.id}&serviceType=${promotion.services[0] ? 'services' : 'packages'}&promotionId=${promotion.id}`;
+      }
+      return {
+        ...promotion,
+        link,
+      };
+    });
     return paginate(
       { page: defaultPage, limit: defaultLimit },
       total,
-      promotions,
+      promotionsWithLinks,
     );
   }
 
@@ -354,9 +363,9 @@ export class PromotionService {
         .execute();
 
       // Create new service relationships
-      if ((serviceIds as string[]).length > 0) {
+      if (serviceIds.length > 0) {
         const services = await this.serviceRepository.find({
-          where: { id: In(serviceIds as string[]) },
+          where: { id: In(serviceIds) },
         });
         const promotionServices = services.map((service) =>
           this.promotionServiceRepository.create({
@@ -378,9 +387,9 @@ export class PromotionService {
         .execute();
 
       // Create new package relationships
-      if ((packageIds as string[]).length > 0) {
+      if (packageIds.length > 0) {
         const packages = await this.packageRepository.find({
-          where: { id: In(packageIds as string[]) },
+          where: { id: In(packageIds) },
         });
         const promotionPackages = packages.map((pkg) =>
           this.promotionPackageRepository.create({
@@ -401,9 +410,9 @@ export class PromotionService {
         .where('promotionId = :promotionId', { promotionId: id })
         .execute();
       // Create new programme relationships
-      if ((programmeIds as string[]).length > 0) {
+      if (programmeIds.length > 0) {
         const programmes = await this.programmeRepository.find({
-          where: { id: In(programmeIds as string[]) },
+          where: { id: In(programmeIds) },
         });
         const promotionProgrammes = programmes.map((programme) =>
           this.promotionProgrammeRepository.create({

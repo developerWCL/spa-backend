@@ -67,6 +67,24 @@ export async function seedBranchOperatingHours() {
       { dayOfWeek: 5, openTime: '09:00', closeTime: '21:00' }, // Friday: 09:00 - 21:00
       { dayOfWeek: 6, openTime: '09:00', closeTime: '21:00' }, // Saturday: 09:00 - 21:00
     ],
+    'Web Connection Spa - Patong Branch': [
+      { dayOfWeek: 0, openTime: '10:00', closeTime: '20:00' }, // Sunday: 10:00 - 20:00
+      { dayOfWeek: 1, openTime: '10:00', closeTime: '20:00' }, // Monday: 10:00 - 20:00
+      { dayOfWeek: 2, openTime: '10:00', closeTime: '20:00' }, // Tuesday: 10:00 - 20:00
+      { dayOfWeek: 3, openTime: '10:00', closeTime: '20:00' }, // Wednesday: 10:00 - 20:00
+      { dayOfWeek: 4, openTime: '10:00', closeTime: '20:00' }, // Thursday: 10:00 - 20:00
+      { dayOfWeek: 5, openTime: '10:00', closeTime: '20:00' }, // Friday: 10:00 - 20:00
+      { dayOfWeek: 6, openTime: '10:00', closeTime: '20:00' }, // Saturday: 10:00 - 20:00
+    ],
+    'Web Connection Spa - Karon Branch': [
+      { dayOfWeek: 0, openTime: '10:00', closeTime: '20:00' }, // Sunday: 10:00 - 20:00
+      { dayOfWeek: 1, openTime: '10:00', closeTime: '20:00' }, // Monday: 10:00 - 20:00
+      { dayOfWeek: 2, openTime: '10:00', closeTime: '20:00' }, // Tuesday: 10:00 - 20:00
+      { dayOfWeek: 3, openTime: '10:00', closeTime: '20:00' }, // Wednesday: 10:00 - 20:00
+      { dayOfWeek: 4, openTime: '10:00', closeTime: '20:00' }, // Thursday: 10:00 - 20:00
+      { dayOfWeek: 5, openTime: '10:00', closeTime: '20:00' }, // Friday: 10:00 - 20:00
+      { dayOfWeek: 6, openTime: '10:00', closeTime: '20:00' }, // Saturday: 10:00 - 20:00
+    ],
   };
 
   for (const branch of branches) {

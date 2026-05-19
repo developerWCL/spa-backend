@@ -97,9 +97,7 @@ export async function seedRoles() {
       role = await roleRepo.save(role);
       console.log(`Created role: ${roleConfig.name}`);
     } else {
-      role.permissions = rolePerms;
-      await roleRepo.save(role);
-      console.log(`Updated role: ${roleConfig.name}`);
+      console.log(`Role '${roleConfig.name}' already exists. Skipping...`);
     }
   }
 }
