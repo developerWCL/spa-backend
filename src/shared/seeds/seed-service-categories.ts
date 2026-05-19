@@ -6,63 +6,159 @@ export async function seedServiceCategories() {
   const categoryRepo = dataSource.getRepository(ServiceCategory);
   const branchRepo = dataSource.getRepository(Branch);
 
-  // Get the first branch (default branch)
-  const branch = await branchRepo.findOne({
-    where: {
-      name: 'Deevana Patong Resort & Spa',
-    },
-  });
+  // Define categories for each branch
+  const branchCategoriesConfig: {
+    [branchName: string]: {
+      name: string;
+      description: string;
+      displayOrder: number;
+    }[];
+  } = {
+    'Deevana Patong Resort & Spa': [
+      {
+        name: 'TREATMENT',
+        description: 'Spa treatment services',
+        displayOrder: 1,
+      },
+      {
+        name: 'Classic Experience',
+        description: 'Classic spa experience packages',
+        displayOrder: 2,
+      },
+    ],
+    'Patong Phuket': [
+      {
+        name: 'TREATMENT',
+        description: 'Spa treatment services',
+        displayOrder: 1,
+      },
+      {
+        name: 'Classic Experience',
+        description: 'Classic spa experience packages',
+        displayOrder: 2,
+      },
+    ],
+    'Ramada by Wyndham Phuket Deevana Patong': [
+      {
+        name: 'TREATMENT',
+        description: 'Spa treatment services',
+        displayOrder: 1,
+      },
+      {
+        name: 'Classic Experience',
+        description: 'Classic spa experience packages',
+        displayOrder: 2,
+      },
+    ],
+    'Deevana Plaza Phuket Patong': [
+      {
+        name: 'TREATMENT',
+        description: 'Spa treatment services',
+        displayOrder: 1,
+      },
+      {
+        name: 'Classic Experience',
+        description: 'Classic spa experience packages',
+        displayOrder: 2,
+      },
+    ],
+    'Deevana Plaza Krabi Aonang': [
+      {
+        name: 'TREATMENT',
+        description: 'Spa treatment services',
+        displayOrder: 1,
+      },
+      {
+        name: 'Classic Experience',
+        description: 'Classic spa experience packages',
+        displayOrder: 2,
+      },
+    ],
+    'Web Connection Spa - Patong Branch': [
+      {
+        name: 'Thai Massage',
+        description: 'Traditional Thai massage services',
+        displayOrder: 1,
+      },
+      {
+        name: 'Relaxation Packages',
+        description: 'Relaxation and stress relief packages',
+        displayOrder: 2,
+      },
+      {
+        name: 'Facial Care',
+        description: 'Facial treatment and skincare services',
+        displayOrder: 3,
+      },
+      {
+        name: 'Body Treatments',
+        description: 'Full body treatment and body scrub services',
+        displayOrder: 4,
+      },
+    ],
+    'Web Connection Spa - Karon Branch': [
+      {
+        name: 'Wellness Services',
+        description: 'Holistic wellness and health services',
+        displayOrder: 1,
+      },
+      {
+        name: 'Deep Tissue Massage',
+        description: 'Deep tissue and therapeutic massage',
+        displayOrder: 2,
+      },
+      {
+        name: 'Premium Therapies',
+        description: 'Premium therapeutic treatments',
+        displayOrder: 3,
+      },
+      {
+        name: 'Couple Packages',
+        description: 'Special packages for couples',
+        displayOrder: 4,
+      },
+    ],
+  };
 
-  if (!branch) {
-    console.log('No branch found. Skipping service categories seed.');
+  // Get all branches
+  const branches = await branchRepo.find();
+
+  if (!branches.length) {
+    console.log('No branches found. Skipping service categories seed.');
     return;
   }
 
-  const categories = [
-    {
-      name: 'TREATMENT',
-      description: 'Spa treatment services',
-      displayOrder: 1,
-    },
-    // {
-    //   name: 'MASSAGE',
-    //   description: 'Massage therapy treatments',
-    //   displayOrder: 2,
-    // },
-    // {
-    //   name: 'SIGNATURE PACKAGES',
-    //   description: 'Special signature spa packages',
-    //   displayOrder: 3,
-    // },
-    // {
-    //   name: 'FACIAL MASSAGE',
-    //   description: 'Facial massage and treatments',
-    //   displayOrder: 4,
-    // },
-    {
-      name: 'Classic Experience',
-      description: 'Classic spa experience packages',
-      displayOrder: 2,
-    },
-  ];
+  // Seed categories for each branch
+  for (const branch of branches) {
+    const categories = branchCategoriesConfig[branch.name];
 
-  for (const catData of categories) {
-    let category = await categoryRepo.findOne({
-      where: { name: catData.name, branch: { id: branch.id } },
-    });
+    if (!categories) {
+      console.log(`No categories config found for branch '${branch.name}'`);
+      continue;
+    }
 
-    if (!category) {
-      category = categoryRepo.create({
-        name: catData.name,
-        description: catData.description,
-        displayOrder: catData.displayOrder,
-        branch,
-        isActive: true,
+    for (const catData of categories) {
+      let category = await categoryRepo.findOne({
+        where: { name: catData.name, branch: { id: branch.id } },
       });
-      category = await categoryRepo.save(category);
-      console.log(`Created service category: ${catData.name}`);
-    } else {
-      console.log(`Service category already exists: ${catData.name}`);
+
+      if (!category) {
+        category = categoryRepo.create({
+          name: catData.name,
+          description: catData.description,
+          displayOrder: catData.displayOrder,
+          branch,
+          isActive: true,
+        });
+        category = await categoryRepo.save(category);
+        console.log(
+          `Created service category '${catData.name}' for branch '${branch.name}'`,
+        );
+      } else {
+        console.log(
+          `Service category '${catData.name}' already exists for branch '${branch.name}'`,
+        );
+      }
     }
   }
 }
