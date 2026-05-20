@@ -43,6 +43,9 @@ export class Spa {
   @Column({ nullable: true })
   website: string;
 
+  @Column({ name: 'booking_engine_url', nullable: true })
+  bookingEngineUrl?: string;
+
   @Column({ default: 'active' })
   status: string;
 

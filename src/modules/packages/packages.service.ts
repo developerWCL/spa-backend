@@ -354,7 +354,7 @@ export class PackagesService {
       const dataWithLink = data.map((pkg) => {
         return {
           ...pkg,
-          link: `${process.env.BOOKING_ENGINE_URL}/${pkg.branch.spa.id}?branchId=${pkg.branch.id}&serviceId=${pkg.id}&serviceType=packages`,
+          link: `${pkg.branch.spa.bookingEngineUrl}/${pkg.branch.spa.id}?branchId=${pkg.branch.id}&serviceId=${pkg.id}&serviceType=packages`,
         };
       });
 
@@ -364,7 +364,7 @@ export class PackagesService {
       const dataWithLink = data.map((pkg) => {
         return {
           ...pkg,
-          link: `${process.env.BOOKING_ENGINE_URL}/${pkg.branch.spa.id}?branchId=${pkg.branch.id}&serviceId=${pkg.id}&serviceType=packages`,
+          link: `${pkg.branch.spa.bookingEngineUrl}/${pkg.branch.spa.id}?branchId=${pkg.branch.id}&serviceId=${pkg.id}&serviceType=packages`,
         };
       });
       return dataWithLink;

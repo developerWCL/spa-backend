@@ -15,7 +15,14 @@ import { MailService } from 'src/shared/services/mail.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([PaypalAccount, PaypalPendingOrder, Branch, Booking, Payment, Spa]),
+    TypeOrmModule.forFeature([
+      PaypalAccount,
+      PaypalPendingOrder,
+      Branch,
+      Booking,
+      Payment,
+      Spa,
+    ]),
     BookingModule,
   ],
   controllers: [PaypalController, PaypalAccountController],

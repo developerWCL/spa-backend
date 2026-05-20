@@ -13,6 +13,7 @@ export async function seedSpa() {
       phone: '+66-2-123-4567',
       email: 'contact@orientala-spa.com',
       website: 'https://orientala-spa.com',
+      bookingEngineUrl: 'https://orientalaspa.webconnection.app',
       status: 'active',
       metadata: {
         logo_url:
@@ -31,6 +32,7 @@ export async function seedSpa() {
       phone: '+66-2-123-4567',
       email: 'contact@webconnection.asia',
       website: 'https://webconnection.asia',
+      bookingEngineUrl: 'https://spa.webconnection.app',
       status: 'active',
       metadata: {
         logo_url:
