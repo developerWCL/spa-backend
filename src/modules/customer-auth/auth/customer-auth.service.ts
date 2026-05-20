@@ -56,10 +56,13 @@ export class AuthService {
     // console.log('hashed', hashed);
 
     const otpCode = Math.floor(100000 + Math.random() * 900000).toString();
+    const spa = await this.spaRepository.findOne({
+      where: { id: spaId },
+    });
+
     // Use transaction for atomicity
     await this.customerRepo.manager.transaction(async (entityManager) => {
       // Create customer
-      const spa = await entityManager.findOne(Spa, { where: { id: spaId } });
       if (!spa) throw new BadRequestException('Invalid spaId');
       await this.customerService.create(
         {
@@ -89,7 +92,11 @@ export class AuthService {
       );
     });
     try {
-      await this.mailService.sendOtpEmail(email.toLowerCase(), otpCode);
+      await this.mailService.sendOtpEmail(
+        email.toLowerCase(),
+        otpCode,
+        spa.name,
+      );
     } catch (error) {
       // Log error but don't fail the reset
       this.logger.error('Failed to send OTP email', error, { email });
@@ -127,11 +134,13 @@ export class AuthService {
             await this.mailService.sendRegistrationVerificationEmail(
               customer.email,
               customer.firstName,
+              customer.spa?.name || 'Wen Connection Spa',
             );
           } else if (otpType === 'password_reset') {
             await this.mailService.sendPasswordResetVerificationEmail(
               customer.email,
               customer.firstName,
+              customer.spa?.name || 'Wen Connection Spa',
             );
           }
         } catch (error) {
@@ -182,7 +191,11 @@ export class AuthService {
     });
 
     try {
-      await this.mailService.sendOtpEmail(email.toLowerCase(), otpCode);
+      await this.mailService.sendOtpEmail(
+        email.toLowerCase(),
+        otpCode,
+        spa.name,
+      );
     } catch (error) {
       console.error('Failed to send OTP email:', error);
       throw new BadRequestException('Failed to send OTP email');
@@ -325,7 +338,11 @@ export class AuthService {
     });
 
     try {
-      await this.mailService.sendOtpEmail(email.toLowerCase(), otpCode);
+      await this.mailService.sendOtpEmail(
+        email.toLowerCase(),
+        otpCode,
+        spa.name,
+      );
     } catch (error) {
       console.error('Failed to send OTP email:', error);
     }
@@ -396,6 +413,7 @@ export class AuthService {
           await this.mailService.sendPasswordResetVerificationEmail(
             customer.email,
             customer.firstName,
+            customer.spa?.name || 'Wen Connection Spa',
           );
         } catch (error) {
           console.error('Failed to send password reset confirmation:', error);
@@ -444,7 +462,11 @@ export class AuthService {
     });
 
     try {
-      await this.mailService.sendOtpEmail(email.toLowerCase(), otpCode);
+      await this.mailService.sendOtpEmail(
+        email.toLowerCase(),
+        otpCode,
+        spa.name,
+      );
     } catch (error) {
       console.error('Failed to send OTP email:', error);
       throw new BadRequestException('Failed to send OTP email');
