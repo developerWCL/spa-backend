@@ -28,6 +28,7 @@ export class MailService {
     email: string,
     resetToken: string,
     staffName: string,
+    spaName: string,
   ): Promise<void> {
     const resetUrl = `${process.env.FRONTEND_URL}/reset-password?token=${resetToken}`;
 
@@ -38,7 +39,7 @@ export class MailService {
           process.env.NODE_ENV === 'production'
             ? email
             : 'waritsara@webconnection.asia',
-        subject: 'Password Reset Request - Orientala Spa',
+        subject: `Password Reset Request - ${spaName}`,
         html: `
           <h2>Password Reset Request</h2>
           <p>Dear ${staffName},</p>
@@ -47,7 +48,7 @@ export class MailService {
           <p>This link will expire in 24 hours.</p>
           <p>If you did not request this, please ignore this email.</p>
           <br/>
-          <p>Best regards,<br/>Orientala Spa Team</p>
+          <p>Best regards,<br/>${spaName} Team</p>
         `,
       });
     } catch (error) {
@@ -61,19 +62,20 @@ export class MailService {
   async sendPasswordChangedEmail(
     email: string,
     staffName: string,
+    spaName: string,
   ): Promise<void> {
     try {
       await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
         to: email,
-        subject: 'Password Changed Successfully - Orientala Spa',
+        subject: `Password Changed Successfully - ${spaName}`,
         html: `
           <h2>Password Changed</h2>
           <p>Dear ${staffName},</p>
           <p>Your password has been successfully changed.</p>
           <p>If you did not make this change, please contact support immediately.</p>
           <br/>
-          <p>Best regards,<br/>Orientala Spa Team</p>
+          <p>Best regards,<br/>${spaName} Team</p>
         `,
       });
     } catch (error) {
@@ -85,19 +87,23 @@ export class MailService {
     }
   }
 
-  async sendOtpEmail(email: string, otp: string): Promise<void> {
+  async sendOtpEmail(
+    email: string,
+    otp: string,
+    spaName: string,
+  ): Promise<void> {
     try {
       await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
         to: email,
-        subject: 'Your OTP Code - Orientala Spa',
+        subject: `Your OTP Code - ${spaName}`,
         html: `
           <h2>Your OTP Code</h2>
           <p>Dear ${email},</p>
           <p>Your OTP code is <b>${otp}</b>.</p>
           <p>If you did not request this OTP, please contact support immediately.</p>
           <br/>
-          <p>Best regards,<br/>Orientala Spa Team</p>
+          <p>Best regards,<br/>${spaName} Team</p>
         `,
       });
     } catch (error) {
@@ -110,12 +116,13 @@ export class MailService {
   async sendRegistrationVerificationEmail(
     email: string,
     firstName: string,
+    spaName: string,
   ): Promise<void> {
     try {
       await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
         to: email,
-        subject: 'Registration Verified - Orientala Spa',
+        subject: `Registration Verified - ${spaName}`,
         html: `
           <h2>Registration Successful</h2>
           <p>Dear ${firstName},</p>
@@ -123,9 +130,9 @@ export class MailService {
           <br/>
           <p>You can now log in and start booking our spa services.</p>
           <br/>
-          <p>Thank you for choosing Orientala Spa. We look forward to welcoming you!</p>
+          <p>Thank you for choosing ${spaName}. We look forward to welcoming you!</p>
           <br/>
-          <p>Best regards,<br/>Orientala Spa Team</p>
+          <p>Best regards,<br/>${spaName} Team</p>
         `,
       });
     } catch (error) {
@@ -137,12 +144,13 @@ export class MailService {
   async sendPasswordResetVerificationEmail(
     email: string,
     firstName: string,
+    spaName: string,
   ): Promise<void> {
     try {
       await this.resend.emails.send({
         from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
         to: email,
-        subject: 'Password Reset Completed - Orientala Spa',
+        subject: `Password Reset Completed - ${spaName}`,
         html: `
           <h2>Password Reset Completed</h2>
           <p>Dear ${firstName},</p>
@@ -152,7 +160,7 @@ export class MailService {
           <br/>
           <p>If you did not request this password reset, please contact our support team immediately.</p>
           <br/>
-          <p>Best regards,<br/>Orientala Spa Team</p>
+          <p>Best regards,<br/>${spaName} Team</p>
         `,
       });
     } catch (error) {

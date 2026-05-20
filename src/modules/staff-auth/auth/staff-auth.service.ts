@@ -177,7 +177,10 @@ export class StaffAuthService {
   }
 
   async forgotPassword(email: string): Promise<{ message: string }> {
-    const staff = await this.staffRepo.findOne({ where: { email } });
+    const staff = await this.staffRepo.findOne({
+      where: { email },
+      relations: ['branches', 'branches.spa'],
+    });
     if (!staff) {
       throw new BadRequestException('Staff member not found');
     }
@@ -204,6 +207,7 @@ export class StaffAuthService {
         email,
         resetToken,
         staffName,
+        staff.branches[0]?.spa?.name || 'Wen Connection Spa',
       );
     } catch (error) {
       console.error('Failed to send reset email:', error);
@@ -228,6 +232,7 @@ export class StaffAuthService {
       where: {
         passwordResetToken: hashedToken,
       },
+      relations: ['branches', 'branches.spa'],
     });
 
     if (!staff) {
@@ -254,8 +259,13 @@ export class StaffAuthService {
 
     // Send confirmation email
     const staffName = `${staff.firstName} ${staff.lastName}`;
+    const spaName = staff.branches[0]?.spa?.name || 'Wen Connection Spa';
     try {
-      await this.mailService.sendPasswordChangedEmail(staff.email, staffName);
+      await this.mailService.sendPasswordChangedEmail(
+        staff.email,
+        staffName,
+        spaName,
+      );
     } catch (error) {
       // Log error but don't fail the reset
       console.error('Failed to send confirmation email:', error);
