@@ -234,9 +234,9 @@ export class PromotionService {
 
     const [promotions, total] = await query.getManyAndCount();
     const promotionsWithLinks = promotions.map((promotion) => {
-      let link = `${process.env.BOOKING_ENGINE_URL}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&promotionId=${promotion.id}`;
+      let link = `${promotion.branch.spa.bookingEngineUrl}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&promotionId=${promotion.id}`;
       if (promotion.services.length + promotion.packages.length === 1) {
-        link = `${process.env.BOOKING_ENGINE_URL}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&serviceId=${promotion.services[0]?.service.id || promotion.packages[0]?.package.id}&serviceType=${promotion.services[0] ? 'services' : 'packages'}&promotionId=${promotion.id}`;
+        link = `${promotion.branch.spa.bookingEngineUrl}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&serviceId=${promotion.services[0]?.service.id || promotion.packages[0]?.package.id}&serviceType=${promotion.services[0] ? 'services' : 'packages'}&promotionId=${promotion.id}`;
       }
       return {
         ...promotion,

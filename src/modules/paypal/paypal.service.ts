@@ -8,6 +8,9 @@ import axios from 'axios';
 import { PaypalAccountService } from './paypal-account.service';
 import { CreatePaypalOrderDto } from './paypal.dto';
 import { AppLoggerService } from 'src/core/logging/app-logger.service';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Spa } from 'src/entities/spa.entity';
+import { Repository } from 'typeorm';
 
 interface PaypalOrderResponse {
   id: string;
@@ -19,6 +22,8 @@ interface PaypalOrderResponse {
 export class PaypalService {
   constructor(
     private readonly accountService: PaypalAccountService,
+    @InjectRepository(Spa)
+    private readonly spaRepository: Repository<Spa>,
     private readonly logger: AppLoggerService,
   ) {
     this.logger.setContext('PaypalService');
@@ -71,9 +76,11 @@ export class PaypalService {
   ): Promise<{ approvalUrl: string; orderId: string }> {
     const { token, mode } = await this.getAccessToken(dto.branchId);
     const url = this.baseUrl(mode);
+    const spa = await this.spaRepository.findOne({
+      where: { id: dto.spaId },
+    });
 
-    const bookingEngineUrl =
-      process.env.BOOKING_ENGINE_URL || 'http://localhost:3000';
+    const bookingEngineUrl = spa?.bookingEngineUrl || 'http://localhost:3000';
 
     const locale = dto.locale || 'en';
     const basePath = `${bookingEngineUrl}/${locale}/${dto.spaId}/payment-gateway`;
@@ -90,7 +97,9 @@ export class PaypalService {
           const unitPrice = totalPrice / qty;
           return {
             name: item.itemName || 'Spa Service',
-            sku: dto.invoiceId ? `${dto.invoiceId}-${index + 1}` : `item-${index + 1}`,
+            sku: dto.invoiceId
+              ? `${dto.invoiceId}-${index + 1}`
+              : `item-${index + 1}`,
             quantity: String(qty),
             unit_amount: {
               currency_code: currency,

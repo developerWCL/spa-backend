@@ -325,7 +325,7 @@ export class ServicesService {
       const dataWithLink = data.map((service) => {
         return {
           ...service,
-          link: `${process.env.BOOKING_ENGINE_URL}/${service.branch.spa.id}?branchId=${service.branch.id}&serviceId=${service.id}&serviceType=services`,
+          link: `${service.branch.spa.bookingEngineUrl}/${service.branch.spa.id}?branchId=${service.branch.id}&serviceId=${service.id}&serviceType=services`,
         };
       });
       return dataWithLink;
@@ -342,7 +342,7 @@ export class ServicesService {
     const dataWithLink = data.map((service) => {
       return {
         ...service,
-        link: `${process.env.BOOKING_ENGINE_URL}/${service.branch.spa.id}?branchId=${service.branch.id}&serviceId=${service.id}&serviceType=services`,
+        link: `${service.branch.spa.bookingEngineUrl}/${service.branch.spa.id}?branchId=${service.branch.id}&serviceId=${service.id}&serviceType=services`,
       };
     });
 
