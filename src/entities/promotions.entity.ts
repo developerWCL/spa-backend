@@ -9,10 +9,12 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Branch } from './branch.entity';
+import { Booking } from './bookings.entity';
 import {
   PromotionActiveDay,
   PromotionDayActivated,
   PromotionDiscountType,
+  PromotionGuestType,
 } from './enums/entity-promotion.enum';
 import { EntityStatus } from './enums/entity-status.enum';
 import { Media } from './media.entity';
@@ -55,6 +57,9 @@ export class Promotion {
   @Column({ type: 'int', default: 0 })
   used: number;
 
+  @Column({ type: 'int', nullable: true, name: 'max_used_per_account' })
+  maxUsedPerAccount: number;
+
   @Column({ type: 'text', array: true, nullable: true, name: 'active_days' })
   activeDays: PromotionActiveDay[];
 
@@ -81,6 +86,14 @@ export class Promotion {
   })
   dayActivated: PromotionDayActivated;
 
+  @Column({
+    name: 'guest_type',
+    type: 'enum',
+    enum: PromotionGuestType,
+    default: PromotionGuestType.ALL_GUESTS,
+  })
+  guestType: PromotionGuestType;
+
   @ManyToOne(() => Branch, (b) => b.promotions, { onDelete: 'CASCADE' })
   branch: Branch;
 
@@ -104,6 +117,9 @@ export class Promotion {
     eager: true,
   })
   programmes: PromotionProgramme[];
+
+  @OneToMany(() => Booking, (booking) => booking.promotion)
+  bookings: Booking[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;
