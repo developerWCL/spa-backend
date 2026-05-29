@@ -67,6 +67,19 @@ export class PromotionController {
     return this.promotionService.findAutoApply(spaId, branchId);
   }
 
+  @Get('used/:userId')
+  findUsedPromotions(
+    @Param('userId') userId: string,
+    @Query('branchId') branchId: string,
+    @Query('promotionId') promotionId?: string,
+  ) {
+    return this.promotionService.findUsedPromotions(
+      userId,
+      branchId,
+      promotionId,
+    );
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.promotionService.findOne(id);

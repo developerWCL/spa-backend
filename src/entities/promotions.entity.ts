@@ -9,6 +9,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Branch } from './branch.entity';
+import { Booking } from './bookings.entity';
 import {
   PromotionActiveDay,
   PromotionDayActivated,
@@ -116,6 +117,9 @@ export class Promotion {
     eager: true,
   })
   programmes: PromotionProgramme[];
+
+  @OneToMany(() => Booking, (booking) => booking.promotion)
+  bookings: Booking[];
 
   @CreateDateColumn({ type: 'timestamp', name: 'created_at' })
   createdAt: Date;

@@ -575,4 +575,44 @@ export class PromotionService {
 
     return activePromotions;
   }
+
+  async findUsedPromotions(
+    userId: string,
+    branchId: string,
+    promotionId?: string,
+  ): Promise<
+    Array<{ promotion: { id: string; code: string }; count: number }>
+  > {
+    if (!userId || !branchId) {
+      return [];
+    }
+    // count how many times the user has used each promotion in the specified branch
+    const query = this.promotionRepository
+      .createQueryBuilder('promotion')
+      .select('promotion.id', 'id')
+      .addSelect('promotion.code', 'code')
+      .addSelect('COUNT(booking.id)', 'count')
+      .leftJoin('promotion.branch', 'branch')
+      .leftJoin('promotion.bookings', 'booking')
+      .leftJoin('booking.customer', 'customer')
+      .where('branch.id = :branchId', { branchId })
+      .andWhere('promotion.status = :status', { status: EntityStatus.ACTIVE })
+      .andWhere('customer.id = :userId', { userId })
+      .groupBy('promotion.id')
+      .addGroupBy('promotion.code');
+
+    if (promotionId) {
+      query.andWhere('promotion.id = :promotionId', { promotionId });
+    }
+
+    const result = await query.getRawMany();
+
+    return result.map((row) => ({
+      promotion: {
+        id: row.id,
+        code: row.code,
+      },
+      count: parseInt(row.count, 10),
+    }));
+  }
 }
