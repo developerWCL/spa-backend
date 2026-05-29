@@ -17,3 +17,8 @@ export enum PromotionDayActivated {
   BOOKING_DAY = 'booking_day',
   SERVICE_DAY = 'service_day',
 }
+
+export enum PromotionGuestType {
+  ALL_GUESTS = 'all_guests',
+  AUTHENTICATED_ONLY = 'authenticated_only',
+}

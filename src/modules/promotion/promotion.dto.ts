@@ -11,6 +11,7 @@ import {
   PromotionActiveDay,
   PromotionDayActivated,
   PromotionDiscountType,
+  PromotionGuestType,
 } from '../../entities/enums/entity-promotion.enum';
 import { EntityStatus } from 'src/entities/enums/entity-status.enum';
 
@@ -49,6 +50,10 @@ export class CreatePromotionDto {
   maxUsed?: number;
 
   @IsOptional()
+  @IsInt()
+  maxUsedPerAccount?: number;
+
+  @IsOptional()
   @IsArray()
   @IsEnum(PromotionActiveDay, { each: true })
   activeDays?: PromotionActiveDay[];
@@ -67,6 +72,10 @@ export class CreatePromotionDto {
   @IsOptional()
   @IsEnum(PromotionDayActivated)
   dayActivated?: PromotionDayActivated;
+
+  @IsOptional()
+  @IsEnum(PromotionGuestType)
+  guestType?: PromotionGuestType;
 
   @IsOptional()
   @IsArray()
@@ -127,6 +136,10 @@ export class UpdatePromotionDto {
   maxUsed?: number;
 
   @IsOptional()
+  @IsInt()
+  maxUsedPerAccount?: number;
+
+  @IsOptional()
   @IsArray()
   @IsEnum(PromotionActiveDay, { each: true })
   activeDays?: PromotionActiveDay[];
@@ -145,6 +158,10 @@ export class UpdatePromotionDto {
   @IsOptional()
   @IsEnum(PromotionDayActivated)
   dayActivated?: PromotionDayActivated;
+
+  @IsOptional()
+  @IsEnum(PromotionGuestType)
+  guestType?: PromotionGuestType;
 
   @IsOptional()
   @IsArray()

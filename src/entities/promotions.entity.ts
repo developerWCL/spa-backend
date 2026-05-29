@@ -13,6 +13,7 @@ import {
   PromotionActiveDay,
   PromotionDayActivated,
   PromotionDiscountType,
+  PromotionGuestType,
 } from './enums/entity-promotion.enum';
 import { EntityStatus } from './enums/entity-status.enum';
 import { Media } from './media.entity';
@@ -55,6 +56,9 @@ export class Promotion {
   @Column({ type: 'int', default: 0 })
   used: number;
 
+  @Column({ type: 'int', nullable: true, name: 'max_used_per_account' })
+  maxUsedPerAccount: number;
+
   @Column({ type: 'text', array: true, nullable: true, name: 'active_days' })
   activeDays: PromotionActiveDay[];
 
@@ -80,6 +84,14 @@ export class Promotion {
     default: PromotionDayActivated.BOOKING_DAY,
   })
   dayActivated: PromotionDayActivated;
+
+  @Column({
+    name: 'guest_type',
+    type: 'enum',
+    enum: PromotionGuestType,
+    default: PromotionGuestType.ALL_GUESTS,
+  })
+  guestType: PromotionGuestType;
 
   @ManyToOne(() => Branch, (b) => b.promotions, { onDelete: 'CASCADE' })
   branch: Branch;
