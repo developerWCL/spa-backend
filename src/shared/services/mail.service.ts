@@ -10,6 +10,7 @@ import { bookingPendingTemplate } from '../templates/booking-pending.template';
 import { PaymentType } from 'src/entities/enums/booking.enum';
 import { Booking } from 'src/entities/bookings.entity';
 import { BookingItem } from 'src/entities/booking_items.entity';
+import { bookingCancelledTemplate } from '../templates/booking-cancelled.template';
 
 @Injectable()
 export class MailService {
@@ -489,17 +490,16 @@ export class MailService {
     const primaryColor = spa?.metadata?.primary_color;
 
     try {
+      const guestEmail = booking.customer
+        ? booking.customer.email
+        : booking.items?.[0]?.guests?.[0]?.email;
+      const guestPhone = booking.customer
+        ? booking.customer.phone
+        : booking.items?.[0]?.guests?.[0]?.phone;
+      const paymentMethod = this.paymentTypeToText(
+        booking.payments?.[0]?.paymentType,
+      );
       if (newStatus.toLowerCase() === 'confirmed') {
-        const guestEmail = booking.customer
-          ? booking.customer.email
-          : booking.items?.[0]?.guests?.[0]?.email;
-        const guestPhone = booking.customer
-          ? booking.customer.phone
-          : booking.items?.[0]?.guests?.[0]?.phone;
-        const paymentMethod = this.paymentTypeToText(
-          booking.payments?.[0]?.paymentType,
-        );
-
         await this.resend.emails.send({
           from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
           to: recipientEmail,
@@ -540,12 +540,34 @@ export class MailService {
           to: recipientEmail,
           ...(cc.length > 0 && { cc }),
           subject: `Booking Cancelled – ${booking.bookingId}`,
-          html: `<!DOCTYPE html><html><body style="font-family:Arial,sans-serif;color:#374151;padding:32px;">
-            <p>Dear <strong>${recipientName}</strong>,</p>
-            <p>Your booking <strong>${booking.bookingId}</strong> has been cancelled.</p>
-            <p>If you have any questions, please contact us.</p>
-            ${branch?.name ? `<p style="margin-top:24px;color:#6b7280;font-size:13px;">${branch.name}${branch.phone ? ' · ' + branch.phone : ''}</p>` : ''}
-          </body></html>`,
+          html: bookingCancelledTemplate({
+            recipientName,
+            bookingId: booking.bookingId,
+            bookingDate,
+            services,
+            subtotalAmount: booking.amount
+              ? parseFloat(booking.amount).toLocaleString('en-US')
+              : undefined,
+            totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString(
+              'en-US',
+            ),
+            discountAmount: booking.discountAmount
+              ? parseFloat(booking.discountAmount).toLocaleString('en-US')
+              : undefined,
+            currency: 'THB',
+            guestCount,
+            branchName: branch?.name,
+            branchPhone: branch?.phone,
+            branchEmail: branch?.email,
+            spaName,
+            logoUrl,
+            primaryColor,
+            guestEmail,
+            guestPhone,
+            paymentMethod,
+            promotionName: booking.promotion?.name,
+            promotionCode: booking.promotion?.code,
+          }),
         });
       }
     } catch (error) {
