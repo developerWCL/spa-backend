@@ -29,7 +29,7 @@ export function bookingConfirmedTemplate(data: {
   const LIGHT_BG = '#f0faf6';
   const spaName = data.spaName || 'Orientala Spa';
   const header = data.logoUrl
-    ? `<img src="${data.logoUrl}" alt="${spaName}" style="height:48px;width:auto;display:block;"/>`
+    ? `<img src="${data.logoUrl}" alt="${spaName}" style="height:48px !important;width:auto !important;display:block !important;"/>`
     : `<p style="margin:0;color:${PRIMARY};font-size:22px;font-weight:700;letter-spacing:0.5px;">${spaName}</p>`;
 
   const lastIdx = data.services.length - 1;

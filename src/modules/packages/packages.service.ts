@@ -332,9 +332,12 @@ export class PackagesService {
       );
     }
     if (filters?.search) {
-      query.andWhere('pkg.name ILIKE :search', {
-        search: `%${filters.search}%`,
-      });
+      query.andWhere(
+        'pkg.name ILIKE :search OR service.name ILIKE :search OR translations.description ILIKE :search',
+        {
+          search: `%${filters.search}%`,
+        },
+      );
     }
 
     if (filters?.status) {
