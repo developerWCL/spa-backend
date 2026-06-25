@@ -54,11 +54,11 @@ async function run() {
     // console.log('Seeding Branch Special Closures...');
     // await seedBranchSpecialClosures();
 
-    console.log('Seeding Rooms...');
-    await seedRooms();
+    // console.log('Seeding Rooms...');
+    // await seedRooms();
 
-    console.log('Seeding Beds...');
-    await seedBeds();
+    // console.log('Seeding Beds...');
+    // await seedBeds();
 
     console.log('\n=== Phase 3: Staffing ===');
     console.log('Seeding Staff...');
@@ -74,25 +74,25 @@ async function run() {
     console.log('Seeding Service Category Translations...');
     await seedServiceCategoryTranslations();
 
-    console.log('Seeding Services...');
-    await seedServices();
+    // console.log('Seeding Services...');
+    // await seedServices();
 
-    console.log('Seeding Sub-Services...');
-    await seedSubServices();
+    // console.log('Seeding Sub-Services...');
+    // await seedSubServices();
 
-    console.log('\n=== Phase 5: Packages & Programmes ===');
-    console.log('Seeding Packages...');
-    await seedPackages();
+    // console.log('\n=== Phase 5: Packages & Programmes ===');
+    // console.log('Seeding Packages...');
+    // await seedPackages();
 
-    console.log('Seeding Programmes...');
-    await seedProgrammes();
+    // console.log('Seeding Programmes...');
+    // await seedProgrammes();
 
-    console.log('Seeding Programme Steps...');
-    await seedProgrammeSteps();
+    // console.log('Seeding Programme Steps...');
+    // await seedProgrammeSteps();
 
-    console.log('\n=== Phase 6: Marketing & Sales ===');
-    console.log('Seeding Promotions...');
-    await seedPromotions();
+    // console.log('\n=== Phase 6: Marketing & Sales ===');
+    // console.log('Seeding Promotions...');
+    // await seedPromotions();
 
     // console.log('\n=== Phase 7: Customer Management ===');
     // console.log('Seeding Customers...');

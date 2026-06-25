@@ -118,11 +118,17 @@ export async function seedStaff() {
   // Create default admin staff
   const adminEmail = 'admin@spa.local';
   const wclAdminEmail = 'wcl-admin@spa.local';
+  const admin1Email = 'admin1@spa.local';
+  const admin2Email = 'admin2@spa.local';
+  const admin3Email = 'admin3@spa.local';
 
   let adminStaff = await staffRepo.findOne({ where: { email: adminEmail } });
   let wclAdminStaff = await staffRepo.findOne({
     where: { email: wclAdminEmail },
   });
+  let admin1Staff = await staffRepo.findOne({ where: { email: admin1Email } });
+  let admin2Staff = await staffRepo.findOne({ where: { email: admin2Email } });
+  let admin3Staff = await staffRepo.findOne({ where: { email: admin3Email } });
 
   if (!adminStaff) {
     const adminPassword = 'admin123456'; // Default password
@@ -162,6 +168,66 @@ export async function seedStaff() {
     console.log(`Default password: ${wclAdminPassword}`);
   } else {
     console.log(`WCL Admin staff already exists: ${wclAdminEmail}`);
+  }
+
+  if (!admin1Staff) {
+    const admin1Password = 'admin1123456'; // Default password
+    const passwordHash = await hashPassword(admin1Password);
+
+    admin1Staff = staffRepo.create({
+      firstName: 'Admin1',
+      lastName: 'User',
+      email: admin1Email,
+      passwordHash: passwordHash,
+      branches: orBranch,
+      roles: [adminRole],
+      isActive: true,
+    });
+    admin1Staff = await staffRepo.save(admin1Staff);
+    console.log(`Created admin staff: ${admin1Email}`);
+    console.log(`Default password: ${admin1Password}`);
+  } else {
+    console.log(`Admin staff already exists: ${admin1Email}`);
+  }
+
+  if (!admin2Staff) {
+    const admin2Password = 'admin2123456'; // Default password
+    const passwordHash = await hashPassword(admin2Password);
+
+    admin2Staff = staffRepo.create({
+      firstName: 'Admin2',
+      lastName: 'User',
+      email: admin2Email,
+      passwordHash: passwordHash,
+      branches: orBranch,
+      roles: [adminRole],
+      isActive: true,
+    });
+    admin2Staff = await staffRepo.save(admin2Staff);
+    console.log(`Created admin staff: ${admin2Email}`);
+    console.log(`Default password: ${admin2Password}`);
+  } else {
+    console.log(`Admin staff already exists: ${admin2Email}`);
+  }
+
+  if (!admin3Staff) {
+    const admin3Password = 'admin3123456'; // Default password
+    const passwordHash = await hashPassword(admin3Password);
+
+    admin3Staff = staffRepo.create({
+      firstName: 'Admin3',
+      lastName: 'User',
+      email: admin3Email,
+      passwordHash: passwordHash,
+      branches: orBranch,
+      roles: [adminRole],
+      isActive: true,
+    });
+    admin3Staff = await staffRepo.save(admin3Staff);
+    console.log(`Created admin staff: ${admin3Email}`);
+    console.log(`Default password: ${admin3Password}`);
+  } else {
+    console.log(`Admin staff already exists: ${admin3Email}`);
   }
 
   // Create therapist staff
