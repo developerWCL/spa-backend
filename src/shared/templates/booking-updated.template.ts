@@ -179,6 +179,7 @@ export function bookingUpdatedTemplate(data: {
               ${data.branchName ? `<p style="margin:0 0 4px;color:#374151;font-size:13px;font-weight:600;">${data.branchName}</p>` : ''}
               ${data.branchPhone ? `<p style="margin:0 0 2px;color:#6b7280;font-size:12px;">Tel: ${data.branchPhone}</p>` : ''}
               ${data.branchEmail ? `<p style="margin:0;color:#6b7280;font-size:12px;">Email: ${data.branchEmail}</p>` : ''}
+            <p style="margin:0;color:#6b7280;font-size:12px;">WhatsApp: +66 81 6763602 (Reservation Office)</p>
             </td>
           </tr>
 
