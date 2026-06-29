@@ -1,8 +1,8 @@
 /**
- * Email template: Booking Confirmed
- * Sent to guest when admin updates booking status to "confirmed".
+ * Email template: Booking Details Updated
+ * Sent to guest when booking details are updated but status hasn't changed.
  */
-export function bookingConfirmedTemplate(data: {
+export function bookingUpdatedTemplate(data: {
   recipientName: string;
   bookingId: string;
   bookingDate: string;
@@ -29,9 +29,8 @@ export function bookingConfirmedTemplate(data: {
   const LIGHT_BG = '#f0faf6';
   const spaName = data.spaName || 'Orientala Spa';
   const header = data.logoUrl
-    ? `<img src="${data.logoUrl}" alt="${spaName}" style="height:48px !important;width:auto !important;display:block !important;"/>`
+    ? `<img src="${data.logoUrl}" alt="${spaName}" style="height:48px;width:auto;display:block;"/>`
     : `<p style="margin:0;color:${PRIMARY};font-size:22px;font-weight:700;letter-spacing:0.5px;">${spaName}</p>`;
-
   const lastIdx = data.services.length - 1;
   const serviceRows = data.services
     .map(
@@ -61,7 +60,7 @@ export function bookingConfirmedTemplate(data: {
                 <tr>
                   <td style="vertical-align:middle;">${header}</td>
                   <td style="text-align:right;vertical-align:middle;">
-                    <p style="margin:0;color:${PRIMARY};font-size:13px;font-weight:600;">Booking Confirmed</p>
+                    <p style="margin:0;color:${PRIMARY};font-size:13px;font-weight:600;">Booking Updated</p>
                   </td>
                 </tr>
               </table>
@@ -72,11 +71,14 @@ export function bookingConfirmedTemplate(data: {
           <tr>
             <td style="padding:36px 40px;">
               <p style="margin:0 0 8px;color:#111827;font-size:16px;">Dear <strong>${data.recipientName}</strong>,</p>
-              <p style="margin:0 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
-                We are pleased to inform you that your booking has been confirmed. We look forward to welcoming you!
+              <p style="margin:24px 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
+                Thank you for your booking.
+              </p>
+               <p style="margin:24px 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
+                Please kindly check the booking details below to ensure all information is correct. Should you need any assistance, please feel free to contact the Spa via WhatsApp or email.
               </p>
 
-              <!-- Booking ID box -->
+             <!-- Booking ID box -->
               <table width="100%" cellpadding="0" cellspacing="0" style="background:${LIGHT_BG};border-radius:6px;margin-bottom:24px;">
                 <tr>
                   <td style="padding:16px 20px;">
@@ -165,8 +167,8 @@ export function bookingConfirmedTemplate(data: {
                 </tr>
               </table>
 
-              <p style="margin:0;color:#6b7280;font-size:13px;line-height:1.6;">
-                Please arrive 10–15 minutes before your appointment. If you need to reschedule or cancel, contact us at least 24 hours in advance.
+              <p style="margin:24px 0 8px;color:#6b7280;font-size:14px;line-height:1.6;">
+                If you have any questions, feel free to reach out to us.
               </p>
             </td>
           </tr>
@@ -177,7 +179,7 @@ export function bookingConfirmedTemplate(data: {
               ${data.branchName ? `<p style="margin:0 0 4px;color:#374151;font-size:13px;font-weight:600;">${data.branchName}</p>` : ''}
               ${data.branchPhone ? `<p style="margin:0 0 2px;color:#6b7280;font-size:12px;">Tel: ${data.branchPhone}</p>` : ''}
               ${data.branchEmail ? `<p style="margin:0;color:#6b7280;font-size:12px;">Email: ${data.branchEmail}</p>` : ''}
-              <p style="margin:0;color:#6b7280;font-size:12px;">WhatsApp: +66 81 6763602 (Reservation Office)</p>
+            <p style="margin:0;color:#6b7280;font-size:12px;">WhatsApp: +66 81 6763602 (Reservation Office)</p>
             </td>
           </tr>
 

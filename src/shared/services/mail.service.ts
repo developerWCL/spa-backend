@@ -7,6 +7,7 @@ import { Resend } from 'resend';
 import { bookingReceivedTemplate } from '../templates/booking-recieved.template';
 import { bookingConfirmedTemplate } from '../templates/booking-confirmed.template';
 import { bookingPendingTemplate } from '../templates/booking-pending.template';
+import { bookingUpdatedTemplate } from '../templates/booking-updated.template';
 import { PaymentType } from 'src/entities/enums/booking.enum';
 import { Booking } from 'src/entities/bookings.entity';
 import { BookingItem } from 'src/entities/booking_items.entity';
@@ -572,6 +573,89 @@ export class MailService {
       }
     } catch (error) {
       console.error('Error sending booking status update email:', error);
+    }
+  }
+
+  async sendBookingDetailsUpdateEmail(
+    booking: any,
+    customerEmail?: string,
+    customerName?: string,
+  ): Promise<void> {
+    const { recipientEmail, recipientName, cc } = this.resolveRecipients(
+      booking,
+      customerEmail,
+      customerName,
+    );
+
+    if (!recipientEmail) {
+      this.logger.warn(
+        `[sendBookingDetailsUpdateEmail] No recipient email for booking ${booking.bookingId}`,
+      );
+      return;
+    }
+
+    this.logger.log(
+      `[sendBookingDetailsUpdateEmail] Sending to ${recipientEmail}${cc.length ? ` cc=${cc.join(',')}` : ''} for booking ${booking.bookingId}`,
+    );
+
+    const services = this.extractServiceNames(booking);
+    const bookingDate = this.extractBookingDate(booking);
+    const guestCount = this.extractGuestCount(booking);
+    const specialRequest = booking.items?.[0]?.notes || undefined;
+    const branch = booking.branch;
+    const spa = branch?.spa;
+    const spaName = spa?.name;
+    const logoUrl = spa?.metadata?.logo_url;
+    const primaryColor = spa?.metadata?.primary_color;
+
+    try {
+      const guestEmail = booking.customer
+        ? booking.customer.email
+        : booking.items?.[0]?.guests?.[0]?.email;
+      const guestPhone = booking.customer
+        ? booking.customer.phone
+        : booking.items?.[0]?.guests?.[0]?.phone;
+      const paymentMethod = this.paymentTypeToText(
+        booking.payments?.[0]?.paymentType,
+      );
+
+      await this.resend.emails.send({
+        from: process.env.MAIL_FROM || 'noreply@orientala-spa.com',
+        to: recipientEmail,
+        ...(cc.length > 0 && { cc }),
+        subject: `Booking Updated – ${booking.bookingId}`,
+        html: bookingUpdatedTemplate({
+          recipientName,
+          bookingId: booking.bookingId,
+          bookingDate,
+          services,
+          subtotalAmount: booking.amount
+            ? parseFloat(booking.amount).toLocaleString('en-US')
+            : undefined,
+          totalAmount: parseFloat(booking.totalAmount || '0').toLocaleString(
+            'en-US',
+          ),
+          discountAmount: booking.discountAmount
+            ? parseFloat(booking.discountAmount).toLocaleString('en-US')
+            : undefined,
+          currency: 'THB',
+          guestCount,
+          branchName: branch?.name,
+          branchPhone: branch?.phone,
+          branchEmail: branch?.email,
+          spaName,
+          logoUrl,
+          primaryColor,
+          guestEmail,
+          guestPhone,
+          specialRequest,
+          paymentMethod,
+          promotionName: booking.promotion?.name,
+          promotionCode: booking.promotion?.code,
+        }),
+      });
+    } catch (error) {
+      console.error('Error sending booking details update email:', error);
     }
   }
 }

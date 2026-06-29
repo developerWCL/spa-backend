@@ -480,6 +480,24 @@ export class BookingService {
         customerName,
       );
     }
+    // Send booking details update email if data was updated but status did not change
+    else if (
+      Object.keys(bookingData).length > 0 &&
+      bookingData.status.toLowerCase() === 'pending'
+    ) {
+      const customerEmail =
+        updatedBooking.customer?.email ||
+        updatedBooking.items[0]?.guests?.[0]?.email;
+      const customerName = updatedBooking.customer
+        ? `${updatedBooking.customer.firstName} ${updatedBooking.customer.lastName}`
+        : `${updatedBooking.items[0].guests?.[0]?.firstName} ${updatedBooking.items[0].guests?.[0]?.lastName}`;
+
+      await this.mailService.sendBookingDetailsUpdateEmail(
+        updatedBooking,
+        customerEmail,
+        customerName,
+      );
+    }
 
     // Log action to database (if user information provided)
     if (actorId) {
