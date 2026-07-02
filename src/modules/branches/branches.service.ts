@@ -87,7 +87,7 @@ export class BranchesService {
   async findBySpaId(spaId: string): Promise<Branch[]> {
     return this.branchRepo.find({
       where: { spa: { id: spaId } },
-      relations: ['spa'],
+      relations: ['spa', 'operatingHours', 'media'],
       order: { createdAt: 'DESC' },
     });
   }

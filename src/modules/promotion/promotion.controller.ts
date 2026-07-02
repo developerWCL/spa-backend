@@ -41,12 +41,12 @@ export class PromotionController {
     @Headers('spa-id') spaId?: string,
     @Query('branchId')
     branchId?: string,
-
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
     @Query('status') status?: string,
     @Query('serviceIds') serviceIds?: string,
+    @Query('available-only') availableOnly?: string,
   ) {
     return this.promotionService.findAll(
       spaId,
@@ -56,6 +56,7 @@ export class PromotionController {
       status,
       branchId,
       serviceIds,
+      availableOnly,
     );
   }
 

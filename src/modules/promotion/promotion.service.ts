@@ -154,12 +154,14 @@ export class PromotionService {
     status?: string,
     branchId?: string,
     serviceIds?: string,
+    availableOnly?: string,
   ): Promise<PaginatedResponse<Promotion>> {
     // Sanitize string 'undefined' values to actual undefined
     spaId = spaId === 'undefined' ? undefined : spaId;
     search = search === 'undefined' ? undefined : search;
     status = status === 'undefined' ? undefined : status;
     branchId = branchId === 'undefined' ? undefined : branchId;
+    availableOnly = availableOnly === 'undefined' ? undefined : availableOnly;
 
     // Sanitize and normalize serviceIds - handle string or array inputs
     let normalizedServiceIds: string[] = [];
@@ -226,6 +228,15 @@ export class PromotionService {
       query = query.andWhere(
         '(ps.service.id IN (:...serviceIds) OR pp.package.id IN (:...serviceIds) OR ppg.programme.id IN (:...serviceIds))',
         { serviceIds: normalizedServiceIds },
+      );
+    }
+
+    // Apply Available Only filter if provided
+    if (availableOnly === 'true') {
+      const today = new Date().toISOString().split('T')[0]; // Get current date in YYYY-MM-DD format
+      query = query.andWhere(
+        '(promotion.startDate IS NULL OR promotion.startDate <= :today) AND (promotion.endDate IS NULL OR promotion.endDate >= :today)',
+        { today },
       );
     }
 
