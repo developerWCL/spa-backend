@@ -48,8 +48,8 @@ async function run() {
     // console.log('Seeding Branches...');
     // await seedBranches();
 
-    // console.log('Seeding Branch Operating Hours...');
-    // await seedBranchOperatingHours();
+    console.log('Seeding Branch Operating Hours...');
+    await seedBranchOperatingHours();
 
     // console.log('Seeding Branch Special Closures...');
     // await seedBranchSpecialClosures();
@@ -67,15 +67,15 @@ async function run() {
     // console.log('Seeding Staff Day-off...');
     // await seedStaffDayoff();
 
-    console.log('\n=== Phase 4: Services & Products ===');
-    console.log('Seeding Service Categories...');
-    await seedServiceCategories();
+    // console.log('\n=== Phase 4: Services & Products ===');
+    // console.log('Seeding Service Categories...');
+    // await seedServiceCategories();
 
-    console.log('Seeding Service Category Translations...');
-    await seedServiceCategoryTranslations();
+    // console.log('Seeding Service Category Translations...');
+    // await seedServiceCategoryTranslations();
 
-    console.log('Seeding Services...');
-    await seedServices();
+    // console.log('Seeding Services...');
+    // await seedServices();
 
     // console.log('Seeding Sub-Services...');
     // await seedSubServices();
