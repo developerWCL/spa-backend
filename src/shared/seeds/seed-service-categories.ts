@@ -25,6 +25,11 @@ export async function seedServiceCategories() {
         description: 'Classic spa experience packages',
         displayOrder: 2,
       },
+      {
+        name: 'PACKAGE ONLY',
+        description: 'Package only',
+        displayOrder: 3,
+      },
     ],
     'Patong Phuket': [
       {
@@ -36,6 +41,11 @@ export async function seedServiceCategories() {
         name: 'Classic Experience',
         description: 'Classic spa experience packages',
         displayOrder: 2,
+      },
+      {
+        name: 'PACKAGE ONLY',
+        description: 'Package only',
+        displayOrder: 3,
       },
     ],
     'Ramada by Wyndham Phuket Deevana Patong': [
@@ -49,6 +59,11 @@ export async function seedServiceCategories() {
         description: 'Classic spa experience packages',
         displayOrder: 2,
       },
+      {
+        name: 'PACKAGE ONLY',
+        description: 'Package only',
+        displayOrder: 3,
+      },
     ],
     'Deevana Plaza Phuket Patong': [
       {
@@ -61,6 +76,11 @@ export async function seedServiceCategories() {
         description: 'Classic spa experience packages',
         displayOrder: 2,
       },
+      {
+        name: 'PACKAGE ONLY',
+        description: 'Package only',
+        displayOrder: 3,
+      },
     ],
     'Deevana Plaza Krabi Aonang': [
       {
@@ -72,6 +92,11 @@ export async function seedServiceCategories() {
         name: 'Classic Experience',
         description: 'Classic spa experience packages',
         displayOrder: 2,
+      },
+      {
+        name: 'PACKAGE ONLY',
+        description: 'Package only',
+        displayOrder: 3,
       },
     ],
     'Web Connection Spa - Patong Branch': [

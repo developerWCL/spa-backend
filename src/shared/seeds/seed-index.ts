@@ -34,22 +34,22 @@ async function run() {
     console.log('✅ Database connected\n');
 
     // // Base entities
-    console.log('=== Phase 1: Core Setup ===');
-    console.log('Seeding Languages...');
-    await seedLanguages();
+    // console.log('=== Phase 1: Core Setup ===');
+    // console.log('Seeding Languages...');
+    // await seedLanguages();
 
-    console.log('Seeding Roles & Permissions...');
-    await seedRoles();
+    // console.log('Seeding Roles & Permissions...');
+    // await seedRoles();
 
-    console.log('Seeding Spa...');
-    await seedSpa();
+    // console.log('Seeding Spa...');
+    // await seedSpa();
 
-    console.log('\n=== Phase 2: Branch & Facilities ===');
-    console.log('Seeding Branches...');
-    await seedBranches();
+    // console.log('\n=== Phase 2: Branch & Facilities ===');
+    // console.log('Seeding Branches...');
+    // await seedBranches();
 
-    console.log('Seeding Branch Operating Hours...');
-    await seedBranchOperatingHours();
+    // console.log('Seeding Branch Operating Hours...');
+    // await seedBranchOperatingHours();
 
     // console.log('Seeding Branch Special Closures...');
     // await seedBranchSpecialClosures();
@@ -60,9 +60,9 @@ async function run() {
     // console.log('Seeding Beds...');
     // await seedBeds();
 
-    console.log('\n=== Phase 3: Staffing ===');
-    console.log('Seeding Staff...');
-    await seedStaff();
+    // console.log('\n=== Phase 3: Staffing ===');
+    // console.log('Seeding Staff...');
+    // await seedStaff();
 
     // console.log('Seeding Staff Day-off...');
     // await seedStaffDayoff();
@@ -74,8 +74,8 @@ async function run() {
     console.log('Seeding Service Category Translations...');
     await seedServiceCategoryTranslations();
 
-    // console.log('Seeding Services...');
-    // await seedServices();
+    console.log('Seeding Services...');
+    await seedServices();
 
     // console.log('Seeding Sub-Services...');
     // await seedSubServices();
