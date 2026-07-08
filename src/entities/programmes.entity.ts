@@ -57,6 +57,9 @@ export class Programme {
   })
   maxBookingsPerDay: number;
 
+  @Column({ type: 'int', nullable: true, name: 'display_order', default: 0 })
+  displayOrder: number;
+
   @OneToMany(() => ProgrammeStep, (ps) => ps.programme, { cascade: true })
   steps: ProgrammeStep[];
 

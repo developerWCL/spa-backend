@@ -228,6 +228,14 @@ export class UpdateServiceDto {
     description: 'Indicates if this service is a price override',
   })
   isOverride?: boolean;
+
+  @IsOptional()
+  @ApiPropertyOptional({
+    type: Number,
+    description: 'Display order of the service',
+  })
+  @IsNumber()
+  displayOrder?: number;
 }
 
 export class BookingCountEntryDto {
@@ -253,4 +261,25 @@ export class BookingCountResponseDto {
     description: 'Booking counts by time slot',
   })
   data: BookingCountEntryDto[];
+}
+
+export class ServiceDisplayOrderDto {
+  @ApiProperty({ description: 'Service ID' })
+  @IsString()
+  id: string;
+
+  @ApiProperty({ description: 'New display order' })
+  @IsNumber()
+  displayOrder: number;
+}
+
+export class BatchUpdateServiceOrderDto {
+  @ApiProperty({
+    type: [ServiceDisplayOrderDto],
+    description: 'Array of services with their new display order',
+  })
+  @ValidateNested({ each: true })
+  @Type(() => ServiceDisplayOrderDto)
+  @IsArray()
+  services: ServiceDisplayOrderDto[];
 }

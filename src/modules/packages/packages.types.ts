@@ -241,3 +241,25 @@ export class UpdatePackageDto {
   @IsOptional()
   isOverride?: boolean;
 }
+
+export class PackageDisplayOrderDto {
+  @ApiProperty({ description: 'Package ID' })
+  @IsString()
+  @IsUUID()
+  id: string;
+
+  @ApiProperty({ description: 'Display order number' })
+  @IsNumber()
+  displayOrder: number;
+}
+
+export class BatchUpdatePackageOrderDto {
+  @ApiProperty({
+    type: [PackageDisplayOrderDto],
+    description: 'Array of packages with their new display order',
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PackageDisplayOrderDto)
+  packages: PackageDisplayOrderDto[];
+}

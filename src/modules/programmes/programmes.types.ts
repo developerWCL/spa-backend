@@ -212,3 +212,25 @@ export class UpdateProgrammeDto {
   })
   isOverride?: boolean;
 }
+
+export class ProgrammeDisplayOrderDto {
+  @ApiProperty({ description: 'Programme ID' })
+  @IsUUID()
+  id: string;
+
+  @ApiProperty({ description: 'Display order number' })
+  @IsNumber()
+  displayOrder: number;
+}
+
+export class BatchUpdateProgrammeOrderDto {
+  @ApiProperty({
+    description: 'Array of programmes with new display order',
+    type: [ProgrammeDisplayOrderDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ProgrammeDisplayOrderDto)
+  programmes: ProgrammeDisplayOrderDto[];
+}
+

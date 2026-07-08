@@ -8,9 +8,14 @@ import {
   Delete,
   UseGuards,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { ServicesService } from './services.service';
-import { CreateServiceDto, UpdateServiceDto } from './services.types';
+import {
+  CreateServiceDto,
+  UpdateServiceDto,
+  BatchUpdateServiceOrderDto,
+} from './services.types';
 import {
   ApiOperation,
   ApiBearerAuth,
@@ -163,6 +168,23 @@ export class ServicesController {
       currentUser?.email,
     );
   }
+
+  @UseGuards(StaffJwtAuthGuard)
+  @Patch('batch/reorder')
+  @ApiOperation({
+    summary: 'Batch update service display order for best performance',
+  })
+  batchUpdateServiceOrder(
+    @Body() dto: BatchUpdateServiceOrderDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.servicesService.batchUpdateServiceOrder(
+      dto.services,
+      currentUser?.sub,
+      currentUser?.email,
+    );
+  }
+
   @UseGuards(StaffJwtAuthGuard)
   @Delete(':id')
   @ApiOperation({ summary: 'Delete service' })
