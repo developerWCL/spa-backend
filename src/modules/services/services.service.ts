@@ -65,7 +65,6 @@ export class ServicesService {
     });
 
     const createdServices = [];
-
     for (const branchId of branchIds) {
       const service = await this.dataSource.transaction(
         async (manager: EntityManager) => {
@@ -125,8 +124,15 @@ export class ServicesService {
             });
 
             for (const media of mediaList) {
-              media.service = savedService;
-              await manager.save(media);
+              // Create a new media copy for this branch's service
+              const newMedia = manager.create(Media, {
+                url: media.url,
+                type: media.type,
+                filename: media.filename,
+                mimeType: media.mimeType,
+                service: savedService,
+              });
+              await manager.save(newMedia);
             }
           }
 
