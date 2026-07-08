@@ -11,7 +11,11 @@ import {
   Patch,
 } from '@nestjs/common';
 import { ProgrammesService } from './programmes.service';
-import { CreateProgrammeDto, UpdateProgrammeDto } from './programmes.types';
+import {
+  CreateProgrammeDto,
+  UpdateProgrammeDto,
+  BatchUpdateProgrammeOrderDto,
+} from './programmes.types';
 import {
   ApiOperation,
   ApiBearerAuth,
@@ -21,7 +25,6 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { StaffJwtAuthGuard } from 'src/guards/staff-jwt.guard';
-import { ApiKeyGuard } from 'src/guards/api-key.guard';
 import { PaginationParams } from 'src/shared/pagination.types';
 import {
   CurrentUser,
@@ -218,6 +221,38 @@ export class ProgrammesController {
   ) {
     return this.programmesService.restore(
       id,
+      currentUser?.sub,
+      currentUser?.email,
+    );
+  }
+
+  @Patch('batch/reorder')
+  @UseGuards(StaffJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Batch update programme display order',
+    description: 'Update the display order for multiple programmes',
+  })
+  @ApiHeader({
+    name: 'spa-id',
+    description: 'The spa/branch ID',
+    required: false,
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Programmes reordered successfully',
+  })
+  batchUpdateOrder(
+    @Body() dto: BatchUpdateProgrammeOrderDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    const programmes = (dto as any).programmes as Array<{
+      id: string;
+      displayOrder: number;
+    }>;
+
+    return this.programmesService.batchUpdateProgrammeOrder(
+      programmes,
       currentUser?.sub,
       currentUser?.email,
     );

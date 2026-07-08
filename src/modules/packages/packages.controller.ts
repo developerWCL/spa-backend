@@ -8,9 +8,10 @@ import {
   Delete,
   UseGuards,
   Query,
+  Patch,
 } from '@nestjs/common';
 import { PackagesService } from './packages.service';
-import { CreatePackageDto, UpdatePackageDto } from './packages.types';
+import { CreatePackageDto, UpdatePackageDto, BatchUpdatePackageOrderDto } from './packages.types';
 import {
   ApiOperation,
   ApiBearerAuth,
@@ -192,5 +193,23 @@ export class PackagesController {
   })
   getActiveSubServices(@Param('id') id: string) {
     return this.packagesService.getActiveSubServices(id);
+  }
+
+  @Patch('batch/reorder')
+  @UseGuards(StaffJwtAuthGuard)
+  @ApiOperation({
+    summary: 'Batch update package display order',
+    description:
+      'Update display order for multiple packages in a single transaction for optimal performance.',
+  })
+  batchUpdatePackageOrder(
+    @Body() dto: BatchUpdatePackageOrderDto,
+    @CurrentUser() currentUser?: CurrentUserPayload,
+  ) {
+    return this.packagesService.batchUpdatePackageOrder(
+      dto.packages,
+      currentUser?.sub,
+      currentUser?.email,
+    );
   }
 }
