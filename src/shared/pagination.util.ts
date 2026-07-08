@@ -128,7 +128,6 @@ export function paginate<T>(
 
   // Create metadata
   const meta = createPaginationMeta(validTotalItems, data.length, limit, page);
-
   return {
     data,
     meta,

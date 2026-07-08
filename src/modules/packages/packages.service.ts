@@ -344,7 +344,9 @@ export class PackagesService {
       query.andWhere('pkg.status = :status', { status: filters.status });
     }
 
-    query.orderBy('pkg.createdAt', 'DESC');
+    query
+      .orderBy('pkg.displayOrder', 'ASC')
+      .addOrderBy('pkg.createdAt', 'DESC');
 
     if (paginationParams) {
       const paginationQuery = getPaginationQueryTypeORM(paginationParams);
@@ -625,5 +627,56 @@ export class PackagesService {
     return pkg.subServices.filter(
       (subService) => subService.status === EntityStatus.ACTIVE,
     );
+  }
+
+  /**
+   * Batch update package display order
+   * Updates the displayOrder field for multiple packages in a single transaction
+   * @param packages - Array of { id, displayOrder }
+   * @param actorId - User ID for audit logging
+   * @param actorName - User name for audit logging
+   */
+  async batchUpdatePackageOrder(
+    packages: Array<{ id: string; displayOrder: number }>,
+    actorId?: string,
+    actorName?: string,
+  ) {
+    if (!packages || packages.length === 0) {
+      throw new BadRequestException('Packages array cannot be empty');
+    }
+
+    // Use transaction for atomicity
+    const result = await this.dataSource.transaction(
+      async (transactionalEntityManager: EntityManager) => {
+        let updateCount = 0;
+
+        for (const pkg of packages) {
+          await transactionalEntityManager
+            .createQueryBuilder()
+            .update(Package)
+            .set({ displayOrder: pkg.displayOrder })
+            .where('id = :id', { id: pkg.id })
+            .execute();
+
+          updateCount++;
+        }
+
+        // Log the action
+        await this.actionLogService.logAction({
+          actorId,
+          actorName,
+          actionType: 'update',
+          entityType: 'Package',
+          description: `Batch updated display order for ${updateCount} packages`,
+          status: 'success',
+          branchId: null,
+          feature: 'package',
+        });
+
+        return { success: true, updatedCount: updateCount };
+      },
+    );
+
+    return result;
   }
 }

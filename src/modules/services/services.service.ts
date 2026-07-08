@@ -65,7 +65,6 @@ export class ServicesService {
     });
 
     const createdServices = [];
-
     for (const branchId of branchIds) {
       const service = await this.dataSource.transaction(
         async (manager: EntityManager) => {
@@ -125,8 +124,15 @@ export class ServicesService {
             });
 
             for (const media of mediaList) {
-              media.service = savedService;
-              await manager.save(media);
+              // Create a new media copy for this branch's service
+              const newMedia = manager.create(Media, {
+                url: media.url,
+                type: media.type,
+                filename: media.filename,
+                mimeType: media.mimeType,
+                service: savedService,
+              });
+              await manager.save(newMedia);
             }
           }
 
@@ -239,7 +245,7 @@ export class ServicesService {
       .leftJoinAndSelect('subServices.translations', 'subServiceTranslations')
       .leftJoinAndSelect('service.translations', 'translations')
       .leftJoinAndSelect('service.media', 'media')
-      .orderBy('service.createdAt', 'DESC')
+      .orderBy('service.displayOrder', 'ASC')
       .addOrderBy('media.createdAt', 'ASC');
 
     if (branchId) {
@@ -332,12 +338,109 @@ export class ServicesService {
     }
     const paginationQuery = getPaginationQueryTypeORM(paginationParams);
 
-    // Get paginated service IDs first (to handle joins correctly)
-    const [data, total] = await query
+    // Get distinct service IDs with pagination (avoid cartesian product from joins)
+    const idsQuery = this.serviceRepo
+      .createQueryBuilder('service')
+      .select('service.id')
+      .where('service.deletedAt IS NULL')
+      .andWhere('service.branchId = :branchId', { branchId });
+
+    // Apply all the same filters to the ID query
+    if (filters?.promotionId) {
+      const promotionServiceSubQuery = this.dataSource
+        .createQueryBuilder()
+        .select('ps.serviceId')
+        .from('promotion_services', 'ps')
+        .where('ps.promotionId = :promotionId', {
+          promotionId: filters.promotionId,
+        });
+      idsQuery.andWhere(
+        `service.id IN (${promotionServiceSubQuery.getQuery()})`,
+        promotionServiceSubQuery.getParameters(),
+      );
+    }
+
+    if (filters?.minDurationMinutes !== undefined) {
+      const subQuery = this.subServiceRepo
+        .createQueryBuilder('ss')
+        .select('ss.serviceId')
+        .where('ss.durationMinutes >= :minDurationMinutes', {
+          minDurationMinutes: filters.minDurationMinutes,
+        });
+      idsQuery.andWhere(
+        `service.id IN (${subQuery.getQuery()})`,
+        subQuery.getParameters(),
+      );
+    }
+
+    if (filters?.maxDurationMinutes !== undefined) {
+      const subQuery = this.subServiceRepo
+        .createQueryBuilder('ss')
+        .select('ss.serviceId')
+        .where('ss.durationMinutes <= :maxDurationMinutes', {
+          maxDurationMinutes: filters.maxDurationMinutes,
+        });
+      idsQuery.andWhere(
+        `service.id IN (${subQuery.getQuery()})`,
+        subQuery.getParameters(),
+      );
+    }
+
+    if (filters?.search) {
+      const searchTerm = `%${filters.search}%`;
+      idsQuery.andWhere(
+        '(service.name ILIKE :search OR service.description ILIKE :search)',
+        { search: searchTerm },
+      );
+    }
+
+    if (filters?.categoryId) {
+      idsQuery.andWhere('service.categoryId = :categoryId', {
+        categoryId: filters.categoryId,
+      });
+    }
+
+    if (filters?.status) {
+      idsQuery.andWhere('service.status = :status', {
+        status: filters.status,
+      });
+    }
+
+    if (filters?.onlyPackage !== undefined) {
+      const onlyPackage = Boolean(filters.onlyPackage);
+      if (onlyPackage === true) {
+        idsQuery.andWhere('service.name != :name', {
+          name: 'PACKAGE ONLY',
+        });
+      }
+    }
+
+    // Get total count
+    const totalCount = await idsQuery.getCount();
+
+    // Get paginated service IDs
+    const serviceIds = await idsQuery
+      .orderBy('service.displayOrder', 'ASC')
       .take(paginationQuery.take)
       .skip(paginationQuery.skip)
-      .getManyAndCount();
-    const totalCount = await query.getCount();
+      .getMany();
+
+    // Load full data for paginated service IDs
+    const data = await this.serviceRepo
+      .createQueryBuilder('service')
+      .where('service.id IN (:...serviceIds)', {
+        serviceIds: serviceIds.map((s) => s.id),
+      })
+      .leftJoinAndSelect('service.category', 'category')
+      .leftJoinAndSelect('service.branch', 'branch')
+      .leftJoinAndSelect('branch.spa', 'spa')
+      .leftJoinAndSelect('service.subServices', 'subServices')
+      .leftJoinAndSelect('subServices.translations', 'subServiceTranslations')
+      .leftJoinAndSelect('service.translations', 'translations')
+      .leftJoinAndSelect('service.media', 'media')
+      .orderBy('service.displayOrder', 'ASC')
+      .addOrderBy('media.createdAt', 'ASC')
+      .getMany();
     //orientalaspa.webconnection.app/aed498b0-b67d-4a3d-a569-1d1b2dad685b?branchId=35870acd-2787-4232-9eeb-bdcc098e05b4&serviceId=903eac8a-ea41-404e-92f5-eaa3f3185c97&serviceType=services
     const dataWithLink = data.map((service) => {
       return {
@@ -383,7 +486,10 @@ export class ServicesService {
     actorId?: string,
     actorName?: string,
   ) {
-    this.logger.log('Updating service', { serviceId: id });
+    this.logger.log('Updating service', {
+      serviceId: id,
+      displayOrder: dto.displayOrder,
+    });
     return this.dataSource.transaction(async (manager: EntityManager) => {
       const service = await manager.findOne(Service, {
         where: { id },
@@ -434,6 +540,8 @@ export class ServicesService {
         service.maxConcurrentBookings = dto.maxConcurrentBookings;
       if (dto.maxBookingsPerDay !== undefined)
         service.maxBookingsPerDay = dto.maxBookingsPerDay;
+      if (dto.displayOrder !== undefined)
+        service.displayOrder = dto.displayOrder;
 
       await manager.save(service);
 
@@ -601,6 +709,65 @@ export class ServicesService {
 
       return this.findOne(id);
     });
+  }
+
+  async batchUpdateServiceOrder(
+    services: Array<{ id: string; displayOrder: number }>,
+    actorId?: string,
+    actorName?: string,
+  ) {
+    this.logger.log('Batch updating service display order', {
+      serviceCount: services.length,
+    });
+
+    try {
+      // Use a single transaction for all updates to ensure consistency
+      await this.dataSource.transaction(async (manager: EntityManager) => {
+        for (const { id, displayOrder } of services) {
+          const service = await manager.findOne(Service, { where: { id } });
+
+          if (!service) {
+            this.logger.warn('Service not found for batch reorder', {
+              serviceId: id,
+            });
+            continue;
+          }
+
+          service.displayOrder = displayOrder;
+          await manager.save(service);
+        }
+      });
+
+      this.logger.log('Batch service order update completed', {
+        serviceCount: services.length,
+      });
+
+      // Log the action for the first service (as a summary)
+      if (services.length > 0) {
+        await this.actionLogService.logAction({
+          feature: 'service',
+          subFeature: null,
+          actionType: 'update',
+          actorId,
+          actorName,
+          entityType: 'service',
+          entityId: services[0].id,
+          oldData: { message: 'Batch reorder' },
+          newData: { message: 'Batch reorder' },
+          description: `Batch updated display order for ${services.length} services`,
+          status: 'success',
+        });
+      }
+
+      return {
+        success: true,
+        message: `Successfully updated display order for ${services.length} services`,
+        count: services.length,
+      };
+    } catch (error) {
+      this.logger.error('Batch update service order failed', error);
+      throw new Error('Failed to update service display order');
+    }
   }
 
   async remove(id: string, actorId?: string, actorName?: string) {

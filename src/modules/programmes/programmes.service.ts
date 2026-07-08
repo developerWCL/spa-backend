@@ -164,7 +164,7 @@ export class ProgrammesService {
       .leftJoinAndSelect('programme.media', 'media')
       .where('programme.branchId = :branchId', { branchId })
       .andWhere('programme.deletedAt IS NULL')
-      .orderBy('programme.createdAt', 'DESC')
+      .orderBy('programme.displayOrder', 'ASC')
       .addOrderBy('media.createdAt', 'ASC');
 
     // Add search filter
@@ -192,7 +192,7 @@ export class ProgrammesService {
       .skip(skip)
       .take(take)
       .getManyAndCount();
-    const totalCount = await query.getCount();
+    const totalCount = total;
     return paginate(paginationParams, totalCount, results);
   }
 
@@ -467,5 +467,53 @@ export class ProgrammesService {
     });
 
     return this.findById(id);
+  }
+
+  async batchUpdateProgrammeOrder(
+    programmes: Array<{ id: string; displayOrder: number }>,
+    actorId?: string,
+    actorName?: string,
+  ) {
+    const savedProgrammes: Programme[] = await this.dataSource.transaction(
+      async (manager: EntityManager) => {
+        const updates: Programme[] = [];
+
+        for (const item of programmes) {
+          const programme = await manager.findOne(Programme, {
+            where: { id: item.id },
+          });
+
+          if (!programme) {
+            throw new NotFoundException(
+              `Programme with ID ${item.id} not found`,
+            );
+          }
+
+          programme.displayOrder = item.displayOrder;
+          await manager.save(programme);
+          updates.push(programme);
+        }
+
+        return updates;
+      },
+    );
+
+    // Log the action
+    await this.actionLogService.logAction({
+      feature: 'programme',
+      subFeature: null,
+      actionType: 'update',
+      actorId,
+      actorName,
+      entityType: 'programme',
+      description: `Batch reordered ${programmes.length} programmes`,
+      status: 'success',
+    });
+
+    return {
+      success: true,
+      message: 'Programmes reordered successfully',
+      updatedCount: savedProgrammes.length,
+    };
   }
 }

@@ -66,6 +66,9 @@ export class Service {
   })
   maxBookingsPerDay: number;
 
+  @Column({ type: 'int', nullable: true, name: 'display_order', default: 0 })
+  displayOrder: number;
+
   @OneToMany(() => SubService, (ss) => ss.service, { cascade: true })
   subServices: SubService[];
 

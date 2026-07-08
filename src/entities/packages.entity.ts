@@ -43,6 +43,9 @@ export class Package {
   })
   status: EntityStatus;
 
+  @Column({ type: 'int', nullable: true, name: 'display_order', default: 0 })
+  displayOrder: number;
+
   @OneToMany(() => PackageTranslation, (t) => t.package, {
     cascade: true,
     eager: true,
