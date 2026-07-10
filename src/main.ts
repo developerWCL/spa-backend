@@ -14,6 +14,10 @@ async function bootstrap() {
   const allowedOrigins = [
     process.env.FRONTEND_URL || 'http://localhost:3000',
     process.env.BOOKING_ENGINE_URL || 'http://localhost:3002',
+    process.env.WEBSITE_URL || 'http://localhost:3001',
+    'http://localhost:3000',
+    'http://localhost:3001',
+    'http://localhost:3002',
   ].filter(Boolean);
   app.enableCors({
     origin: allowedOrigins,
