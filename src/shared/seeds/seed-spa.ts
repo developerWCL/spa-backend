@@ -9,6 +9,7 @@ export async function seedSpa() {
       companyId: '550e8400-e29b-41d4-a716-446655440000',
       companyName: 'Orientala Wellness Group',
       billingEmail: 'billing@orientala-spa.com',
+      id: '9fbdff3d-98a6-4f66-8a88-2535e3cccaa3',
       name: 'Orientala Spa',
       phone: '+66-2-123-4567',
       email: 'contact@orientala-spa.com',
