@@ -30,6 +30,9 @@ export class Service {
   })
   category: ServiceCategory;
 
+  @Column({ type: 'text', nullable: true, name: 'sub_category' })
+  subCategory: string;
+
   @Column()
   name: string;
 

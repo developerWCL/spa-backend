@@ -104,6 +104,7 @@ export class ServicesService {
           newService.durationMinutes = dto.durationMinutes;
           newService.maxConcurrentBookings = dto.maxConcurrentBookings;
           newService.maxBookingsPerDay = dto.maxBookingsPerDay;
+          newService.subCategory = dto.subCategory;
           if (branchId === dto.mainBranchId) {
             newService.status = dto.status;
           } else {
@@ -196,6 +197,7 @@ export class ServicesService {
               basePrice: savedService.basePrice,
               durationMinutes: savedService.durationMinutes,
               status: savedService.status,
+              subCategory: savedService.subCategory,
               maxConcurrentBookings: savedService.maxConcurrentBookings,
               maxBookingsPerDay: savedService.maxBookingsPerDay,
               categoryId: category?.id,
@@ -231,6 +233,7 @@ export class ServicesService {
       minDurationMinutes?: number;
       maxDurationMinutes?: number;
       promotionId?: string;
+      subCategory?: string;
     },
     paginationParams?: PaginationParams,
   ) {
@@ -323,6 +326,14 @@ export class ServicesService {
         });
       }
     }
+    if (filters?.subCategory) {
+      query = query.andWhere(
+        'LOWER(service.sub_category) = LOWER(:subCategory)',
+        {
+          subCategory: filters.subCategory,
+        },
+      );
+    }
 
     // Handle pagination
     if (!paginationParams) {
@@ -413,6 +424,12 @@ export class ServicesService {
           name: 'PACKAGE ONLY',
         });
       }
+    }
+
+    if (filters?.subCategory) {
+      idsQuery.andWhere('LOWER(service.sub_category) = LOWER(:subCategory)', {
+        subCategory: filters.subCategory,
+      });
     }
 
     // Get total count
@@ -542,6 +559,7 @@ export class ServicesService {
         service.maxBookingsPerDay = dto.maxBookingsPerDay;
       if (dto.displayOrder !== undefined)
         service.displayOrder = dto.displayOrder;
+      if (dto.subCategory !== undefined) service.subCategory = dto.subCategory;
 
       await manager.save(service);
 

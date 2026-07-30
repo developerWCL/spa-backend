@@ -106,6 +106,7 @@ export class ServicesController {
     @Query('minDurationMinutes') minDurationMinutes?: number,
     @Query('maxDurationMinutes') maxDurationMinutes?: number,
     @Query('promotionId') promotionId?: string,
+    @Query('subCategory') subCategory?: string,
   ) {
     const paginationParams: PaginationParams =
       page || limit
@@ -124,6 +125,7 @@ export class ServicesController {
         minDurationMinutes,
         maxDurationMinutes,
         promotionId,
+        subCategory,
       },
       paginationParams,
     );
