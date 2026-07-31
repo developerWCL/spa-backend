@@ -152,6 +152,12 @@ export class CreateServiceDto {
   @Type(() => SubServiceDto)
   @IsArray()
   subServices?: SubServiceDto[];
+
+  @ApiPropertyOptional({
+    description: 'subCategory for the service',
+  })
+  @IsOptional()
+  subCategory?: string;
 }
 
 export class UpdateServiceDto {
@@ -236,6 +242,12 @@ export class UpdateServiceDto {
   })
   @IsNumber()
   displayOrder?: number;
+
+  @ApiPropertyOptional({
+    description: 'subCategory for the service',
+  })
+  @IsOptional()
+  subCategory?: string;
 }
 
 export class BookingCountEntryDto {

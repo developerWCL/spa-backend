@@ -88,7 +88,7 @@ export class BranchesService {
     return this.branchRepo.find({
       where: { spa: { id: spaId } },
       relations: ['spa', 'operatingHours', 'media'],
-      order: { createdAt: 'DESC' },
+      order: { createdAt: 'ASC' },
     });
   }
 

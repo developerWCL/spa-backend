@@ -72,10 +72,10 @@ export function bookingUpdatedTemplate(data: {
             <td style="padding:36px 40px;">
               <p style="margin:0 0 8px;color:#111827;font-size:16px;">Dear <strong>${data.recipientName}</strong>,</p>
               <p style="margin:24px 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
-                Thank you for your booking.
+                Your booking has been updated by the Spa. We apologize for any inconvenience this may cause. Please review the updated booking details below.
               </p>
                <p style="margin:24px 0 24px;color:#6b7280;font-size:14px;line-height:1.6;">
-                Please kindly check the booking details below to ensure all information is correct. Should you need any assistance, please feel free to contact the Spa via WhatsApp or email.
+                If you need any assistance, please contact the Spa via WhatsApp or email.
               </p>
 
              <!-- Booking ID box -->
