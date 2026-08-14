@@ -31,6 +31,9 @@ export class Branch {
   @Column()
   name: string;
 
+  @Column({ name: 'branch_code', type: 'text', nullable: true })
+  branchCode: string;
+
   @Column({ type: 'text', nullable: true })
   location: string;
 

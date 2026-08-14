@@ -29,6 +29,7 @@ export async function seedSpa() {
       companyId: 'f8b410aa-b93b-427c-b1ce-e3b1de13ddfd',
       companyName: 'Web Connection',
       billingEmail: 'billing@webconnection.asia',
+      id: '38124ddc-a1c5-4ccc-ba47-d5f25ba85fbb',
       name: 'Web Connection Spa',
       phone: '+66-2-123-4567',
       email: 'contact@webconnection.asia',

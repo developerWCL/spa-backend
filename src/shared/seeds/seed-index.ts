@@ -4,6 +4,7 @@ import { seedStaff } from './seed-staff';
 import { seedSpa } from './seed-spa';
 import { seedBranches } from './seed-branches';
 import { seedBranchOperatingHours } from './seed-branch-operating-hours';
+import { updateBranchCodes } from './seed-branch-codes';
 // import { seedBranchSpecialClosures } from './seed-branch-special-closures';
 import { seedRooms } from './seed-rooms';
 import { seedBeds } from './seed-beds';
@@ -48,8 +49,11 @@ async function run() {
     // console.log('Seeding Branches...');
     // await seedBranches();
 
-    console.log('Seeding Branch Operating Hours...');
-    await seedBranchOperatingHours();
+    // console.log('Seeding Branch Operating Hours...');
+    // await seedBranchOperatingHours();
+
+    console.log('Updating Branch codes...');
+    await updateBranchCodes();
 
     // console.log('Seeding Branch Special Closures...');
     // await seedBranchSpecialClosures();

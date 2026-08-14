@@ -192,6 +192,7 @@ export class PromotionService {
       .leftJoinAndSelect('promotion.media', 'media')
       .leftJoinAndSelect('promotion.services', 'ps')
       .leftJoinAndSelect('ps.service', 'service')
+      .leftJoinAndSelect('service.category', 'serviceCategory')
       .leftJoinAndSelect('promotion.packages', 'pp')
       .leftJoinAndSelect('pp.package', 'package')
       .leftJoinAndSelect('promotion.programmes', 'ppg')
@@ -247,8 +248,16 @@ export class PromotionService {
       .take(defaultLimit);
 
     const [promotions, total] = await query.getManyAndCount();
+    console.log('promotions', promotions);
     const promotionsWithLinks = promotions.map((promotion) => {
-      let link = `${promotion.branch.spa.bookingEngineUrl}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&promotionId=${promotion.id}`;
+      const tab = promotion.services.find(
+        (s) => s.service.category.name === 'Classic Experience',
+      )
+        ? 'classic'
+        : promotion.packages.length > 0
+          ? 'packages'
+          : 'treatments';
+      let link = `${promotion.branch.spa.bookingEngineUrl}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&promotionId=${promotion.id}&tab=${tab}`;
       if (promotion.services.length + promotion.packages.length === 1) {
         link = `${promotion.branch.spa.bookingEngineUrl}/${promotion.branch.spa.id}?branchId=${promotion.branch.id}&serviceId=${promotion.services[0]?.service.id || promotion.packages[0]?.package.id}&serviceType=${promotion.services[0] ? 'services' : 'packages'}&promotionId=${promotion.id}`;
       }
